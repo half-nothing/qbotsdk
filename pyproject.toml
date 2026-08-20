@@ -1,0 +1,48 @@
+[project]
+name = "qq-bot-sdk"
+version = "0.1.0"
+description = "Unofficial QQ robot SDK"
+authors = [
+    { name = "Half_nothing", email = "Half_nothing@163.com" },
+]
+dependencies = [
+    "aiohttp>=3.14.3",
+    "pydantic>=2.13.4"
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+
+[tool.mypy]
+python_version = "3.12"
+disable_error_code = []
+strict = true
+disallow_untyped_defs = true
+warn_return_any = true
+files = [
+    "src/",
+    "tests/"
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+]

@@ -1,0 +1,19 @@
+{
+  "id": "xxxxxx",
+  "channel_id": "xxxxxx",
+  "guild_id": "xxxxxx",
+  "content": "<@!1234>hello world",
+  "timestamp": "2021-05-13T14:45:45+08:00",
+  "tts": false,
+  "mention_everyone": false,
+  "author": {
+    "id": "xxxxxx",
+    "username": "abc",
+    "avatar": "",
+    "bot": true
+  },
+  "embeds": [{}],
+  "pinned": false,
+  "type": 0,
+  "flags": 0
+}

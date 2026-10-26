@@ -30,7 +30,7 @@
 - [x] GitHub Actions CI：Python 3.12 / 3.13 / 3.14 × pytest + mypy + ruff · `.github/workflows/check.yml`，`aac0d27`
 - [x] README 充实：安装、鉴权原理（`QQBot <token>`）、快速开始
 
-## Phase 1 · v0.2 REST 架构定型（≈1 周）
+## Phase 1 · v0.2 REST 架构定型（≈1 周）· 已关账 2026-10-26
 
 设计先行：[docs/design/phase1-rest-architecture.md](docs/design/phase1-rest-architecture.md)，六个实施切片 T1–T6，另加增补片 T7（群组只读）。
 
@@ -43,13 +43,19 @@
 - [x] 分页 helper（`limit`/`after` 模式统一封装）· T5
 - [x] 每个接口配 mock-server 测试 · T4
 
-## Phase 2 · v0.3 消息收发（≈1~2 周）
+## Phase 2 · v0.3 消息发送与撤回（≈1 周）
 
-- [ ] 频道消息：发送、回复、撤回、分页拉取历史消息
-- [ ] 富媒体上传 API（图片/语音/视频/文件，`/v2/users/@me/...`）
-- [ ] 私信（Direct Message）与表情表态（Reactions）
-- [ ] Ark / Markdown / Keyboard 模板消息模型
-- [ ] 客户端限频器（平台限制：如频道消息 5s/条）
+设计先行：[docs/design/phase2-message-send.md](docs/design/phase2-message-send.md)，六个实施切片 T1–T6，另有六项待拍板 D1–D6。
+
+范围收窄为「只发与只撤，不收」：事件与 WebSocket 仍在 Phase 3，单聊（C2C）、频道私信、表情表态、历史消息分页、客户端限流器与群分片上传一并顺延。
+
+- [ ] 频道消息发送：文本 / Markdown / 引用回复（`POST /channels/{channel_id}/messages`）· T3
+- [ ] 频道消息撤回：`DELETE /channels/{channel_id}/messages/{message_id}?hidetip=` · T3
+- [ ] 群消息发送：`msg_type` 0/2/7 自动推断、`msg_seq` 去重语义、引用回复（`POST /v2/groups/{group_openid}/messages`）· T4
+- [ ] 群消息撤回：`DELETE /v2/groups/{group_openid}/messages/{message_id}`，2 分钟时限 · T4
+- [ ] 群富媒体上传：URL 上传 + 5MB 以内二进制直传（`POST /v2/groups/{group_openid}/files`）· T5
+- [ ] 消息模型：频道 `Message`（官方示例 12 字段）、群 `GroupMessageReceipt`、`UploadedFile` · T1
+- [ ] `HTTPClient` 支持 `multipart/form-data`，新增 `ClientOptions.retry_post`（默认关）· T2
 
 ## Phase 3 · v0.4 事件接入（≈2~3 周，SDK 核心价值）
 

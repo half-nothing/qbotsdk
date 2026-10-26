@@ -87,6 +87,8 @@ pdm run pytest -q
 
 CI 在 Python 3.12 / 3.13 / 3.14 三个版本上跑同一套检查，见 [`.github/workflows/check.yml`](.github/workflows/check.yml)。
 
+装了 GNU Make 的可以直接用根目录的 [`Makefile`](Makefile)：`make check` 一次跑完四项门禁，`make help` 列出全部快捷命令。
+
 文案约定：异常消息与日志统一英文（例如 `GET /users/@me request failed: ...`），注释与文档保持中文。
 
 ## 许可证

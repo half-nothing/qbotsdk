@@ -69,7 +69,9 @@ class ChannelMessageDraft(QQModel):
             )
         )
         if not has_content:
-            raise ValueError("a channel message needs at least one of content/embed/ark/image/markdown")
+            raise ValueError(
+                "a channel message needs at least one of content/embed/ark/image/markdown"
+            )
         return self
 
 

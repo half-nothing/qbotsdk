@@ -27,6 +27,8 @@ class RecordedCall:
     path: str
     query: dict[str, str]
     headers: dict[str, str]
+    # 原始请求体, multipart 只能从这里断言
+    body: bytes
     json: object | None
 
 
@@ -55,13 +57,14 @@ class MockServer:
 
     def _recording(self, handler: Handler) -> Handler:
         async def wrapper(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
-            raw = await request.text()
+            raw = await request.read()
+            text = raw.decode("utf-8", errors="replace")
             payload: object | None
-            if raw:
+            if text:
                 try:
-                    payload = jsonlib.loads(raw)
+                    payload = jsonlib.loads(text)
                 except jsonlib.JSONDecodeError:
-                    payload = raw
+                    payload = text
             else:
                 payload = None
             self.calls.append(
@@ -70,6 +73,7 @@ class MockServer:
                     path=request.path,
                     query=dict(request.query),
                     headers=dict(request.headers),
+                    body=raw,
                     json=payload,
                 )
             )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from asyncio import sleep
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -14,6 +14,7 @@ from aiohttp import (
     ClientError,
     ClientSession,
     ClientTimeout,
+    FormData,
     TraceConfig,
     TraceRequestEndParams,
     TraceRequestExceptionParams,
@@ -30,6 +31,18 @@ from .token_manager import TokenManager
 # 5xx 与网络异常无法确认服务端是否已处理, 只对有幂等语义的方法重试
 _RETRYABLE_STATUS: frozenset[int] = frozenset({500, 502, 503, 504})
 _RETRYABLE_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "PUT", "DELETE"})
+
+# 现成的 FormData 只能写进流一次, 重试必须能重建, 因此也接受工厂函数
+FormSource = FormData | Callable[[], FormData]
+
+
+def _make_form(form: FormSource) -> tuple[FormData, bool]:
+    """返回 (本次要发的 FormData, 是否只能发一次)。"""
+
+    if isinstance(form, FormData):
+        # 调用方传了实例, 流已经就绪, 再发一次会报 "form data has been processed"
+        return form, True
+    return form(), False
 
 
 async def _sleep(seconds: float) -> None:
@@ -159,16 +172,25 @@ class HTTPClient:
         *,
         params: Mapping[str, str | int] | None = None,
         json: Mapping[str, object] | None = None,
+        form: FormSource | None = None,
     ) -> object:
         method = method.upper()
+        if json is not None and form is not None:
+            raise ValueError("json and form are mutually exclusive")
         attempt = 0
         auth_retried = False
         while True:
             attempt += 1
+            if form is None:
+                form_data: FormData | None = None
+                replayable = True
+            else:
+                form_data, single_use = _make_form(form)
+                replayable = not single_use
             try:
-                raw = await self._send(method, path, params, json)
+                raw = await self._send(method, path, params, json, form_data)
             except (ClientError, TimeoutError) as exc:
-                if method in _RETRYABLE_METHODS and attempt < self._options.max_attempts:
+                if self._retryable(method, replayable) and attempt < self._options.max_attempts:
                     delay = self._backoff(attempt)
                     logger.trace("Network error, retrying {} in {:.2f}s: {!r}", method, delay, exc)
                     await _sleep(delay)
@@ -181,7 +203,7 @@ class HTTPClient:
                 ) from exc
 
             # 401 说明缓存的 token 失效，丢弃后重试一次，仍失败才抛出
-            if raw.status == 401 and not auth_retried:
+            if raw.status == 401 and not auth_retried and replayable:
                 auth_retried = True
                 logger.trace("Received 401, dropping cached token and retrying once")
                 self._token_manager.invalidate()
@@ -201,7 +223,7 @@ class HTTPClient:
 
             if (
                 raw.status in _RETRYABLE_STATUS
-                and method in _RETRYABLE_METHODS
+                and self._retryable(method, replayable)
                 and attempt < self._options.max_attempts
             ):
                 delay = self._backoff(attempt)
@@ -238,12 +260,23 @@ class HTTPClient:
     ) -> object:
         return await self.request("POST", path, params=params, json=json)
 
+    async def post_form(
+        self,
+        path: str,
+        *,
+        form: Callable[[], FormData],
+    ) -> object:
+        """发 `multipart/form-data`。传工厂而不是实例: 每次重试都要一份新的流。"""
+
+        return await self.request("POST", path, form=form)
+
     async def _send(
         self,
         method: str,
         path: str,
         params: Mapping[str, str | int] | None,
         json: Mapping[str, object] | None,
+        form: FormData | None = None,
     ) -> _RawResponse:
         session = await self._get_session()
         token = await self._token_manager.get_token(session)
@@ -251,12 +284,13 @@ class HTTPClient:
         headers = {"Authorization": f"{AUTHORIZATION_SCHEME} {token}"}
         # 用 yarl 拼接 URL, 避免字符串拼接的斜杠/编码问题；path 前导斜杠会被 yarl 拒绝
         url = URL(BASE_URL) / path.lstrip("/")
-        logger.trace("Request {} {} body={}", method, url, json)
+        logger.trace("Request {} {} body={} form={}", method, url, json, form is not None)
         async with session.request(
             method,
             url,
             params=params,
             json=json,
+            data=form,
             headers=headers,
         ) as resp:
             payload = None if resp.status == 204 else _decode(await resp.text())
@@ -267,6 +301,13 @@ class HTTPClient:
                 trace_id=resp.headers.get(TRACE_ID_HEADER),
                 payload=payload,
             )
+
+    def _retryable(self, method: str, replayable: bool) -> bool:
+        """POST 默认不重试; 打开 `retry_post` 且包体可重建时才允许。"""
+
+        if method in _RETRYABLE_METHODS:
+            return True
+        return method == "POST" and self._options.retry_post and replayable
 
     @staticmethod
     def _error(method: str, path: str, raw: _RawResponse) -> APIError:

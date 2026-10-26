@@ -21,6 +21,8 @@ class ClientOptions:
     backoff_max: float = 8.0
     # 429 的 Retry-After 超过此值就放弃, 不阻塞调用方
     max_retry_after: float = 30.0
+    # POST 是否参与 5xx 与网络异常重试
+    retry_post: bool = False
 
     def __post_init__(self) -> None:
         if self.max_attempts < 1:

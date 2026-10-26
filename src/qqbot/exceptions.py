@@ -8,7 +8,9 @@ from enum import IntEnum
 _BODY_PREVIEW_LIMIT = 2048
 
 # 官方明确说明可重试的错误码
-RETRYABLE_CODES: frozenset[int] = frozenset({11252, 11262, 11263, 11281})
+RETRYABLE_CODES: frozenset[int] = frozenset(
+    {11252, 11262, 11263, 11281, 50055001, 850027, 40093001}
+)
 
 # 按区间归类的错误码, 用于提示不枚举具体值
 ERROR_CODE_RANGES: dict[tuple[int, int], str] = {

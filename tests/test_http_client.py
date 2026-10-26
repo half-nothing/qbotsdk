@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator
 import aiohttp
 import aiohttp.web
 import pytest
+from aiohttp import FormData
 
 import qqbot.module.http_client
 from qqbot.exceptions import APIError, ErrorCode, TransportError
@@ -212,3 +213,76 @@ async def test_401_refreshes_token_once(client: HTTPClient, server: MockServer) 
     assert attempts["n"] == 2
     token_calls = [call for call in server.calls if call.path == TOKEN_PATH]
     assert len(token_calls) == 2
+
+
+def _upload_form() -> FormData:
+    form = FormData()
+    form.add_field("content", "hello")
+    form.add_field("file_image", b"\x89PNG\r\n", filename="a.png", content_type="image/png")
+    return form
+
+
+async def test_post_form_sends_multipart(client: HTTPClient, server: MockServer) -> None:
+    async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
+        return aiohttp.web.json_response({"ok": True})
+
+    server.route("POST", "/upload", handler)
+
+    assert await client.post_form("/upload", form=_upload_form) == {"ok": True}
+
+    call = server.calls[-1]
+    assert call.headers["Content-Type"].startswith("multipart/form-data; boundary=")
+    assert b'name="content"' in call.body
+    assert b"hello" in call.body
+    assert b'filename="a.png"' in call.body
+
+
+async def test_post_not_retried_by_default(
+    client: HTTPClient,
+    server: MockServer,
+    sleeps: list[float],
+) -> None:
+    attempts = {"n": 0}
+
+    async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
+        attempts["n"] += 1
+        return aiohttp.web.Response(status=503)
+
+    server.route("POST", "/write", handler)
+
+    with pytest.raises(APIError) as excinfo:
+        await client.post("/write", json={"a": 1})
+
+    assert excinfo.value.status == 503
+    assert attempts["n"] == 1
+    assert sleeps == []
+
+
+async def test_retry_post_when_enabled(
+    server: MockServer,
+    point_at: None,
+    sleeps: list[float],
+) -> None:
+    add_token_route(server)
+    attempts = {"n": 0}
+
+    async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
+        attempts["n"] += 1
+        if attempts["n"] == 1:
+            return aiohttp.web.Response(status=503)
+        return aiohttp.web.json_response({"ok": True})
+
+    server.route("POST", "/flaky", handler)
+    http = HTTPClient("app", "secret", options=ClientOptions(retry_post=True))
+    try:
+        assert await http.post_form("/flaky", form=_upload_form) == {"ok": True}
+    finally:
+        await http.close()
+
+    uploads = [call for call in server.calls if call.path == "/flaky"]
+    assert attempts["n"] == 2
+    # 重试时包体被重新构建了一份, 否则第二次发送会报 form data has been processed
+    assert len(uploads) == 2
+    assert uploads[0].body != b""
+    assert b'name="content"' in uploads[1].body
+    assert len(sleeps) == 1

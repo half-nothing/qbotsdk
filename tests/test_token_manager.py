@@ -147,3 +147,47 @@ async def test_short_lived_token_refreshes_at_half_lifetime(
 
         clock["value"] += 6
         assert await manager.get_token(session) == "token-2"
+
+
+async def test_error_body_with_200_raises_api_error(
+    server: MockServer, point_at: None, clock: dict[str, float]
+) -> None:
+    """凭证接口用 HTTP 200 返回 err_code，应转成 APIError，而不是交给 pydantic 校验。"""
+
+    async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
+        return aiohttp.web.json_response(
+            {"err_code": 11252, "message": "invalid appid or secret", "trace_id": "trace-1"}
+        )
+
+    add_token_route(server, handler)
+    manager = TokenManager("app", "secret")
+
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(APIError) as info:
+            await manager.get_token(session)
+
+    assert info.value.status == 200
+    assert info.value.code == 11252
+    assert info.value.trace_id == "trace-1"
+    assert info.value.path == TOKEN_PATH
+    assert "invalid appid or secret" in info.value.message
+
+
+async def test_malformed_200_body_raises_api_error(
+    server: MockServer, point_at: None, clock: dict[str, float]
+) -> None:
+    """200 但包体不是凭证结构时，同样抛 APIError，不让 ValidationError 泄漏出去。"""
+
+    async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
+        return aiohttp.web.json_response({"message": "something went wrong"})
+
+    add_token_route(server, handler)
+    manager = TokenManager("app", "secret")
+
+    async with aiohttp.ClientSession() as session:
+        with pytest.raises(APIError) as info:
+            await manager.get_token(session)
+
+    assert info.value.status == 200
+    assert "something went wrong" in info.value.message
+    assert info.value.path == TOKEN_PATH

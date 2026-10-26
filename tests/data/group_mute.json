@@ -1,0 +1,36 @@
+{
+  "global_rule": {
+    "mode": "schedule",
+    "schedule_rules": [
+      {
+        "task_id": "task_7ffd5d31e2b37c1c872acb51",
+        "start_at": "2026-07-22T10:44:00+08:00",
+        "end_at": "2026-07-22T11:44:00+08:00",
+        "enabled": false
+      },
+      {
+        "task_id": "task_e9ca43ca9a31b539d824639c",
+        "start_at": "2026-07-22T10:54:00+08:00",
+        "end_at": "2026-07-22T11:54:00+08:00",
+        "enabled": false
+      }
+    ],
+    "recurring_rules": [
+      {
+        "task_id": "task_3a6348b8fb04bbc48b8a8709",
+        "weekdays": [1, 2, 3, 4, 5, 6, 7],
+        "start_time": "13:05",
+        "end_time": "14:05",
+        "enabled": true
+      }
+    ]
+  },
+  "members": [
+    {
+      "member_openid": "EC58D87F598C8294A533B9D458DAAF33",
+      "mute_expire_at": "2026-08-05T11:23:04+08:00",
+      "username": "T小不点101",
+      "union_openid": "EC58D87F598C8294A533B9D458DAAF33"
+    }
+  ]
+}

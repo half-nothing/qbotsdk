@@ -110,7 +110,7 @@ class APIError(QQBotError):
         path: str = "",
     ) -> APIError:
         payload = data if isinstance(data, dict) else {}
-        code = _as_int(payload.get("err_code", payload.get("code", 0)))
+        code = error_code_of(data)
         message = str(payload.get("message", "") or f"HTTP {status}")
         return cls(
             status=status,
@@ -154,3 +154,14 @@ def _preview(data: object) -> object:
         return None
     text = data if isinstance(data, str) else repr(data)
     return text if len(text) <= _BODY_PREVIEW_LIMIT else text[:_BODY_PREVIEW_LIMIT] + "…"
+
+
+def error_code_of(payload: object) -> int:
+    """取响应体里的业务错误码，取不到时返回 0。
+
+    凭证接口与 REST 接口都用它判定「HTTP 200 但业务失败」的情形。
+    """
+
+    if not isinstance(payload, dict):
+        return 0
+    return _as_int(payload.get("err_code", payload.get("code", 0)))

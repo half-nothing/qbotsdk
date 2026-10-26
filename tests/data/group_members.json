@@ -1,0 +1,21 @@
+{
+  "members": [
+    {
+      "member_openid": "7A3B9C1D5E2F4A6B8C0D1E3F5A7B9C2D",
+      "username": "阳光小助手",
+      "member_role": "member",
+      "bot": false,
+      "joined_at": "2025-08-20T09:15:00+08:00",
+      "union_openid": "9F2E872045CCCC5948BEAF5B5FCCDF22"
+    },
+    {
+      "member_openid": "EC58D87F598C8294A533B9D458DAAF33",
+      "username": "T小不点101",
+      "member_role": "member",
+      "bot": false,
+      "joined_at": "2025-07-01T10:30:00+08:00",
+      "union_openid": "FE003FAF76C4817251FDC128A16753BB"
+    }
+  ],
+  "next_cursor": "bG1fNmIxOTM1NTRjNy4zMA"
+}

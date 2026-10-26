@@ -7,9 +7,10 @@ from time import monotonic
 
 from aiohttp import ClientError, ClientResponseError, ClientSession
 from loguru import logger
+from pydantic import ValidationError
 
-from ..constant import BASE_URL, TOKEN_URL
-from ..exceptions import APIError, TransportError
+from ..constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
+from ..exceptions import APIError, TransportError, error_code_of
 from ..model.token import Token
 
 # 提前60s刷新，平台只在旧token到期前60s内才签发新token, 且旧token在这60s内仍有效
@@ -108,6 +109,8 @@ class TokenManager:
                 TOKEN_URL,
                 json={"appId": self._app_id, "clientSecret": self._client_secret},
             ) as resp:
+                status = resp.status
+                trace_id = resp.headers.get(TRACE_ID_HEADER)
                 resp.raise_for_status()
                 data = await resp.json()
         except ClientResponseError as exc:
@@ -121,8 +124,28 @@ class TokenManager:
                 cause=exc,
             ) from exc
 
-        token = Token.model_validate(data)
-        # 打印完整返回值, 方便排查
+        # 凭证接口也会用 HTTP 200 返回 err_code，不能直接交给模型校验
+        if error_code_of(data) != 0:
+            raise APIError.from_response(
+                status,
+                data,
+                trace_id=trace_id,
+                method="POST",
+                path=_TOKEN_PATH,
+            )
+
+        try:
+            token = Token.model_validate(data)
+        except ValidationError as exc:
+            # 200 但包体不是凭证结构，同样是上游错误，不该把 pydantic 的报错漏给调用方
+            raise APIError.from_response(
+                status,
+                data,
+                trace_id=trace_id,
+                method="POST",
+                path=_TOKEN_PATH,
+            ) from exc
+
         # access_token 属于凭证, 仅 TRACE 级别输出
         logger.trace("access_token response: {} (expires in {}s)", data, token.expires_in)
         return token

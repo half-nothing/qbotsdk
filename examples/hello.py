@@ -1,5 +1,10 @@
 # Copyright (c) 2026-present Half_nothing.
 
+"""列出机器人加入的频道与子频道
+
+运行前设置环境变量 QQ_BOT_APP_ID 与 QQ_BOT_APP_SECRET
+"""
+
 import asyncio
 import os
 import sys
@@ -18,8 +23,14 @@ async def main() -> None:
         app_id=os.environ["QQ_BOT_APP_ID"],
         client_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
-        me = await bot.get_me()
-        print(f"登录成功: {me.username} (id={me.id}, bot={me.bot})")
+        me = await bot.api.user.me()
+        print(f"登录成功: {me.username} (id={me.id})")
+
+        async for guild in bot.api.user.iter_guilds():
+            channels = await bot.api.guild.channels(guild.id)
+            print(f"频道 {guild.name} ({guild.id}) 共 {len(channels)} 个子频道")
+            for channel in channels:
+                print(f"  - {channel.name} type={channel.type} id={channel.id}")
 
 
 if __name__ == "__main__":

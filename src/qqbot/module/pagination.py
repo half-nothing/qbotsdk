@@ -62,7 +62,10 @@ async def paginate[T](
             return
 
         next_cursor = cursor_of(page)
-        if next_cursor is None or next_cursor == cursor:
+        # None 是「没有下一页」的正常结束，不告警；只有游标原地打转才是异常
+        if next_cursor is None:
+            return
+        if next_cursor == cursor:
             logger.warning("Pagination stopped, cursor did not advance: {!r}", next_cursor)
             return
 

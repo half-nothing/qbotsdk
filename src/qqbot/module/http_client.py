@@ -22,16 +22,14 @@ from aiohttp import (
 from loguru import logger
 from yarl import URL
 
-from ..constant import AUTHORIZATION_SCHEME, BASE_URL
-from ..exceptions import APIError, TransportError
+from ..constant import AUTHORIZATION_SCHEME, BASE_URL, TRACE_ID_HEADER
+from ..exceptions import APIError, TransportError, error_code_of
 from ..options import ClientOptions
 from .token_manager import TokenManager
 
 # 5xx 与网络异常无法确认服务端是否已处理, 只对有幂等语义的方法重试
 _RETRYABLE_STATUS: frozenset[int] = frozenset({500, 502, 503, 504})
 _RETRYABLE_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "PUT", "DELETE"})
-# 官方在响应头里回传的链路 ID, 与响应体里的 trace_id 二选一
-_TRACE_ID_HEADER = "X-Tps-trace-ID"
 
 
 async def _sleep(seconds: float) -> None:
@@ -70,21 +68,6 @@ def _parse_retry_after(raw: str | None) -> float | None:
     if when.tzinfo is None:
         when = when.replace(tzinfo=UTC)
     return max(0.0, (when - datetime.now(UTC)).total_seconds())
-
-
-def _err_code(payload: object) -> int:
-    """从错误体里取 err_code, 兼容旧字段名 code 与字符串数字。"""
-
-    if not isinstance(payload, dict):
-        return 0
-    raw = payload.get("err_code", payload.get("code", 0))
-    if isinstance(raw, bool):
-        return 0
-    if isinstance(raw, int):
-        return raw
-    if isinstance(raw, str) and raw.isdigit():
-        return int(raw)
-    return 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,7 +215,7 @@ class HTTPClient:
                 raise self._error(method, path, raw)
 
             # 201/202 表示异步成功，但仍可能带 error body，err_code 非 0 即失败
-            if _err_code(raw.payload) != 0:
+            if error_code_of(raw.payload) != 0:
                 raise self._error(method, path, raw)
 
             return raw.payload
@@ -281,7 +264,7 @@ class HTTPClient:
             return _RawResponse(
                 status=resp.status,
                 retry_after=resp.headers.get("Retry-After"),
-                trace_id=resp.headers.get(_TRACE_ID_HEADER),
+                trace_id=resp.headers.get(TRACE_ID_HEADER),
                 payload=payload,
             )
 

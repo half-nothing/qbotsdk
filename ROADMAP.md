@@ -32,13 +32,14 @@
 
 ## Phase 1 · v0.2 REST 架构定型（≈1 周）
 
-设计先行：[docs/design/phase1-rest-architecture.md](docs/design/phase1-rest-architecture.md)，六个实施切片 T1–T6。
+设计先行：[docs/design/phase1-rest-architecture.md](docs/design/phase1-rest-architecture.md)，六个实施切片 T1–T6，另加增补片 T7（群组只读）。
 
-进度：T1 传输层（`APIError`/`TransportError`/`ClientOptions`/超时/429/401）、T2 模型层（`QQModel` + 六个模型 + 官方示例快照）、T3 凭证生命周期（`refresh_at` / `hard_expire_at` 拆分 + 刷新失败回退）、T4 资源层（`bot.api.*` 四个域 + 六个只读接口 + 8 个端到端用例）、T5 分页（`paginate` 生成器 + `iter_guilds` / `iter_members`）已完成。
+进度：T1 传输层（`APIError`/`TransportError`/`ClientOptions`/超时/429/401）、T2 模型层（`QQModel` + 六个模型 + 官方示例快照）、T3 凭证生命周期（`refresh_at` / `hard_expire_at` 拆分 + 刷新失败回退）、T4 资源层（`bot.api.*` 四个域 + 七个只读接口 + 8 个端到端用例）、T5 分页（`paginate` 生成器 + `iter_guilds` / `iter_members`）、T6 收尾（README 快速开始、`examples/hello.py` 频道列表、版本号 `0.2.0`）、T7 群组只读（`bot.api.group` 五个接口 + `next_cursor` 翻页）已完成，Phase 1 关账。
 
-- [x] Resource 分层：`Bot.api.user` / `bot.api.guild` / `bot.api.channel` / `bot.api.message`，`bot.py` 退化为薄门面 · T4
+- [x] Resource 分层：`Bot.api.user` / `bot.api.guild` / `bot.api.group` / `bot.api.channel` / `bot.api.message`，`bot.py` 退化为薄门面 · T4
 - [x] `APIError` 完善：官方错误码体系、429 限流（`Retry-After`）自动重试、网络层超时与可配置重试 · T1
 - [x] 频道基础接口：频道列表/详情、子频道列表/详情、成员列表、身份组 · T4
+- [x] 群组只读接口：群基本信息、机器人群内状态、群成员列表/详情、群禁言状态 · T7
 - [x] 分页 helper（`limit`/`after` 模式统一封装）· T5
 - [x] 每个接口配 mock-server 测试 · T4
 

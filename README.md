@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
 1. 用 AppID 与 AppSecret 请求 `/app/getAppAccessToken`，拿到 `access_token` 与 `expires_in`，有效期通常 7200 秒。
 2. 之后每个请求带上 `Authorization: QQBot <access_token>`。前缀是 `QQBot`，不是 `Bearer`。
-3. SDK 缓存 token 并在到期前 60 秒触发刷新，并发调用由双检锁收敛成一次凭证请求。平台只在旧 token 临近到期时才签发新的，提前刷新是官方推荐做法。
+3. SDK 缓存 token 并在到期前 60 秒触发刷新，并发调用由双检锁收敛成一次凭证请求。平台只在旧 token 临近到期时才签发新的，提前刷新是官方推荐做法。刷新失败时，只要旧 token 还没真正过期就继续用它，一次凭证抖动不会打断业务调用。
 
 ## 日志
 

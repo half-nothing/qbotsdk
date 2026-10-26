@@ -43,19 +43,21 @@
 - [x] 分页 helper（`limit`/`after` 模式统一封装）· T5
 - [x] 每个接口配 mock-server 测试 · T4
 
-## Phase 2 · v0.3 消息发送与撤回（≈1 周）
+## Phase 2 · v0.3 消息发送与撤回（≈1 周）· 已关账 2026-10-26
 
-设计先行：[docs/design/phase2-message-send.md](docs/design/phase2-message-send.md)，六个实施切片 T1–T6，另有六项待拍板 D1–D6。
+设计先行：[docs/design/phase2-message-send.md](docs/design/phase2-message-send.md)，六个实施切片 T1–T6，六项拍板 D1–D6 均已在设计文档 §14 落定。
 
 范围收窄为「只发与只撤，不收」：事件与 WebSocket 仍在 Phase 3，单聊（C2C）、频道私信、表情表态、历史消息分页、客户端限流器与群分片上传一并顺延。
 
-- [ ] 频道消息发送：文本 / Markdown / 引用回复（`POST /channels/{channel_id}/messages`）· T3
-- [ ] 频道消息撤回：`DELETE /channels/{channel_id}/messages/{message_id}?hidetip=` · T3
-- [ ] 群消息发送：`msg_type` 0/2/7 自动推断、`msg_seq` 去重语义、引用回复（`POST /v2/groups/{group_openid}/messages`）· T4
-- [ ] 群消息撤回：`DELETE /v2/groups/{group_openid}/messages/{message_id}`，2 分钟时限 · T4
-- [ ] 群富媒体上传：URL 上传 + 5MB 以内二进制直传（`POST /v2/groups/{group_openid}/files`）· T5
-- [ ] 消息模型：频道 `Message`（官方示例 12 字段）、群 `GroupMessageReceipt`、`UploadedFile` · T1
-- [ ] `HTTPClient` 支持 `multipart/form-data`，新增 `ClientOptions.retry_post`（默认关）· T2
+进度：T1 消息模型（`Message` / `GroupMessageReceipt` / `UploadedFile` / 键盘 / 草稿 + 官方示例快照）、T2 传输层 multipart（`post_form` + `ClientOptions.retry_post`）、T3 频道发送与撤回（JSON + `file_image` 直传）、T4 群发送与撤回（`msg_type` 推断 + `msg_seq`）、T5 群富媒体上传（URL 与 ≤5MB 二进制）、T6 收尾（README、示例、版本号 `0.3.0`）已完成，Phase 2 关账。
+
+- [x] 频道消息发送：文本 / Markdown / 引用回复（`POST /channels/{channel_id}/messages`）· T3
+- [x] 频道消息撤回：`DELETE /channels/{channel_id}/messages/{message_id}?hidetip=` · T3
+- [x] 群消息发送：`msg_type` 0/2/7 自动推断、`msg_seq` 去重语义、引用回复（`POST /v2/groups/{group_openid}/messages`）· T4
+- [x] 群消息撤回：`DELETE /v2/groups/{group_openid}/messages/{message_id}`，2 分钟时限 · T4
+- [x] 群富媒体上传：URL 上传 + 5MB 以内二进制直传（`POST /v2/groups/{group_openid}/files`）· T5
+- [x] 消息模型：频道 `Message`（官方示例 12 字段）、群 `GroupMessageReceipt`、`UploadedFile` · T1
+- [x] `HTTPClient` 支持 `multipart/form-data`，新增 `ClientOptions.retry_post`（默认关）· T2
 
 ## Phase 3 · v0.4 事件接入（≈2~3 周，SDK 核心价值）
 

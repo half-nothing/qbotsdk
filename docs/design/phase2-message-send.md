@@ -472,7 +472,7 @@ MockServer 已经能断言「请求方法 + 路径 + query」，本期新增两�
 | T3 | `ChannelResource.send_message`（JSON + multipart）/ `recall_message`、`MessageResource.reply` 占位 + 7 用例 | 频道发送端到端可跑（已完成 2026-10-26，`tests/test_message_api.py`） |
 | T4 | `GroupResource.send_message`（含 keyboard）/ `recall_message` + 7 用例 | 群发送端到端可跑（已完成 2026-10-26，`tests/test_group_message_api.py`） |
 | T5 | `GroupResource.upload_file`（URL 与二进制）+ 6 用例 | 上传后能拿到 `file_info` 并发出 `msg_type=7`（已完成 2026-10-26，`tests/test_group_file_api.py`） |
-| T6 | README / ROADMAP / 示例脚本 / 版本号 0.3.0 | 门禁全绿 |
+| T6 | README / ROADMAP / 示例脚本 / 版本号 0.3.0 | 门禁全绿（已完成 2026-10-26，README「发消息」节 + `examples/hello.py` 发送与撤回演示） |
 
 ## 13. 版本
 

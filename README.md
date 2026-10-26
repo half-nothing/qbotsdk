@@ -1,9 +1,9 @@
 # qq-bot-sdk
 
-非官方 QQ 机器人 SDK。封装官方 API v2 的鉴权与频道域 REST 能力，异步优先，全量类型标注。
+非官方 QQ 机器人 SDK。封装官方 API v2 的鉴权、频道与群组 REST 能力以及消息发送/撤回，异步优先，全量类型标注。
 
 > 官方文档：<https://bot.q.qq.com/wiki/develop/api-v2/>
-> 当前版本 `0.2.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询」。后续规划见 [ROADMAP.md](ROADMAP.md)。
+> 当前版本 `0.3.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询 + 频道与群消息发送/撤回 + 群富媒体上传」。后续规划见 [ROADMAP.md](ROADMAP.md)。
 
 ## 特性
 
@@ -14,6 +14,8 @@
 | 错误体系 | 官方 `err_code` 映射为 `APIError.code`，附错误码枚举、`retryable` 判定与 `trace_id` |
 | 容错 | 429 按 `Retry-After` 重试、5xx 与网络异常退避重试、401 自动刷新 token 后重试一次、204 与非 JSON 包体不抛异常 |
 | 分页 | `iter_guilds` / `iter_members` / `bot.api.group.iter_members` 自动翻页，频道成员按 `user.id` 去重 |
+| 消息发送 | 频道与群消息发送、撤回；`msg_type` 0/2/7 自动推断，支持 Markdown、键盘按钮与 `multipart` 图片直传 |
+| 富媒体 | 群文件 URL 上传与 5MB 以内二进制直传，返回的 `file_info` 直接用于发送 |
 | 数据模型 | pydantic v2，字段别名钉住官方命名，未知字段不报错 |
 | 类型 | `py.typed` 随包分发，`mypy --strict` 通过 |
 
@@ -85,9 +87,39 @@ if __name__ == "__main__":
 | `bot.api.group.members(group_openid, cursor=cursor)` | 群成员单页，每次最多 30 条 |
 | `bot.api.group.member(group_openid, member_openid)` | 单个群成员 |
 | `bot.api.group.mute_setting(group_openid)` | 群禁言状态，需机器人为群管理员 |
+| `bot.api.channel.send_message(channel_id, content="hi")` | 发频道消息，返回 `Message` |
+| `bot.api.channel.recall_message(channel_id, message_id)` | 撤回频道消息，2 分钟内有效 |
+| `bot.api.group.send_message(group_openid, content="hi")` | 发群消息，返回 `GroupMessageReceipt` |
+| `bot.api.group.upload_file(group_openid, FileType.IMAGE, url=...)` | 上传群富媒体，返回 `file_info` |
 | `iter_guilds` / `iter_members` / `bot.api.group.iter_members` | 自动翻页，频道成员按 `user.id` 去重 |
 
 频道与群组是两套 ID 体系，不能混用：频道的 `guild_id` / `channel_id` / `user.id` 与群组的 `group_openid` / `member_openid` 互不相通。群接口都在 `/v2` 前缀下，且多数要求白名单权限（错误码 `11253`）。
+
+## 发消息
+
+```python
+from qqbot import Bot
+from qqbot.model.media import FileType, MediaInfo
+
+async with Bot(app_id=..., client_secret=...) as bot:
+    # 频道：文本、Markdown、引用回复、本地图片直传
+    message = await bot.api.channel.send_message(channel_id, content="hello")
+    await bot.api.channel.send_message(channel_id, content="收到", reply_to=message.id)
+
+    # 群：msg_type 由内容自动推断（文本 0 / Markdown 2 / 富媒体 7）
+    uploaded = await bot.api.group.upload_file(
+        group_openid, FileType.IMAGE, file_name="a.png", file_data=png_bytes
+    )
+    await bot.api.group.send_message(group_openid, media=MediaInfo(file_info=uploaded.file_info))
+```
+
+几处平台限制值得先知道：
+
+1. **被动回复有窗口**：收到消息后 5 分钟内才算被动回复，每条消息最多回 5 次。超出窗口再发就是主动消息。
+2. **`msg_seq` 决定去重**：同一个 `msg_id` + `msg_seq` 重复发送会被平台拒绝（`40054005`）。SDK 只在 `reply_to` 且未给 `msg_seq` 时补 `1`，要回第二次请显式传 `msg_seq=2`——进程重启后自增计数不共享，SDK 不做进程内计数。
+3. **主动消息有配额**：子频道每天 20 条、每天最多 2 个子频道，主被动合计每秒 5 条；超限返回 `40034100`。
+4. **撤回有时限**：发送后 2 分钟内可撤回，超过就失败。
+5. **`image` 与 `file_image` 二选一**：前者是 URL 由服务端转存，后者是本地字节走 `multipart`，同时给会抛 `ValueError`。
 
 ## 鉴权原理
 

@@ -1,8 +1,9 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""列出机器人加入的频道与子频道
+"""列出机器人加入的频道与子频道，并在指定子频道里发一条消息
 
-运行前设置环境变量 QQ_BOT_APP_ID 与 QQ_BOT_APP_SECRET
+运行前设置环境变量 QQ_BOT_APP_ID 与 QQ_BOT_APP_SECRET；
+再设置 QQ_BOT_CHANNEL_ID 则会往该子频道发一条消息并立刻撤回。
 """
 
 import asyncio
@@ -31,6 +32,17 @@ async def main() -> None:
             print(f"频道 {guild.name} ({guild.id}) 共 {len(channels)} 个子频道")
             for channel in channels:
                 print(f"  - {channel.name} type={channel.type} id={channel.id}")
+
+        channel_id = os.environ.get("QQ_BOT_CHANNEL_ID")
+        if channel_id is None:
+            print("未设置 QQ_BOT_CHANNEL_ID，跳过发消息演示")
+            return
+
+        message = await bot.api.channel.send_message(channel_id, content="来自 qq-bot-sdk 的问好")
+        print(f"已发送: id={message.id} channel={message.channel_id}")
+
+        await bot.api.channel.recall_message(channel_id, message.id, hide_tip=True)
+        print("已撤回")
 
 
 if __name__ == "__main__":

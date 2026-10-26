@@ -15,7 +15,7 @@ from .base import QQModel
 
 
 class ChannelType(IntEnum):
-    """子频道类型，官方字段是 integer。"""
+    """子频道类型。"""
 
     TEXT = 0  # 文字
     AUDIO = 2  # 语音
@@ -23,6 +23,10 @@ class ChannelType(IntEnum):
     LIVE = 10005  # 直播
     APP = 10006  # 应用
     FORUM = 10007  # 论坛
+    # 也许是日程？
+    # 文档里面完全没有这个类型，但实际API返回里面有这个类型
+    # TX我丢雷老母
+    SCHEDULE = 10011
 
 
 class ChannelSubType(IntEnum):

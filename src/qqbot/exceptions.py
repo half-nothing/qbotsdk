@@ -42,6 +42,7 @@ class ErrorCode(IntEnum):
     ERROR_CHECK_ADMIN_NOT_PASS = 11282
     REQUEST_INVALID = 12002
     CHANNEL_HIT_WRITE_RATE_LIMIT = 20028
+    CHANNEL_MESSAGE_SUBMITTED_FOR_REVIEW = 40034120
 
 
 def describe_code(code: int) -> str:

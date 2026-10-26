@@ -1,7 +1,16 @@
+# Copyright (c) 2026-present Half_nothing.
+
 import asyncio
 import os
+import sys
+
+from loguru import logger
 
 from qqbot import Bot
+
+# 打开 TRACE 级别，输出底层网络日志
+logger.remove()
+logger.add(sys.stderr, level="TRACE")
 
 
 async def main() -> None:

@@ -1,3 +1,5 @@
+# Copyright (c) 2026-present Half_nothing.
+
 from __future__ import annotations
 
 from types import TracebackType

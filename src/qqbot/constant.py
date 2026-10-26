@@ -1,3 +1,5 @@
+# Copyright (c) 2026-present Half_nothing.
+
 # OpenAPI 根地址
 BASE_URL: str = "https://api.bot.qq.com"
 # 用 AppID/AppSecret 换取 access_token 的凭证接口

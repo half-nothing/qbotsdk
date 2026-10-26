@@ -1,3 +1,5 @@
+# Copyright (c) 2026-present Half_nothing.
+
 import asyncio
 import socket
 from collections.abc import AsyncIterator, Callable, Coroutine
@@ -22,13 +24,13 @@ def _free_port() -> int:
 
 @asynccontextmanager
 async def _server(
-    routes: list[
-        tuple[
-            str,
-            str,
-            Callable[[aiohttp.web.Request], Coroutine[Any, Any, aiohttp.web.Response]],
-        ]
-    ],
+        routes: list[
+            tuple[
+                str,
+                str,
+                Callable[[aiohttp.web.Request], Coroutine[Any, Any, aiohttp.web.Response]],
+            ]
+        ],
 ) -> AsyncIterator[str]:
     app = aiohttp.web.Application()
     for method, path, handler in routes:
@@ -67,10 +69,10 @@ def test_get_me_injects_authorization_header(monkeypatch: Any) -> None:
 
     async def inner() -> None:
         async with _server(
-            [
-                ("POST", "/app/getAppAccessToken", token_handler),
-                ("GET", "/users/@me", me_handler),
-            ]
+                [
+                    ("POST", "/app/getAppAccessToken", token_handler),
+                    ("GET", "/users/@me", me_handler),
+                ]
         ) as base:
             monkeypatch.setattr(
                 qqbot.module.token_manager,

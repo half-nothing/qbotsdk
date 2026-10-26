@@ -1,9 +1,12 @@
+# Copyright (c) 2026-present Half_nothing.
+
 from __future__ import annotations
 
 from asyncio import Lock
 from time import monotonic
 
 from aiohttp import ClientSession
+from loguru import logger
 
 from ..constant import TOKEN_URL
 from ..model.token import Token
@@ -50,10 +53,14 @@ class TokenManager:
         return self._access_token
 
     async def _fetch(self, session: ClientSession) -> Token:
+        logger.trace("获取 access_token")
         async with session.post(
                 TOKEN_URL,
                 json={"appId": self._app_id, "clientSecret": self._client_secret},
         ) as resp:
             resp.raise_for_status()
             data = await resp.json()
-            return Token.model_validate(data)
+            token = Token.model_validate(data)
+            # 打印完整返回值，方便排查；access_token 属于凭证，仅 TRACE 级别输出
+            logger.trace("access_token 响应: {} (有效期 {}s)", data, token.expires_in)
+            return token

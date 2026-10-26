@@ -1,0 +1,50 @@
+name: Code style and python grammar check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src
+      - examples
+      - tests
+      - pdm.lock
+      - pyproject.toml
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.12", "3.13", "3.14" ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install python ${{ matrix.python-version }} and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: true
+
+      - name: Sync dependencies
+        run: pdm install -d --frozen-lockfile
+
+      - name: Static code type checking
+        run: pdm run mypy
+
+      - name: Run unit test
+        run: pdm run pytest -q

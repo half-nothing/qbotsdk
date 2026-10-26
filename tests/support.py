@@ -2,7 +2,8 @@
 
 """测试辅助，一个本地 aiohttp 服务，记录收到的每一次调用。
 
-用例断言的是「SDK 发了什么」，因此`MockServer.calls`保存method/path/query/headers/body，而不只是返回值。
+用例断言的是「SDK 发了什么」，因此 `MockServer.calls` 会记下每次调用的
+method/path/query/headers/body，而不只是返回值。
 """
 
 from __future__ import annotations

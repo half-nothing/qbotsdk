@@ -1,0 +1,38 @@
+[
+  {
+    "user": {
+      "id": "xxxxxx",
+      "username": "xxxx",
+      "avatar": "xxxxxx",
+      "bot": false,
+      "public_flags": 0,
+      "system": false,
+      "union_openid": "xxxxxx",
+      "union_user_account": ""
+    },
+    "nick": "",
+    "roles": ["1"],
+    "joined_at": "2021-12-09T15:53:41+08:00",
+    "deaf": false,
+    "mute": false,
+    "pending": false
+  },
+  {
+    "user": {
+      "id": "xxxxxx",
+      "username": "秦时明月",
+      "avatar": "xxxxxx",
+      "bot": false,
+      "public_flags": 0,
+      "system": false,
+      "union_openid": "xxxxxx",
+      "union_user_account": ""
+    },
+    "nick": "",
+    "roles": ["4"],
+    "joined_at": "2021-12-02T15:19:00+08:00",
+    "deaf": false,
+    "mute": false,
+    "pending": false
+  }
+]

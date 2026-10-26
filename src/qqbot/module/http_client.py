@@ -217,9 +217,9 @@ class HTTPClient:
                 continue
 
             if (
-                    raw.status in _RETRYABLE_STATUS
-                    and method in _RETRYABLE_METHODS
-                    and attempt < self._options.max_attempts
+                raw.status in _RETRYABLE_STATUS
+                and method in _RETRYABLE_METHODS
+                and attempt < self._options.max_attempts
             ):
                 delay = self._backoff(attempt)
                 logger.trace(
@@ -244,7 +244,7 @@ class HTTPClient:
         params: Mapping[str, str | int] | None = None,
         json: Mapping[str, object] | None = None,
     ) -> object:
-        return self.request("GET", path, params=params, json=json)
+        return await self.request("GET", path, params=params, json=json)
 
     async def post(
         self,
@@ -253,7 +253,7 @@ class HTTPClient:
         params: Mapping[str, str | int] | None = None,
         json: Mapping[str, object] | None = None,
     ) -> object:
-        return self.request("POST", path, params=params, json=json)
+        return await self.request("POST", path, params=params, json=json)
 
     async def _send(
         self,
@@ -270,11 +270,11 @@ class HTTPClient:
         url = URL(BASE_URL) / path.lstrip("/")
         logger.trace("Request {} {} body={}", method, url, json)
         async with session.request(
-                method,
-                url,
-                params=params,
-                json=json,
-                headers=headers,
+            method,
+            url,
+            params=params,
+            json=json,
+            headers=headers,
         ) as resp:
             payload = None if resp.status == 204 else _decode(await resp.text())
             logger.trace("Response {} {} status={} body={}", method, url, resp.status, payload)

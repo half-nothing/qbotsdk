@@ -1,0 +1,22 @@
+{
+  "guild_id": "123456",
+  "roles": [
+    {
+      "id": "4",
+      "name": "创建者",
+      "color": 4294927682,
+      "hoist": 1,
+      "number": 1,
+      "member_limit": 1
+    },
+    {
+      "id": "2",
+      "name": "管理员",
+      "color": 4280276644,
+      "hoist": 1,
+      "number": 5,
+      "member_limit": 50
+    }
+  ],
+  "role_num_limit": "30"
+}

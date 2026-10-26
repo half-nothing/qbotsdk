@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
+from aiohttp import FormData
+
 from ..model.draft import GroupMessageDraft, MessageMarkdown
 from ..model.group import (
     Group,
@@ -15,11 +17,15 @@ from ..model.group import (
     GroupMuteState,
 )
 from ..model.keyboard import Keyboard
-from ..model.media import MediaInfo
+from ..model.media import FileType, MediaInfo, UploadedFile
 from ..model.message import GroupMessageReceipt
 from ..module.http_client import HTTPClient
 from ..module.pagination import paginate
 from ._parse import expect_object
+
+# 二进制直传上限，官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
+# 但 multipart 直传字段本身限制 5MB，超过要走 url 或分片上传。
+_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
 class GroupResource:
@@ -121,3 +127,56 @@ class GroupResource:
 
         path = f"/v2/groups/{group_openid}/messages/{message_id}"
         await self._http.request("DELETE", path)
+
+    async def upload_file(
+        self,
+        group_openid: str,
+        file_type: FileType,
+        /,
+        *,
+        url: str | None = None,
+        file_data: bytes | None = None,
+        file_name: str | None = None,
+        srv_send_msg: bool = False,
+    ) -> UploadedFile:
+        """上传群富媒体（图片 / 视频 / 语音 / 文件）。
+
+        url 与 file_data 二选一，前者交给服务端下载，后者按 multipart 直传，上限 5MB。
+        返回的 file_info 直接填进 send_message 的 media。
+        srv_send_msg=True 时服务端上传后立即发送，会占用主动消息频次。
+        """
+
+        if (url is None) == (file_data is None):
+            raise ValueError("upload_file needs exactly one of url or file_data")
+
+        path = f"/v2/groups/{group_openid}/files"
+
+        if url is not None:
+            payload = await self._http.post(
+                path,
+                json={
+                    "file_type": int(file_type),
+                    "url": url,
+                    "srv_send_msg": srv_send_msg,
+                },
+            )
+            return UploadedFile.model_validate(expect_object(payload, path))
+
+        assert file_data is not None  # 由上面的二选一校验保证
+        if len(file_data) > _MAX_UPLOAD_BYTES:
+            raise ValueError("file_data must not exceed 5 MB, use url instead")
+        if file_name is None:
+            raise ValueError("file_data needs file_name so the server can infer the type")
+
+        name = file_name
+
+        def build_form() -> FormData:
+            form = FormData()
+            form.add_field("file_type", str(int(file_type)))
+            form.add_field("srv_send_msg", "true" if srv_send_msg else "false")
+            form.add_field("file_data", file_data, filename=name)
+            form.add_field("file_name", name)
+            return form
+
+        payload = await self._http.post_form(path, form=build_form)
+        return UploadedFile.model_validate(expect_object(payload, path))

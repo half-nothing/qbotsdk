@@ -450,15 +450,18 @@ MockServer 已经能断言「请求方法 + 路径 + query」，本期新增两�
 | `test_group_send_explicit_seq` | `msg_seq=3` 原样透传 |
 | `test_group_send_keyboard_payload` | `keyboard` 对象按官方嵌套形状序列化，`rows` 与 `buttons` 结构不被压平 |
 | `test_group_recall_returns_none` | `DELETE /v2/groups/{gid}/messages/{mid}`，响应 `{}` → `None` |
-| `test_group_upload_url` | `file_type=1` + `url`，`srv_send_msg=false`，解析出 `ttl` |
-| `test_group_upload_rejects_oversize` | `file_data` 超 5MB 抛 `ValueError`，未发请求 |
-| `test_group_upload_binary_is_multipart` | `Content-Type` 以 `multipart/form-data` 开头，字段含 `file_data` 与 `file_name` |
+| `test_upload_by_url_sends_json` | `file_type=1` + `url`，包体只有 `file_type`/`url`/`srv_send_msg`，解析出 `ttl` |
+| `test_upload_binary_is_multipart` | `Content-Type` 以 `multipart/form-data` 开头，字段含 `file_data; filename="a.silk"` 与 `file_name` |
+| `test_upload_binary_with_srv_send_msg` | `srv_send_msg=True` 时包体带 `true`，响应里的 `id` 被解析 |
+| `test_upload_rejects_oversize` | `file_data` 超 5MB 抛 `ValueError`，未发请求 |
+| `test_upload_needs_exactly_one_source` | 都不给与都给分别抛 `ValueError`，未发请求 |
+| `test_upload_binary_needs_file_name` | 二进制但缺 `file_name` 抛 `ValueError`，未发请求 |
 | `test_post_not_retried_by_default` | 500 后直接抛 `APIError`，只发生一次请求 |
 | `test_keyboard_requires_id_or_content` | 都不给与都给分别抛 `ValueError` |
 | `test_keyboard_rejects_more_than_five_rows` | 6 行触发 `ValidationError` |
 | `test_message_reply_placeholder` | `bot.api.message.reply(...)` 抛 `NotImplementedError` |
 
-实际是 18 条：上表按文件归组，`test_keyboard_*` 归 `tests/test_keyboard.py`，`test_post_not_retried_by_default` 归 `tests/test_http_client.py`，`test_message_reply_placeholder` 归 `tests/test_message_api.py`。
+实际是 21 条：上表按文件归组，`test_keyboard_*` 归 `tests/test_keyboard.py`，`test_post_not_retried_by_default` 归 `tests/test_http_client.py`，`test_message_reply_placeholder` 归 `tests/test_message_api.py`，`test_upload_*` 归 `tests/test_group_file_api.py`。
 
 ## 12. 切片
 
@@ -468,7 +471,7 @@ MockServer 已经能断言「请求方法 + 路径 + query」，本期新增两�
 | T2 | `HTTPClient.request(form=...)` 与 `post_form`、`ClientOptions.retry_post`、`RecordedCall.body` | `test_http_client.py` 新增 3 用例（已完成 2026-10-26） |
 | T3 | `ChannelResource.send_message`（JSON + multipart）/ `recall_message`、`MessageResource.reply` 占位 + 7 用例 | 频道发送端到端可跑（已完成 2026-10-26，`tests/test_message_api.py`） |
 | T4 | `GroupResource.send_message`（含 keyboard）/ `recall_message` + 7 用例 | 群发送端到端可跑（已完成 2026-10-26，`tests/test_group_message_api.py`） |
-| T5 | `GroupResource.upload_file`（URL 与二进制）+ 4 用例 | 上传后能拿到 `file_info` 并发出 `msg_type=7` |
+| T5 | `GroupResource.upload_file`（URL 与二进制）+ 6 用例 | 上传后能拿到 `file_info` 并发出 `msg_type=7`（已完成 2026-10-26，`tests/test_group_file_api.py`） |
 | T6 | README / ROADMAP / 示例脚本 / 版本号 0.3.0 | 门禁全绿 |
 
 ## 13. 版本

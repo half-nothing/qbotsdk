@@ -25,24 +25,24 @@ class APIError(Exception):
         super().__init__(f"QQ API error {status} (code={code}): {message}")
 
     @classmethod
-    def from_response(cls, status: int, data: object) -> "APIError":
+    def from_response(cls, status: int, data: object) -> APIError:
         if isinstance(data, dict):
             return cls(status=status, message=str(data.get("message", "")), code=data.get("code"))
         return cls(status=status, message=str(data))
 
 
 async def _on_request_start(
-        session: ClientSession,
-        trace_config_ctx: object,
-        params: TraceRequestStartParams,
+    session: ClientSession,
+    trace_config_ctx: object,
+    params: TraceRequestStartParams,
 ) -> None:
     logger.trace("HTTP --> {} {}", params.method, params.url)
 
 
 async def _on_request_end(
-        session: ClientSession,
-        trace_config_ctx: object,
-        params: TraceRequestEndParams,
+    session: ClientSession,
+    trace_config_ctx: object,
+    params: TraceRequestEndParams,
 ) -> None:
     logger.trace(
         "HTTP <-- {} {} {}",
@@ -53,9 +53,9 @@ async def _on_request_end(
 
 
 async def _on_request_exception(
-        session: ClientSession,
-        trace_config_ctx: object,
-        params: TraceRequestExceptionParams,
+    session: ClientSession,
+    trace_config_ctx: object,
+    params: TraceRequestExceptionParams,
 ) -> None:
     logger.trace(
         "HTTP !! {} {}: {!r}",
@@ -87,28 +87,26 @@ class HTTPClient:
         return session
 
     async def request(
-            self,
-            method: str,
-            path: str,
-            *,
-            params: Mapping[str, str | int] | None = None,
-            json: Mapping[str, object] | None = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, str | int] | None = None,
+        json: Mapping[str, object] | None = None,
     ) -> object:
         session = await self._get_session()
         token = await self._token_manager.get_token(session)
         # 鉴权头格式固定为 "QQBot <token>"
-        headers = {
-            "Authorization": f"{AUTHORIZATION_SCHEME} {token}"
-        }
-        # 用 yarl 拼接 URL，避免字符串拼接的斜杠/编码问题；path 前导斜杠会被 yarl 拒绝
+        headers = {"Authorization": f"{AUTHORIZATION_SCHEME} {token}"}
+        # 用 yarl 拼接 URL, 避免字符串拼接的斜杠/编码问题；path 前导斜杠会被 yarl 拒绝
         url = URL(BASE_URL) / path.lstrip("/")
         logger.trace("请求 {} {} body={}", method, url, json)
         async with session.request(
-                method,
-                url,
-                params=params,
-                json=json,
-                headers=headers,
+            method,
+            url,
+            params=params,
+            json=json,
+            headers=headers,
         ) as resp:
             data = await resp.json()
             if resp.status >= 400:

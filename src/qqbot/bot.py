@@ -20,7 +20,7 @@ class Bot:
     async def close(self) -> None:
         await self._http.close()
 
-    async def __aenter__(self) -> "Bot":
+    async def __aenter__(self) -> Bot:
         return self
 
     async def __aexit__(

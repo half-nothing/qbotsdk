@@ -5,9 +5,10 @@ on:
     branches:
       - main
     paths:
-      - src
-      - examples
-      - tests
+      - .github/workflows/**
+      - src/**
+      - examples/**
+      - tests/**
       - pdm.lock
       - pyproject.toml
   pull_request:
@@ -42,6 +43,12 @@ jobs:
 
       - name: Sync dependencies
         run: pdm install -d --frozen-lockfile
+
+      - name: Lint code
+        run: pdm run ruff check
+
+      - name: Check code format
+        run: pdm run ruff format --check
 
       - name: Static code type checking
         run: pdm run mypy

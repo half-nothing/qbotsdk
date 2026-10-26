@@ -24,13 +24,13 @@ def _free_port() -> int:
 
 @asynccontextmanager
 async def _server(
-        routes: list[
-            tuple[
-                str,
-                str,
-                Callable[[aiohttp.web.Request], Coroutine[Any, Any, aiohttp.web.Response]],
-            ]
-        ],
+    routes: list[
+        tuple[
+            str,
+            str,
+            Callable[[aiohttp.web.Request], Coroutine[Any, Any, aiohttp.web.Response]],
+        ]
+    ],
 ) -> AsyncIterator[str]:
     app = aiohttp.web.Application()
     for method, path, handler in routes:
@@ -52,9 +52,7 @@ def test_get_me_injects_authorization_header(monkeypatch: Any) -> None:
     async def token_handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         body = await request.json()
         assert body == {"appId": "app", "clientSecret": "secret"}
-        return aiohttp.web.json_response(
-            {"access_token": "test-token", "expires_in": 7200}
-        )
+        return aiohttp.web.json_response({"access_token": "test-token", "expires_in": 7200})
 
     async def me_handler(request: aiohttp.web.Request) -> aiohttp.web.Response:
         seen.append(request.headers.get("Authorization", ""))
@@ -69,10 +67,10 @@ def test_get_me_injects_authorization_header(monkeypatch: Any) -> None:
 
     async def inner() -> None:
         async with _server(
-                [
-                    ("POST", "/app/getAppAccessToken", token_handler),
-                    ("GET", "/users/@me", me_handler),
-                ]
+            [
+                ("POST", "/app/getAppAccessToken", token_handler),
+                ("GET", "/users/@me", me_handler),
+            ]
         ) as base:
             monkeypatch.setattr(
                 qqbot.module.token_manager,

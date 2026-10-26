@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .api import ApiClient
 from .bot import Bot
 from .exceptions import APIError, ErrorCode, QQBotError, TransportError
 from .model import Channel, Guild, Member, Role, User
@@ -9,6 +10,7 @@ from .options import ClientOptions
 
 __all__ = [
     "APIError",
+    "ApiClient",
     "Bot",
     "Channel",
     "ClientOptions",

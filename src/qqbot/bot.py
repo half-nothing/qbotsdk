@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from types import TracebackType
 
+from .api import ApiClient
 from .model.user import User
 from .module.http_client import HTTPClient
 from .options import ClientOptions
@@ -18,11 +19,18 @@ class Bot:
         options: ClientOptions | None = None,
     ) -> None:
         self._http = HTTPClient(app_id, client_secret, options=options)
+        self._api = ApiClient(self._http)
+
+    @property
+    def api(self) -> ApiClient:
+        """四个资源域：`api.user` / `api.guild` / `api.channel` / `api.message`。"""
+
+        return self._api
 
     async def get_me(self) -> User:
-        # 获取机器人自身信息
-        data = await self._http.get("/users/@me")
-        return User.model_validate(data)
+        """已弃用：请改用 `bot.api.user.me()`，v0.3 移除。"""
+
+        return await self._api.user.me()
 
     async def close(self) -> None:
         await self._http.close()

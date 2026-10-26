@@ -34,13 +34,13 @@
 
 设计先行：[docs/design/phase1-rest-architecture.md](docs/design/phase1-rest-architecture.md)，六个实施切片 T1–T6。
 
-进度：T1 传输层（`APIError`/`TransportError`/`ClientOptions`/超时/429/401）、T2 模型层（`QQModel` + 六个模型 + 官方示例快照）、T3 凭证生命周期（`refresh_at` / `hard_expire_at` 拆分 + 刷新失败回退）已完成。
+进度：T1 传输层（`APIError`/`TransportError`/`ClientOptions`/超时/429/401）、T2 模型层（`QQModel` + 六个模型 + 官方示例快照）、T3 凭证生命周期（`refresh_at` / `hard_expire_at` 拆分 + 刷新失败回退）、T4 资源层（`bot.api.*` 四个域 + 六个只读接口 + 8 个端到端用例）已完成。
 
-- [ ] Resource 分层：`Bot.api.user` / `bot.api.guild` / `bot.api.channel` / `bot.api.message`，`bot.py` 退化为薄门面
+- [x] Resource 分层：`Bot.api.user` / `bot.api.guild` / `bot.api.channel` / `bot.api.message`，`bot.py` 退化为薄门面 · T4
 - [x] `APIError` 完善：官方错误码体系、429 限流（`Retry-After`）自动重试、网络层超时与可配置重试 · T1
-- [ ] 频道基础接口：频道列表/详情、子频道列表/详情、成员列表、身份组
-- [ ] 分页 helper（`limit`/`after` 模式统一封装）
-- [ ] 每个接口配 mock-server 测试
+- [x] 频道基础接口：频道列表/详情、子频道列表/详情、成员列表、身份组 · T4
+- [ ] 分页 helper（`limit`/`after` 模式统一封装）· T5
+- [x] 每个接口配 mock-server 测试 · T4
 
 ## Phase 2 · v0.3 消息收发（≈1~2 周）
 

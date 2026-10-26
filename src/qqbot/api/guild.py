@@ -4,11 +4,14 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 from ..model.channel import Channel
 from ..model.guild import Guild
 from ..model.member import Member
 from ..model.role import RolesResult
 from ..module.http_client import HTTPClient
+from ..module.pagination import paginate
 from ._parse import expect_list, expect_object
 
 
@@ -46,6 +49,21 @@ class GuildResource:
         params: dict[str, str | int] = {"after": after, "limit": limit}
         payload = expect_list(await self._http.get(path, params=params), path)
         return [Member.model_validate(item) for item in payload]
+
+    async def iter_members(self, guild_id: str, *, limit: int = 100) -> AsyncIterator[Member]:
+        """自动翻页遍历频道成员，按 `user.id` 去重，空页结束。"""
+
+        async def fetch_page(cursor: str | None) -> list[Member]:
+            return await self.members(guild_id, after=cursor or "0", limit=limit)
+
+        def cursor_of(page: list[Member]) -> str | None:
+            return page[-1].user.id
+
+        def key_of(member: Member) -> str:
+            return member.user.id
+
+        async for member in paginate(fetch_page, cursor_of=cursor_of, key_of=key_of):
+            yield member
 
     async def roles(self, guild_id: str) -> RolesResult:
         """身份组列表。"""

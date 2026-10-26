@@ -10,13 +10,7 @@ from .guild import GuildResource
 from .message import MessageResource
 from .user import UserResource
 
-__all__ = [
-    "ApiClient",
-    "ChannelResource",
-    "GuildResource",
-    "MessageResource",
-    "UserResource"
-]
+__all__ = ["ApiClient", "ChannelResource", "GuildResource", "MessageResource", "UserResource"]
 
 
 class ApiClient:

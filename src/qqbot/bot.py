@@ -6,15 +6,22 @@ from types import TracebackType
 
 from .model.user import User
 from .module.http_client import HTTPClient
+from .options import ClientOptions
 
 
 class Bot:
-    def __init__(self, app_id: str, client_secret: str) -> None:
-        self._http = HTTPClient(app_id, client_secret)
+    def __init__(
+        self,
+        app_id: str,
+        client_secret: str,
+        *,
+        options: ClientOptions | None = None,
+    ) -> None:
+        self._http = HTTPClient(app_id, client_secret, options=options)
 
     async def get_me(self) -> User:
         # 获取机器人自身信息
-        data = await self._http.request("GET", "/users/@me")
+        data = await self._http.get("/users/@me")
         return User.model_validate(data)
 
     async def close(self) -> None:

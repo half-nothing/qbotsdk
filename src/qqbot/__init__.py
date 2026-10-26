@@ -1,6 +1,18 @@
 # Copyright (c) 2026-present Half_nothing.
 
-from .bot import Bot
-from .model.user import User
+from __future__ import annotations
 
-__all__ = ["Bot", "User"]
+from .bot import Bot
+from .exceptions import APIError, ErrorCode, QQBotError, TransportError
+from .model.user import User
+from .options import ClientOptions
+
+__all__ = [
+    "APIError",
+    "Bot",
+    "ClientOptions",
+    "ErrorCode",
+    "QQBotError",
+    "TransportError",
+    "User",
+]

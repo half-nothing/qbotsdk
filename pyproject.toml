@@ -43,6 +43,11 @@ files = [
     "tests/"
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 测试全部是 async def, 统一由 pytest-asyncio 接管, 不再在用例里写 asyncio.run
+asyncio_mode = "auto"
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100
@@ -61,4 +66,5 @@ dev = [
     "mypy>=2.3.1",
     "pytest>=9.1.1",
     "ruff>=0.17.2",
+    "pytest-asyncio>=1.4.1",
 ]

@@ -1,11 +1,12 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群组（QQ 群）域接口，只读部分。"""
+"""群组（QQ 群）域接口，读写。"""
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
+from ..model.draft import GroupMessageDraft, MessageMarkdown
 from ..model.group import (
     Group,
     GroupBotState,
@@ -13,6 +14,9 @@ from ..model.group import (
     GroupMembersPage,
     GroupMuteState,
 )
+from ..model.keyboard import Keyboard
+from ..model.media import MediaInfo
+from ..model.message import GroupMessageReceipt
 from ..module.http_client import HTTPClient
 from ..module.pagination import paginate
 from ._parse import expect_object
@@ -74,3 +78,46 @@ class GroupResource:
 
         async for member in paginate(fetch_page, cursor_of=cursor_of):
             yield member
+
+    async def send_message(
+        self,
+        group_openid: str,
+        *,
+        content: str | None = None,
+        markdown: MessageMarkdown | None = None,
+        media: MediaInfo | None = None,
+        keyboard: Keyboard | None = None,
+        reply_to: str | None = None,
+        event_id: str | None = None,
+        msg_seq: int | None = None,
+    ) -> GroupMessageReceipt:
+        """发群消息。
+
+        被动回复有效期为 5 分钟, 每条消息最多回 5 次。
+        同一个 msg_id + msg_seq 重复发送会被拒
+        要回第二次请显式传 msg_seq=2
+        """
+
+        path = f"/v2/groups/{group_openid}/messages"
+        if reply_to is not None and msg_seq is None:
+            msg_seq = 1
+        draft = GroupMessageDraft(
+            content=content,
+            markdown=markdown,
+            media=media,
+            keyboard=keyboard,
+            msg_id=reply_to,
+            event_id=event_id,
+            msg_seq=msg_seq,
+        )
+        payload = await self._http.post(
+            path,
+            json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
+        )
+        return GroupMessageReceipt.model_validate(expect_object(payload, path))
+
+    async def recall_message(self, group_openid: str, message_id: str) -> None:
+        """撤回群消息, 发送后 2 分钟内有效, 接口限制 10 QPS。"""
+
+        path = f"/v2/groups/{group_openid}/messages/{message_id}"
+        await self._http.request("DELETE", path)

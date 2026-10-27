@@ -14,7 +14,14 @@ from .draft import (
     UserMessageDraft,
     UserMessageType,
 )
-from .event import EventModel, GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
+from .event import (
+    C2CMessageCreate,
+    EventModel,
+    GroupAtMessageCreate,
+    ReadyEvent,
+    ResumedEvent,
+    UnknownEvent,
+)
 from .group import (
     Group,
     GroupBotState,
@@ -48,11 +55,12 @@ from .message import (
     UserMessageReceipt,
 )
 from .role import Role, RolesResult
-from .scene import Attachment, MessageElement, MessageScene
+from .scene import ARKData, Attachment, ElementAuthor, MessageElement, MessageScene
 from .token import Token
-from .user import GroupUser, GuildUser, User
+from .user import C2CUser, GroupUser, GuildUser, User
 
 __all__ = [
+    "ARKData",
     "Attachment",
     "Button",
     "ButtonAction",
@@ -61,10 +69,13 @@ __all__ = [
     "ButtonPermissionType",
     "ButtonRenderData",
     "ButtonStyle",
+    "C2CMessageCreate",
+    "C2CUser",
     "Channel",
     "ChannelMessageDraft",
     "ChannelSubType",
     "ChannelType",
+    "ElementAuthor",
     "EventModel",
     "FileType",
     "Group",

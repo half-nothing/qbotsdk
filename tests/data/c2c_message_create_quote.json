@@ -1,0 +1,46 @@
+{
+  "id": "ROBOT1.0_IrExO5_vr3n6JfGk4VlA9G5QqQ1lQV6m6J9h7bE0C8w!",
+  "author": {
+    "id": "xxxxxx",
+    "user_openid": "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4"
+  },
+  "content": "你好",
+  "timestamp": "2024-01-01T00:00:00+08:00",
+  "message_scene": {
+    "source": "default",
+    "ext": ["msg_idx=xxx", "ref_msg_idx=REFIDX_xxx", "auth_token=xxx"]
+  },
+  "msg_elements": [
+    {
+      "message_type": 103,
+      "content": "每天坚持阅读半小时，可以提升专注力。",
+      "attachments": [
+        {
+          "content_type": "image/png",
+          "filename": "quote.png",
+          "height": 1080,
+          "size": 3152455,
+          "url": "https://example.com/quote.png",
+          "width": 1920
+        }
+      ],
+      "ark_data": {
+        "prompt": "引用消息",
+        "ark_type": "1",
+        "ark_name": "quote",
+        "fields": { "title": "阅读计划" }
+      },
+      "msg_idx": "REFIDX_xxx",
+      "author": {
+        "user_openid": "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4"
+      },
+      "msg_elements": [
+        {
+          "message_type": 0,
+          "content": "被引用的原文",
+          "msg_idx": "REFIDX_yyy"
+        }
+      ]
+    }
+  ]
+}

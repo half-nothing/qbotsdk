@@ -144,7 +144,7 @@ docs/
 | 切片 | 内容 | 验收 |
 | --- | --- | --- |
 | P1 | 单聊发送 + 撤回 + 上传（`api/user_message.py`、`UserMessageResource`、`UserMessageDraft`） | `test_user_message_api.py` 全绿 |
-| P2 | `C2C_MESSAGE_CREATE` 事件 + `reply()` | `test_c2c_event.py` |
+| P2 | `C2C_MESSAGE_CREATE` 事件 + `reply()` | `test_c2c_event.py` 全绿 |
 | P3 | 主动消息配额层（`RateLimiter`、`respect_rate_limits`、被动回复次数拦截） | `test_rate_limit.py` |
 | P4 | `AT_MESSAGE_CREATE` + `INTERACTION_CREATE`（先取证） | 两个事件的快照与用例 |
 | P5 | 表情表态 + 论坛/音频按需 | 各一个用例 |
@@ -152,6 +152,8 @@ docs/
 | P7 | VitePress 文档站：骨架 + 七篇指南 + API 自动生成 + Pages 部署（`design/` 不进站） | 本地 `docs:build` 通过且产物里没有 `design/`，CI 的生成物校验为绿 |
 
 进度：P1 已完成（2026-10-27），新增 `api/user_message.py`、`UserMessageDraft`、`UserMessageType`、`InputNotify`；单聊上传只实现 `url` 方式，二进制直传的字段表官方没给，未取证不实现。
+
+P2 已完成（2026-10-27）：新增 `C2CMessageCreate`（`C2CUser` 作者、`msg_elements` 递归、`message_scene`）与事件上的 `reply()`；`MessageElement.content` 按官方改成 `str`，元素作者单独用 `ElementAuthor`（元素层不保证 `id`），`ARKData` 补卡片数据；`tests/data/c2c_message_create.json` 与 `c2c_message_create_quote.json` 两个快照，门禁 154 passed / mypy 62 / format 70。
 
 ## 9. 已拍板（2026-10-27）
 

@@ -47,3 +47,17 @@ class GroupUser(User):
     @property
     def openid(self) -> str | None:
         return self.member_openid
+
+
+class C2CUser(User):
+    """单聊事件里的作者，以 user_openid 标识用户。"""
+
+    user_openid: str = Field(alias="user_openid")
+    username: str = Field(alias="username", default="")
+    bot: bool = Field(alias="bot", default=False)
+    union_openid: str | None = Field(alias="union_openid", default=None)
+    union_user_account: str | None = Field(alias="union_user_account", default=None)
+
+    @property
+    def openid(self) -> str | None:
+        return self.user_openid

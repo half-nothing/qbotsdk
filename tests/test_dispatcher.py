@@ -122,12 +122,12 @@ async def test_unknown_event_reaches_unknown_handler() -> None:
     async def on_unknown(ctx: EventContext[UnknownEvent]) -> None:
         seen.append(ctx.event)
 
-    frame = GatewayPayload(op=0, t="C2C_MESSAGE_CREATE", d={"id": "m1"}, s=3)  # type: ignore[arg-type]
+    frame = GatewayPayload(op=0, t="NOT_MODELED_EVENT", d={"id": "m1"}, s=3)  # type: ignore[arg-type]
     dispatcher.handle(frame)
     await dispatcher.join()
 
     assert len(seen) == 1
-    assert seen[0].t == "C2C_MESSAGE_CREATE"
+    assert seen[0].t == "NOT_MODELED_EVENT"
     assert seen[0].data == {"id": "m1"}
 
 

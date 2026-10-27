@@ -11,14 +11,14 @@ from async_event_bus import AbstractEvent
 from pydantic import ConfigDict, Field, PrivateAttr
 
 from .base import QQModel
-from .scene import Attachment, MessageElement, MessageScene
-from .user import GroupUser, GuildUser
+from .scene import ARKData, Attachment, MessageElement, MessageScene
+from .user import C2CUser, GroupUser, GuildUser
 
 if TYPE_CHECKING:
     from .draft import MessageMarkdown
     from .keyboard import Keyboard
     from .media import MediaInfo
-    from .message import GroupMessageReceipt
+    from .message import GroupMessageReceipt, UserMessageReceipt
 
 
 class GroupSender(Protocol):
@@ -38,11 +38,32 @@ class GroupSender(Protocol):
     ) -> GroupMessageReceipt: ...
 
 
+class ChatSender(Protocol):
+    """ApiClient.user_message 里事件回复用到的那一小块。"""
+
+    async def send_message(
+        self,
+        user_openid: str,
+        *,
+        content: str | None = None,
+        markdown: MessageMarkdown | None = None,
+        media: MediaInfo | None = None,
+        keyboard: Keyboard | None = None,
+        reply_to: str | None = None,
+        event_id: str | None = None,
+        msg_seq: int | None = None,
+        is_wakeup: bool = False,
+    ) -> UserMessageReceipt: ...
+
+
 class ApiProtocol(Protocol):
     """事件需要的接口面, ApiClient 结构上满足它。"""
 
     @property
     def group(self) -> GroupSender: ...
+
+    @property
+    def user_message(self) -> ChatSender: ...
 
 
 class EventModel(QQModel, AbstractEvent):
@@ -129,6 +150,54 @@ class GroupAtMessageCreate(EventModel):
         )
 
 
+class C2CMessageCreate(EventModel):
+    """t = C2C_MESSAGE_CREATE，用户单聊机器人。"""
+
+    id: str = Field(alias="id")
+    author: C2CUser = Field(alias="author")
+    content: str = Field(alias="content", default="")
+    timestamp: datetime = Field(alias="timestamp")
+    # 0 文本 / 3 卡片 / 101 并行 / 102 聊天记录 / 103 引用
+    message_type: int | None = Field(alias="message_type", default=None)
+    message_scene: MessageScene | None = Field(alias="message_scene", default=None)
+    attachments: list[Attachment] = Field(alias="attachments", default_factory=list)
+    ark_data: ARKData | None = Field(alias="ark_data", default=None)
+    msg_elements: list[MessageElement] = Field(alias="msg_elements", default_factory=list)
+
+    async def reply(
+        self,
+        content: str,
+        *,
+        markdown: MessageMarkdown | None = None,
+        media: MediaInfo | None = None,
+        keyboard: Keyboard | None = None,
+        msg_seq: int | None = None,
+    ) -> UserMessageReceipt:
+        """回复这条单聊消息。
+
+        自动带本事件的 id 作为 msg_id, 被动回复窗口 60 分钟、每条消息最多回 4 次。
+        msg_seq 不传时从 1 起按事件自增。
+        """
+
+        api = self.api
+        if api is None:
+            raise ValueError(
+                "reply() needs an event dispatched by Bot; use bot.api.user_message.send_message()"
+            )
+        if msg_seq is None:
+            self._reply_seq += 1
+            msg_seq = self._reply_seq
+        return await api.user_message.send_message(
+            self.author.user_openid,
+            content=content,
+            markdown=markdown,
+            media=media,
+            keyboard=keyboard,
+            reply_to=self.id,
+            msg_seq=msg_seq,
+        )
+
+
 class UnknownEvent(EventModel):
     """未建模的事件，保留 t 与原始 d。"""
 
@@ -136,11 +205,12 @@ class UnknownEvent(EventModel):
     data: Any = Field(alias="data", default=None)
 
 
-# `t` 到事件模型的映射。没登记的事件一律降级成 UnknownEvent，不抛错
+# t 到事件模型的映射。没登记的事件一律降级成 UnknownEvent，不抛错
 EVENT_MODELS: Final[dict[str, type[EventModel]]] = {
     "READY": ReadyEvent,
     "RESUMED": ResumedEvent,
     "GROUP_AT_MESSAGE_CREATE": GroupAtMessageCreate,
+    "C2C_MESSAGE_CREATE": C2CMessageCreate,
 }
 
 

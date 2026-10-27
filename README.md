@@ -137,7 +137,7 @@ import asyncio
 from async_event_bus import EventContext
 
 from qqbot import Bot
-from qqbot.model.event import GroupAtMessageCreate, UnknownEvent
+from qqbot.model.event import C2CMessageCreate, GroupAtMessageCreate, UnknownEvent
 
 
 async def main() -> None:
@@ -145,6 +145,10 @@ async def main() -> None:
 
         @bot.on(GroupAtMessageCreate)
         async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
+            await ctx.event.reply("收到: " + ctx.event.content)
+
+        @bot.on(C2CMessageCreate)
+        async def on_c2c(ctx: EventContext[C2CMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
 
         @bot.on_unknown()
@@ -161,11 +165,11 @@ asyncio.run(main())
 几个要点：
 
 1. **处理器只收 `async def`**，参数是 `EventContext`，事件对象在 `ctx.event`；同步函数注册时直接抛 `TypeError`。
-2. **能不能回复看方法**：`GroupAtMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
-3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；只有群消息事件支持，其余事件只能走 `bot.api` 的显式接口。
+2. **能不能回复看方法**：`GroupAtMessageCreate` 与 `C2CMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
+3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；群聊每条消息最多回 5 次、单聊 4 次，超出请显式传 `msg_seq` 或改走 `bot.api`。
 4. **`Bot.start()` 不做阻塞**，`bot.stop()` / `async with` 退出时才断开网关；`stop()` 会清空订阅，再次 `start()` 需要重新注册。
 5. **去重**：官方说明同一消息可能重复推送，分发器默认记住最近 512 条消息 ID 直接丢弃重复（`dedupe_size=0` 关闭）。
-6. **未建模事件**：`AT_MESSAGE_CREATE`、`C2C_MESSAGE_CREATE` 本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
+6. **未建模事件**：`AT_MESSAGE_CREATE`、`INTERACTION_CREATE` 等本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
 
 ### Webhook 接入
 

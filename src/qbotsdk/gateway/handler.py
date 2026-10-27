@@ -32,7 +32,7 @@ TIMESTAMP_HEADER = "X-Signature-Timestamp"
 WebhookHandler = Callable[[Request], Awaitable[StreamResponse]]
 
 
-def build_webhook_handler(dispatcher: Dispatcher, bot_secret: str) -> WebhookHandler:
+def build_webhook_handler(dispatcher: Dispatcher, app_secret: str) -> WebhookHandler:
     """返回aiohttp能直接使用的处理函数。
 
     op 13 是管理端配置回调地址时的地址校验，直接按 botSecret 签名应答；
@@ -49,13 +49,13 @@ def build_webhook_handler(dispatcher: Dispatcher, bot_secret: str) -> WebhookHan
             return Response(status=400, text="invalid payload")
 
         if payload.op is OpCode.CALLBACK_VALIDATION:
-            return _validation_response(payload, bot_secret)
+            return _validation_response(payload, app_secret)
 
         signature = request.headers.get(SIGNATURE_HEADER, "")
         timestamp = request.headers.get(TIMESTAMP_HEADER, "")
         if not signature or not timestamp:
             return Response(status=401, text="missing signature")
-        if not verify_webhook_signature(bot_secret, signature, timestamp, body):
+        if not verify_webhook_signature(app_secret, signature, timestamp, body):
             return Response(status=401, text="invalid signature")
 
         # handle 只起一个后台任务就返回, 处理器本身不等
@@ -70,7 +70,7 @@ def build_webhook_handler(dispatcher: Dispatcher, bot_secret: str) -> WebhookHan
     return handle
 
 
-def _validation_response(payload: GatewayPayload, bot_secret: str) -> Response:
+def _validation_response(payload: GatewayPayload, app_secret: str) -> Response:
     data = payload.d
     if not isinstance(data, dict):
         return Response(status=400, text="invalid validation payload")
@@ -78,4 +78,4 @@ def _validation_response(payload: GatewayPayload, bot_secret: str) -> Response:
     event_ts = data.get("event_ts")
     if not isinstance(plain_token, str) or not isinstance(event_ts, str):
         return Response(status=400, text="invalid validation payload")
-    return json_response(build_validation_response(bot_secret, plain_token, event_ts))
+    return json_response(build_validation_response(app_secret, plain_token, event_ts))

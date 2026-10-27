@@ -38,7 +38,7 @@ class WebhookServer:
     def __init__(
         self,
         dispatcher: Dispatcher,
-        bot_secret: str,
+        app_secret: str,
         *,
         host: str = "0.0.0.0",
         port: int = 8443,
@@ -51,7 +51,7 @@ class WebhookServer:
 
         Args:
             dispatcher: 事件最终交给它分发。
-            bot_secret: 机器人密钥，用于验签与 op 13 应答。
+            app_secret: 机器人密钥，用于验签与 op 13 应答。
             host:       监听地址。
             port:       监听端口，0 表示让操作系统挑一个空闲端口。
             path:       回调路径。
@@ -66,8 +66,8 @@ class WebhookServer:
             raise ValueError("ssl_context cannot be combined with certfile and keyfile")
 
         self._dispatcher = dispatcher
-        self._bot_secret = bot_secret
-        self._handler = build_webhook_handler(dispatcher, bot_secret)
+        self._app_secret = app_secret
+        self._handler = build_webhook_handler(dispatcher, app_secret)
         self._host = host
         self._port = port
         self._path = path

@@ -18,14 +18,14 @@ QQ_BOT_APP_SECRET=你的AppSecret
 
 ## 各示例额外的环境变量
 
-| 文件                  | 变量                                                   |
-|---------------------|------------------------------------------------------|
-| `hello.py`          | `QQ_BOT_CHANNEL_ID`、`QQ_BOT_GROUP_OPENID`（不设则跳过对应演示） |
-| `websocket.py`      | `QQ_BOT_INTENTS`、`QQ_BOT_SESSION_FILE`               |
-| `webhook.py`        | `QQ_BOT_SECRET`、`QQ_BOT_CERTFILE`、`QQ_BOT_KEYFILE`   |
-| `group_bot.py`      | `QQ_BOT_IMAGE_PATH`、`QQ_BOT_SESSION_FILE`            |
-| `c2c_bot.py`        | 无                                                    |
-| `custom_webhook.py` | `QQ_BOT_SECRET`、`QQ_BOT_WEBHOOK_PORT`                |
+| 文件                  | 变量                                        |
+|---------------------|-------------------------------------------|
+| `hello.py`          | `QQ_BOT_CHANNEL_ID`、`QQ_BOT_GROUP_OPENID` |
+| `websocket.py`      | `QQ_BOT_INTENTS`、`QQ_BOT_SESSION_FILE`    |
+| `webhook.py`        | `QQ_BOT_CERTFILE`、`QQ_BOT_KEYFILE`        |
+| `group_bot.py`      | `QQ_BOT_IMAGE_PATH`、`QQ_BOT_SESSION_FILE` |
+| `c2c_bot.py`        | 无                                         |
+| `custom_webhook.py` | `QQ_BOT_WEBHOOK_PORT`                     |
 
 ## 说明
 

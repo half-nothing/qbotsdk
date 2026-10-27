@@ -52,6 +52,10 @@ build-backend = "pdm.backend"
 [tool.pdm]
 distribution = true
 
+[tool.pdm.build]
+# 源码包里带上更新日志; source-includes 只影响 sdist, 不会跑进 wheel
+source-includes = ["CHANGELOG.md"]
+
 [tool.mypy]
 python_version = "3.12"
 disable_error_code = []

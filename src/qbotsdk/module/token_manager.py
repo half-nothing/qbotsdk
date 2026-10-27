@@ -41,7 +41,7 @@ class TokenManager:
         refresh_buffer: float = _REFRESH_BUFFER_SECONDS,
     ) -> None:
         self._app_id = app_id
-        self._client_secret = app_secret
+        self._app_secret = app_secret
         self._refresh_buffer = refresh_buffer
         self._access_token: str | None = None
         self._refresh_at: float = 0.0
@@ -107,7 +107,7 @@ class TokenManager:
         try:
             async with session.post(
                 TOKEN_URL,
-                json={"appId": self._app_id, "clientSecret": self._client_secret},
+                json={"appId": self._app_id, "clientSecret": self._app_secret},
             ) as resp:
                 status = resp.status
                 trace_id = resp.headers.get(TRACE_ID_HEADER)

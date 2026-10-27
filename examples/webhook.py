@@ -4,7 +4,6 @@
 
 运行前设置环境变量：
     QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证
-    QQ_BOT_SECRET                      botSecret，用于验签
     QQ_BOT_CERTFILE / QQ_BOT_KEYFILE   证书与私钥；不设则走明文，仅适合本地调试
 """
 
@@ -31,7 +30,7 @@ async def main() -> None:
         app_id=os.environ["QQ_BOT_APP_ID"],
         app_secret=os.environ["QQ_BOT_APP_SECRET"],
         adapter=WebhookAdapter(
-            os.environ["QQ_BOT_SECRET"],
+            os.environ["QQ_BOT_APP_SECRET"],
             host="0.0.0.0",
             port=8443,
             path="/qbotsdk",

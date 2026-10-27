@@ -43,7 +43,7 @@ def test_seed_repeats_secret_for_odd_length() -> None:
 
 
 def test_empty_secret_is_rejected() -> None:
-    with pytest.raises(ValueError, match="bot_secret must not be empty"):
+    with pytest.raises(ValueError, match="app_secret must not be empty"):
         build_validation_response("", PLAIN_TOKEN, EVENT_TS)
 
 

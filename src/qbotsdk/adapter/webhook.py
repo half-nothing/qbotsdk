@@ -16,7 +16,7 @@ class WebhookAdapter(Adapter):
 
     def __init__(
         self,
-        bot_secret: str,
+        app_secret: str,
         *,
         host: str = "0.0.0.0",
         port: int = 8443,
@@ -28,7 +28,7 @@ class WebhookAdapter(Adapter):
         """记录监听参数, 真正监听发生在 start()。
 
         Args:
-            bot_secret:  机器人密钥, 用于验签与 op 13 应答。
+            app_secret:  机器人密钥, 用于验签与 op 13 应答。
             host:        监听地址。
             port:        监听端口, 0 表示让操作系统挑一个空闲端口。
             path:        回调路径, 管理端填的地址要与之对应。
@@ -37,7 +37,7 @@ class WebhookAdapter(Adapter):
             ssl_context: 现成的 SSLContext, 与 certfile/keyfile 互斥。
         """
 
-        self._bot_secret = bot_secret
+        self._app_secret = app_secret
         self._host = host
         self._port = port
         self._path = path
@@ -60,7 +60,7 @@ class WebhookAdapter(Adapter):
 
         server = WebhookServer(
             context.dispatcher,
-            self._bot_secret,
+            self._app_secret,
             host=self._host,
             port=self._port,
             path=self._path,

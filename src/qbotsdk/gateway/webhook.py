@@ -18,27 +18,27 @@ _SEED_SIZE = 32
 _ACK_OP = 12
 
 
-def _seed_bytes(bot_secret: str) -> bytes:
+def _seed_bytes(app_secret: str) -> bytes:
     """把 botSecret 循环重复到 32 字节，作为 Ed25519 的私钥种子。"""
 
-    raw = bot_secret.encode("utf-8")
+    raw = app_secret.encode("utf-8")
     if not raw:
-        raise ValueError("bot_secret must not be empty")
+        raise ValueError("app_secret must not be empty")
     return (raw * (_SEED_SIZE // len(raw) + 1))[:_SEED_SIZE]
 
 
-def _private_key(bot_secret: str) -> Ed25519PrivateKey:
-    return Ed25519PrivateKey.from_private_bytes(_seed_bytes(bot_secret))
+def _private_key(app_secret: str) -> Ed25519PrivateKey:
+    return Ed25519PrivateKey.from_private_bytes(_seed_bytes(app_secret))
 
 
-def build_validation_response(bot_secret: str, plain_token: str, event_ts: str) -> dict[str, str]:
+def build_validation_response(app_secret: str, plain_token: str, event_ts: str) -> dict[str, str]:
     """op 13 地址验证的应答体，签名体是 event_ts + plain_token。"""
 
-    signature = _private_key(bot_secret).sign(f"{event_ts}{plain_token}".encode())
+    signature = _private_key(app_secret).sign(f"{event_ts}{plain_token}".encode())
     return {"plain_token": plain_token, "signature": signature.hex()}
 
 
-def verify_webhook_signature(bot_secret: str, signature: str, timestamp: str, body: bytes) -> bool:
+def verify_webhook_signature(app_secret: str, signature: str, timestamp: str, body: bytes) -> bool:
     """校验回调请求头 X-Signature-Ed25519。"""
 
     try:
@@ -46,7 +46,7 @@ def verify_webhook_signature(bot_secret: str, signature: str, timestamp: str, bo
     except (Error, ValueError):
         return False
 
-    public_key = _private_key(bot_secret).public_key()
+    public_key = _private_key(app_secret).public_key()
     try:
         public_key.verify(raw, timestamp.encode("utf-8") + body)
     except InvalidSignature:

@@ -53,8 +53,8 @@ async def main() -> None:
     # 将环境变量QQ_BOT_APP_SECRET设为获取到的AppSecret
     # 如果您选择直接替换对应内容，请不要将携带敏感信息的文件提交到仓库
     async with Bot(
-            app_id=os.environ["QQ_BOT_APP_ID"],
-            app_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_id=os.environ["QQ_BOT_APP_ID"],
+        app_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
         me = await bot.api.user.me()
         print(f"登录成功：{me.username}")
@@ -83,6 +83,7 @@ from qbotsdk.model.event import C2CMessageCreate, GroupAtMessageCreate, Interact
 async def main() -> None:
     # 认证信息的具体获取方式请查看“快速开始”章节
     async with Bot(app_id=..., app_secret=...) as bot:
+
         @bot.on(GroupAtMessageCreate)
         async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
@@ -156,7 +157,7 @@ bot = Bot(
     app_id=...,
     app_secret=...,
     adapter=WebhookAdapter(
-        "机器人密钥",
+        "同app_secret",
         port=8443,
         path="/qbotsdk",
         certfile="certs/fullchain.pem",

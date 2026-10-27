@@ -16,7 +16,6 @@ aiohttp 应用与中间件（鉴权、日志、限流都按你自己的来）。
 
 环境变量：
     QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证
-    QQ_BOT_SECRET                      botSecret，用于验签与 op 13 应答
     QQ_BOT_WEBHOOK_PORT                本地监听端口，默认 8080
 """
 
@@ -52,7 +51,7 @@ SIGNATURE_HEADER = "X-Signature-Ed25519"
 TIMESTAMP_HEADER = "X-Signature-Timestamp"
 
 
-def build_handler_by_hand(dispatcher: Dispatcher, bot_secret: str) -> web.Handler:
+def build_handler_by_hand(dispatcher: Dispatcher, app_secret: str) -> web.Handler:
     """用纯函数拼一份处理函数，这也是SDK的高层封装具体做的事情。
 
     当然提供的函数也是经过封装的，还有更底层的操作，但这里我们不做展开。
@@ -71,7 +70,7 @@ def build_handler_by_hand(dispatcher: Dispatcher, bot_secret: str) -> web.Handle
             data = payload.d if isinstance(payload.d, dict) else {}
             return web.json_response(
                 build_validation_response(
-                    bot_secret,
+                    app_secret,
                     str(data.get("plain_token", "")),
                     str(data.get("event_ts", "")),
                 )
@@ -81,7 +80,7 @@ def build_handler_by_hand(dispatcher: Dispatcher, bot_secret: str) -> web.Handle
         timestamp = request.headers.get(TIMESTAMP_HEADER, "")
         if not signature or not timestamp:
             return web.json_response({"error": "missing signature"}, status=401)
-        if not verify_webhook_signature(bot_secret, signature, timestamp, body):
+        if not verify_webhook_signature(app_secret, signature, timestamp, body):
             return web.json_response({"error": "bad signature"}, status=401)
 
         # 平台要求尽快 ACK，回慢了会被重推
@@ -92,12 +91,12 @@ def build_handler_by_hand(dispatcher: Dispatcher, bot_secret: str) -> web.Handle
 
 
 async def main() -> None:
-    bot_secret = os.environ["QQ_BOT_SECRET"]
+    app_secret = os.environ["QQ_BOT_APP_SECRET"]
     port = int(os.environ.get("QQ_BOT_WEBHOOK_PORT", "8080"))
 
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
-        app_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_secret=app_secret,
     ) as bot:
 
         @bot.on(GroupAtMessageCreate)
@@ -108,9 +107,9 @@ async def main() -> None:
 
         app = web.Application()
         # SDK 提供的组合层
-        app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, bot_secret))
+        app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, app_secret))
         # 自己用纯函数拼
-        app.router.add_post("/qbotsdk-manual", build_handler_by_hand(bot.dispatcher, bot_secret))
+        app.router.add_post("/qbotsdk-manual", build_handler_by_hand(bot.dispatcher, app_secret))
         app.router.add_get("/healthz", lambda _: web.json_response({"ok": True}))
 
         runner = web.AppRunner(app)

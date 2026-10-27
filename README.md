@@ -191,6 +191,8 @@ asyncio.run(main())
 7. **`AT_MESSAGE_CREATE` 的字段出处**：官方 api-v2 没有这个事件的事件体页面，`ChannelMessageCreate` 直接继承「消息对象(Message)」表格建模，字段与频道发送接口的响应同源；`GUILD_MEMBERS` 不在默认 intents 里，频道成员相关事件需要显式传 `intents`。
 8. **未建模事件**：没登记的事件（如 `GUILD_CREATE`、`MESSAGE_DELETE`）统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
 
+可直接运行的完整版本见 [`examples/websocket.py`](examples/websocket.py)：群、单聊、频道、互动、未知事件五类处理器，带 Ctrl+C 优雅退出。
+
 ### Webhook 接入
 
 不想维持长连接就换 Webhook：平台把事件推到你自己的地址，SDK 负责验签、回 ACK 与分发。

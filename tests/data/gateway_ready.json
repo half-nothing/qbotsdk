@@ -1,0 +1,11 @@
+{
+  "op": 0,
+  "s": 1,
+  "t": "READY",
+  "d": {
+    "version": 1,
+    "session_id": "xxxxxx",
+    "user": { "id": "xxxxxx", "username": "abc", "bot": true },
+    "shard": [0, 1]
+  }
+}

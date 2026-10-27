@@ -12,13 +12,13 @@ from datetime import datetime
 from pydantic import Field
 
 from .base import QQModel
-from .user import User
+from .user import GuildUser
 
 
 class Member(QQModel):
     """`GET /guilds/{guild_id}/members` 的数组元素。"""
 
-    user: User = Field(alias="user")
+    user: GuildUser = Field(alias="user")
     nick: str = Field(alias="nick")
     roles: list[str] = Field(alias="roles")
     joined_at: datetime = Field(alias="joined_at")

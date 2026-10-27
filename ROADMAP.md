@@ -61,21 +61,16 @@
 
 ## Phase 3 · v0.4 事件接入（≈2~3 周，SDK 核心价值）
 
-架构决策：以 [async-event-bus](https://github.com/half-nothing/async-event-bus) 为统一事件骨干，
-Bot 门面提供装饰器语法糖（`@bot.on(...)` 委托 `bus.on(...)`），二者是分层关系而非二选一：
+设计文档：[`docs/design/phase3-events.md`](docs/design/phase3-events.md)（14 节，含 D1–D5 拍板记录）。
+架构决策：不引入外部事件总线，`gateway/` 自己做连接、心跳、Resume 与分发；处理器统一 `async def handler(event)`。
 
-- 所有消息事件与系统事件（限频命中、重连、token 刷新、HTTP 错误）emit 到同一总线
-- 事件载体：`AbstractEvent` 子类组合包裹 pydantic 模型（不直接继承 BaseModel），如 `AtMessageCreate` 携带 `AtMessage`
-- SDK 内部机制用总线实现：高 weight 全局 filter 做事件去重（msgId/msgSeq），injector 注入 `bot` 引用
-- 默认 `raise_exception=False` 隔离单个 handler 异常；`max_concurrent_tasks` 可配置
-- 公开 API 不泄漏 `EventContext`/bus 内部类型，`bot.bus` 仅作进阶逃生口
-- 前置条件：总线库补 `py.typed`（SDK 为 mypy strict）；文档注明 handler 优先 async（同步回调串行先执行）
+- [x] T1 `gateway/payload.py`（OpCode / Intents / 关闭码表 / 错误类）+ `model/event.py` · 2026-10-27
+- [ ] T2 WebSocket Gateway：Hello、Identify、READY、心跳
+- [ ] T3 Resume、关闭码处理、退避重连
+- [ ] T4 分发层 + `bot.on(...)` + `event.reply()`
+- [ ] T5 WebHook 函数层：op 13 签名、请求验签、parse
+- [ ] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）
 
-- [ ] WebSocket Gateway：鉴权、心跳、断线 resume、多分片连接
-- [ ] 事件模型映射到总线（`AT_MESSAGE_CREATE`、`DIRECT_MESSAGE_CREATE`、`GUILD_MEMBER_ADD` 等）
-- [ ] `@bot.on(...)` 装饰器 API；echo-bot、群聊机器人示例
-- [ ] WebHook 回调模式：Ed25519 签名校验、事件去重、快速 Ack（官方当前主推的事件通道）
-- [ ] 群聊/单聊事件：`GROUP_AT_MESSAGE_CREATE`、`C2C_MESSAGE_CREATE`
 
 ## Phase 4 · v0.5+ 补全与发布
 

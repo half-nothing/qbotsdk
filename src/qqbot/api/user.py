@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 from ..model.guild import Guild
-from ..model.user import User
+from ..model.user import GuildUser
 from ..module.http_client import HTTPClient
 from ..module.pagination import paginate
 from ._parse import expect_list, expect_object
@@ -20,11 +20,11 @@ class UserResource:
     def __init__(self, http: HTTPClient) -> None:
         self._http = http
 
-    async def me(self) -> User:
+    async def me(self) -> GuildUser:
         """当前机器人自身信息。"""
 
         payload = expect_object(await self._http.get(_ME_PATH), _ME_PATH)
-        return User.model_validate(payload)
+        return GuildUser.model_validate(payload)
 
     async def guilds(
         self,

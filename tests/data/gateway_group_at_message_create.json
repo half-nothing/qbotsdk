@@ -1,0 +1,30 @@
+{
+  "op": 0,
+  "s": 2,
+  "t": "GROUP_AT_MESSAGE_CREATE",
+  "d": {
+    "id": "ROBOT1.0_abc",
+    "author": {
+      "id": "xxxxxx",
+      "member_openid": "member-1",
+      "union_openid": "union-1"
+    },
+    "content": "hello",
+    "group_openid": "group-1",
+    "timestamp": "2024-01-01T00:00:00+08:00",
+    "message_scene": {
+      "source": "default",
+      "ext": ["msg_idx=101", "auth_token=token-1"]
+    },
+    "attachments": [
+      {
+        "url": "https://example.com/a.png",
+        "filename": "a.png",
+        "size": 1024,
+        "content_type": "image/png"
+      }
+    ],
+    "mentions": [],
+    "msg_elements": []
+  }
+}

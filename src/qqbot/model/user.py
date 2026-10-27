@@ -1,20 +1,49 @@
 # Copyright (c) 2026-present Half_nothing.
 
+"""用户对象。"""
+
+from __future__ import annotations
+
 from pydantic import Field
 
 from .base import QQModel
 
 
 class User(QQModel):
+    """最小的用户标识：只有 `id`。"""
+
     id: str = Field(alias="id")
+
+    @property
+    def openid(self) -> str | None:
+        """场景相关的 openid；基类没有这个概念。"""
+
+        return None
+
+
+class GuildUser(User):
+    """频道场景的用户，消息作者、成员列表里的 user、READY 里的机器人自己。"""
+
     username: str = Field(alias="username")
-    avatar: str = Field(alias="avatar")
-    # 不知为何, 虽然官方文档里面写了bot这个字段, 但API返回值里面没有
-    # 所以给bot字段默认值True, 你都用这个库了怎么可能不是机器人
+    # READY 的示例里没有 avatar, 频道成员与消息作者里都有, 因此允许缺省
+    avatar: str | None = Field(alias="avatar", default=None)
+    # 官方文档写了 bot, 但部分接口不返回, 都调用这个库了默认就是机器人
     bot: bool = Field(alias="bot", default=True)
-    # 以下字段只在成员列表的 user 对象里出现, 因此标为可选
+    union_openid: str | None = Field(alias="union_openid", default=None)
+    union_user_account: str | None = Field(alias="union_user_account", default=None)
+    # 以下两个只在成员列表的 user 对象里出现
     public_flags: int | None = Field(alias="public_flags", default=None)
     system: bool | None = Field(alias="system", default=None)
-    union_openid: str = Field(alias="union_openid", default="")
-    union_user_account: str = Field(alias="union_user_account", default="")
-    welcome_msg: str = Field(alias="welcome_msg", default="")
+
+
+class GroupUser(User):
+    """群聊事件里的作者，以member_openid标识群成员。"""
+
+    member_openid: str = Field(alias="member_openid")
+    union_openid: str | None = Field(alias="union_openid", default=None)
+    user_openid: str | None = Field(alias="user_openid", default=None)
+    member_role: str | None = Field(alias="member_role", default=None)
+
+    @property
+    def openid(self) -> str | None:
+        return self.member_openid

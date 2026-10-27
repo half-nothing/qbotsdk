@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import Field
 
 from .base import QQModel
-from .user import User
+from .user import GuildUser
 
 
 class MessageExtInfo(QQModel):
@@ -44,7 +44,7 @@ class Message(QQModel):
     timestamp: datetime = Field(alias="timestamp")
     tts: bool = Field(alias="tts")
     mention_everyone: bool = Field(alias="mention_everyone")
-    author: User = Field(alias="author")
+    author: GuildUser = Field(alias="author")
     # 示例里是 [{}], 具体结构见 Embed 消息页面, 本期不解析
     embeds: list[dict[str, Any]] = Field(alias="embeds")
     pinned: bool = Field(alias="pinned")

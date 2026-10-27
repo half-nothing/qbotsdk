@@ -11,6 +11,7 @@ from .draft import (
     MessageMarkdown,
     MessageReference,
 )
+from .event import GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
 from .group import (
     Group,
     GroupBotState,
@@ -38,10 +39,12 @@ from .media import FileType, MediaInfo, UploadedFile
 from .member import Member
 from .message import GroupMessageReceipt, Message, MessageExtInfo
 from .role import Role, RolesResult
+from .scene import Attachment, MessageElement, MessageScene
 from .token import Token
-from .user import User
+from .user import GroupUser, GuildUser, User
 
 __all__ = [
+    "Attachment",
     "Button",
     "ButtonAction",
     "ButtonActionType",
@@ -55,6 +58,7 @@ __all__ = [
     "ChannelType",
     "FileType",
     "Group",
+    "GroupAtMessageCreate",
     "GroupBotState",
     "GroupMember",
     "GroupMemberRole",
@@ -63,24 +67,31 @@ __all__ = [
     "GroupMessageReceipt",
     "GroupMessageType",
     "GroupMuteState",
+    "GroupUser",
     "Guild",
+    "GuildUser",
     "Keyboard",
     "KeyboardContent",
     "KeyboardRow",
     "MediaInfo",
     "Member",
     "Message",
+    "MessageElement",
     "MessageExtInfo",
     "MessageMarkdown",
     "MessageReference",
+    "MessageScene",
     "MuteMode",
     "PrivateType",
     "QQModel",
+    "ReadyEvent",
     "RecvMsgSetting",
+    "ResumedEvent",
     "Role",
     "RolesResult",
     "SpeakPermission",
     "Token",
+    "UnknownEvent",
     "UploadedFile",
     "User",
 ]

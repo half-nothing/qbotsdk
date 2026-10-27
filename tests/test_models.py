@@ -15,11 +15,11 @@ from qqbot.model import (
     Channel,
     ChannelType,
     Guild,
+    GuildUser,
     Member,
     QQModel,
     RolesResult,
     SpeakPermission,
-    User,
 )
 
 DATA = Path(__file__).parent / "data"
@@ -104,7 +104,7 @@ def test_member_snapshot_nested_user() -> None:
     assert member.roles == ["4"]
     assert member.joined_at == datetime.fromisoformat("2021-12-02T15:19:00+08:00")
     assert missing_fields(items[0], Member) == set()
-    assert missing_fields(as_dict(items[0]["user"]), User) == set()
+    assert missing_fields(as_dict(items[0]["user"]), GuildUser) == set()
 
 
 def test_roles_snapshot() -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from .api import ApiClient
 from .bot import Bot
 from .exceptions import APIError, ErrorCode, QQBotError, TransportError
+from .gateway import WebhookServer
 from .model import (
     Channel,
     ChannelMessageDraft,
@@ -47,4 +48,5 @@ __all__ = [
     "Role",
     "TransportError",
     "User",
+    "WebhookServer",
 ]

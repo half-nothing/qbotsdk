@@ -1,9 +1,9 @@
 # qq-bot-sdk
 
-非官方 QQ 机器人 SDK。封装官方 API v2 的鉴权、频道与群组 REST 能力以及消息发送/撤回，异步优先，全量类型标注。
+非官方 QQ 机器人 SDK。封装官方 API v2 的鉴权、频道与群组 REST 能力、消息发送/撤回以及事件接入，异步优先，全量类型标注。
 
 > 官方文档：<https://bot.q.qq.com/wiki/develop/api-v2/>
-> 当前版本 `0.3.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询 + 频道与群消息发送/撤回 + 群富媒体上传」。后续规划见 [ROADMAP.md](ROADMAP.md)。
+> 当前版本 `0.4.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询 + 频道与群消息发送/撤回 + 群富媒体上传 + WebSocket / Webhook 事件接入」。后续规划见 [ROADMAP.md](ROADMAP.md)。
 
 ## 特性
 
@@ -16,6 +16,7 @@
 | 分页 | `iter_guilds` / `iter_members` / `bot.api.group.iter_members` 自动翻页，频道成员按 `user.id` 去重 |
 | 消息发送 | 频道与群消息发送、撤回；`msg_type` 0/2/7 自动推断，支持 Markdown、键盘按钮与 `multipart` 图片直传 |
 | 富媒体 | 群文件 URL 上传与 5MB 以内二进制直传，返回的 `file_info` 直接用于发送 |
+| 事件接入 | WebSocket 长连接（心跳、Resume、关闭码驱动的重连）与 Webhook 两种方式，`bot.on()` 注册处理器；Webhook 自带 op 13 验证、验签与快速 ACK |
 | 数据模型 | pydantic v2，字段别名钉住官方命名，未知字段不报错 |
 | 类型 | `py.typed` 随包分发，`mypy --strict` 通过 |
 
@@ -158,6 +159,50 @@ asyncio.run(main())
 4. **`Bot.start()` 不做阻塞**，`bot.stop()` / `async with` 退出时才断开网关；`stop()` 会清空订阅，再次 `start()` 需要重新注册。
 5. **去重**：官方说明同一消息可能重复推送，分发器默认记住最近 512 条消息 ID 直接丢弃重复（`dedupe_size=0` 关闭）。
 6. **未建模事件**：`AT_MESSAGE_CREATE`、`C2C_MESSAGE_CREATE` 本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
+
+### Webhook 接入
+
+不想维持长连接就换 Webhook：平台把事件推到你自己的地址，SDK 负责验签、回 ACK 与分发。
+
+```python
+import asyncio
+
+from async_event_bus import EventContext
+
+from qqbot import Bot
+from qqbot.gateway import WebhookServer
+from qqbot.model.event import GroupAtMessageCreate
+
+
+async def main() -> None:
+    async with Bot(app_id=..., client_secret=...) as bot:
+
+        @bot.on(GroupAtMessageCreate)
+        async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
+            await ctx.event.reply("收到: " + ctx.event.content)
+
+        server = WebhookServer(
+            bot,
+            bot_secret=...,
+            port=8443,
+            path="/qqbot",
+            certfile="certs/fullchain.pem",
+            keyfile="certs/privkey.pem",
+        )
+        await server.start()
+        await asyncio.sleep(3600)  # 换成你的主循环
+        await server.close()
+
+
+asyncio.run(main())
+```
+
+1. **op 13 地址验证自动应答**：平台配置回调地址时会推一帧 `op 13`，服务器用 botSecret 签名后回 `plain_token` 与 `signature`，不需要自己写。
+2. **先验签再解析**：普通回调校验 `X-Signature-Ed25519` 与 `X-Signature-Timestamp`，签名体是「时间戳 + 原始报文」，失败直接 `401`。
+3. **先 ACK 再分发**：验签通过先回 `{"op": 12, "d": {}}`，再把事件丢给同一个分发器，处理器慢也不会被平台重推。
+4. **TLS 三种用法**：`certfile` 与 `keyfile` 成对；或传现成的 `ssl_context`；都不传走明文，端口为 443/8443 时会打 warning。证书热更新不在本期，换证书要 `close()` 后重新 `start()`。
+5. **反向代理**：代理层必须原样透传请求体与两个签名头，任何重压、转码或 JSON 重排都会让验签失败。
+6. **自己接框架**：不想用这个服务器就从 `qqbot.gateway` 取 `build_validation_response`、`verify_webhook_signature`、`parse_webhook_event`，接 FastAPI / Flask 都行，它们是纯函数。
 
 ## 鉴权原理
 

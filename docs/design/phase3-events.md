@@ -415,12 +415,11 @@ tests/
 | T3 | Resume、关闭码表、退避重连 | 关闭码与 Resume 用例全绿 | T2（2026-10-27 与 T2 一并完成） |
 | T4 | `dispatcher.py`（基于 `async-event-bus`）+ `bot.on()` + `event.reply()` | 分发与 reply 用例全绿 | T1、T3（2026-10-27 完成） |
 | T5 | `webhook.py`：op 13 签名、验签、parse（纯函数） | `test_webhook.py` 全绿（10 用例，含官方向量） | T1（2026-10-27 完成） |
-| T6 | `webhook_server.py`：开箱即用服务器（TLS 三种配置 + 明文告警）、端口告警、快速 ACK、优雅关闭 | `test_webhook_server.py` 全绿 | T5 |
+| T6 | `webhook_server.py`：开箱即用服务器（TLS 三种配置 + 明文告警）、端口告警、快速 ACK、优雅关闭 | `test_webhook_server.py` 全绿（8 用例） | T5（2026-10-27 完成） |
 
 顺序：T1 → T2 → T3 → T4 → T5 → T6，T5/T6 可与 T2/T3 并行。
 
-进度：T1（2026-10-27）、T2 + T3（2026-10-27）、T4（2026-10-27，`bot.on()` 与 `event.reply()` 接线完成）、T5（2026-10-27）已完成；门禁 `129 passed` / `mypy` 57 files / `ruff format --check` 63 files。
-下一步 T6（`WebhookServer` + 示例）。
+进度：T1–T6 全部完成（2026-10-27），Phase 3 关账；门禁 `137 passed` / `mypy` 59 files / `ruff format --check` 65 files。
 
 ## 12. 版本与兼容
 

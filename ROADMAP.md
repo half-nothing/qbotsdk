@@ -69,7 +69,9 @@
 - [x] T3 Resume、关闭码处理、退避重连 · 2026-10-27（与 T2 一并完成）
 - [x] T4 分发层 + `bot.on(...)` + `event.reply()` · 2026-10-27（总线 `async-event-bus`，`Bot.start()` 接网关，`event.reply()` 自动带 `msg_id` 与递增 `msg_seq`）
 - [x] T5 WebHook 函数层：op 13 签名、请求验签、parse · 2026-10-27（`gateway/webhook.py`，官方向量入测）
-- [ ] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）
+- [x] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）· 2026-10-27（`gateway/webhook_server.py`，8 用例含自签证书 TLS 链路）
+
+进度：T1–T6 全部完成，Phase 3 关账，版本 `0.4.0`（`Bot` 可 WebSocket 长连接或 Webhook 两种方式收事件）。
 
 
 ## Phase 4 · v0.5+ 补全与发布

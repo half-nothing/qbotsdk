@@ -151,6 +151,8 @@ docs/
 | P6 | `CHANGELOG.md`、`release.yml`、PyPI | tag 触发后能在 PyPI 看到版本 |
 | P7 | VitePress 文档站：骨架 + 七篇指南 + API 自动生成 + Pages 部署（`design/` 不进站） | 本地 `docs:build` 通过且产物里没有 `design/`，CI 的生成物校验为绿 |
 
+进度：P1 已完成（2026-10-27），新增 `api/user_message.py`、`UserMessageDraft`、`UserMessageType`、`InputNotify`；单聊上传只实现 `url` 方式，二进制直传的字段表官方没给，未取证不实现。
+
 ## 9. 已拍板（2026-10-27）
 
 | 编号 | 问题 | 决定 |

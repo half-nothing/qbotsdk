@@ -112,7 +112,13 @@ async with Bot(app_id=..., client_secret=...) as bot:
         group_openid, FileType.IMAGE, file_name="a.png", file_data=png_bytes
     )
     await bot.api.group.send_message(group_openid, media=MediaInfo(file_info=uploaded.file_info))
+
+    # 单聊：多一个 msg_type 6（输入中状态），被动回复窗口 60 分钟
+    await bot.api.user_message.send_message(user_openid, content="hi")
+    await bot.api.user_message.notify_input(user_openid, seconds=30)
 ```
+
+单聊与群聊的差别只有三处：`msg_type` 多一个 6、被动回复窗口是 60 分钟且每条消息最多回 4 次、多一个 `is_wakeup` 互动召回字段（与 `reply_to`、`event_id` 互斥）。
 
 几处平台限制值得先知道：
 
@@ -121,6 +127,7 @@ async with Bot(app_id=..., client_secret=...) as bot:
 3. **主动消息有配额**：子频道每天 20 条、每天最多 2 个子频道，主被动合计每秒 5 条；超限返回 `40034100`。
 4. **撤回有时限**：发送后 2 分钟内可撤回，超过就失败。
 5. **`image` 与 `file_image` 二选一**：前者是 URL 由服务端转存，后者是本地字节走 `multipart`，同时给会抛 `ValueError`。
+6. **单聊富媒体只支持 URL**：`user_message.upload_file` 只实现 `url` 方式，官方未给单聊 `file_data` 的字段表，本地文件请先上传到可访问地址。
 
 ## 接收事件
 

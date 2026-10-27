@@ -10,6 +10,7 @@ from .group import GroupResource
 from .guild import GuildResource
 from .message import MessageResource
 from .user import UserResource
+from .user_message import UserMessageResource
 
 __all__ = [
     "ApiClient",
@@ -17,12 +18,13 @@ __all__ = [
     "GroupResource",
     "GuildResource",
     "MessageResource",
+    "UserMessageResource",
     "UserResource",
 ]
 
 
 class ApiClient:
-    """五个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
+    """六个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
 
     def __init__(self, http: HTTPClient) -> None:
         self.user = UserResource(http)
@@ -30,3 +32,4 @@ class ApiClient:
         self.group = GroupResource(http)
         self.channel = ChannelResource(http)
         self.message = MessageResource(http)
+        self.user_message = UserMessageResource(http)

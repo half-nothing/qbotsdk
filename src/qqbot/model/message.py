@@ -23,15 +23,24 @@ class MessageExtInfo(QQModel):
     ref_idx: str = Field(alias="ref_idx")
 
 
-class GroupMessageReceipt(QQModel):
-    """群发送消息的返回值。
+class MessageReceipt(QQModel):
+    """发送消息的返回值。
 
-    群聊接口不返回完整消息, 只有消息 ID 与时间戳, 撤回时需要这里的 `id`。
+    群聊与单聊是同一个形状: 只有消息 ID 与时间戳, 撤回时需要这里的 `id`。
+    频道不同, 返回完整 `Message`。
     """
 
     id: str = Field(alias="id")
     timestamp: datetime = Field(alias="timestamp")
     ext_info: MessageExtInfo | None = Field(alias="ext_info", default=None)
+
+
+class GroupMessageReceipt(MessageReceipt):
+    """群聊发送消息的返回值。"""
+
+
+class UserMessageReceipt(MessageReceipt):
+    """单聊发送消息的返回值。"""
 
 
 class Message(QQModel):

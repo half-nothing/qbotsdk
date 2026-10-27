@@ -8,8 +8,11 @@ from .draft import (
     ChannelMessageDraft,
     GroupMessageDraft,
     GroupMessageType,
+    InputNotify,
     MessageMarkdown,
     MessageReference,
+    UserMessageDraft,
+    UserMessageType,
 )
 from .event import EventModel, GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
 from .group import (
@@ -37,7 +40,13 @@ from .keyboard import (
 )
 from .media import FileType, MediaInfo, UploadedFile
 from .member import Member
-from .message import GroupMessageReceipt, Message, MessageExtInfo
+from .message import (
+    GroupMessageReceipt,
+    Message,
+    MessageExtInfo,
+    MessageReceipt,
+    UserMessageReceipt,
+)
 from .role import Role, RolesResult
 from .scene import Attachment, MessageElement, MessageScene
 from .token import Token
@@ -71,6 +80,7 @@ __all__ = [
     "GroupUser",
     "Guild",
     "GuildUser",
+    "InputNotify",
     "Keyboard",
     "KeyboardContent",
     "KeyboardRow",
@@ -80,6 +90,7 @@ __all__ = [
     "MessageElement",
     "MessageExtInfo",
     "MessageMarkdown",
+    "MessageReceipt",
     "MessageReference",
     "MessageScene",
     "MuteMode",
@@ -95,4 +106,7 @@ __all__ = [
     "UnknownEvent",
     "UploadedFile",
     "User",
+    "UserMessageDraft",
+    "UserMessageReceipt",
+    "UserMessageType",
 ]

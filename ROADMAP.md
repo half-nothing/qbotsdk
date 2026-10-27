@@ -78,7 +78,7 @@
 
 计划文档：[`docs/design/phase4-plan.md`](docs/design/phase4-plan.md)（单聊全链路、主动消息配额、交互闭环、长尾接口、发布）。
 
-- [ ] P1 单聊发送 / 撤回 / 富媒体上传
+- [x] P1 单聊发送 / 撤回 / 富媒体上传 · 2026-10-27（`api/user_message.py`、`UserMessageDraft` 带 msg_type 6、上传只实现 url）
 - [ ] P2 `C2C_MESSAGE_CREATE` 事件与 `reply()`
 - [ ] P3 主动消息配额层（本地令牌桶、被动回复次数拦截）
 - [ ] P4 `AT_MESSAGE_CREATE` 与 `INTERACTION_CREATE`（需先取证）

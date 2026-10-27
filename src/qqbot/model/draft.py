@@ -44,6 +44,28 @@ class GroupMessageType(IntEnum):
     MEDIA = 7  # 富媒体
 
 
+class UserMessageType(IntEnum):
+    """单聊消息类型, 对应 msg_type。比群聊多一个输入中状态。"""
+
+    TEXT = 0  # 文本
+    MARKDOWN = 2  # Markdown
+    INPUT_NOTIFY = 6  # 输入中状态
+    MEDIA = 7  # 富媒体
+
+
+class InputNotify(QQModel):
+    """单聊的「输入中」状态, 最长 60 秒。"""
+
+    input_type: int = Field(alias="input_type", default=1)
+    input_second: int = Field(alias="input_second", default=60)
+
+    @model_validator(mode="after")
+    def _check_second(self) -> InputNotify:
+        if not 1 <= self.input_second <= 60:
+            raise ValueError("input_second must be between 1 and 60")
+        return self
+
+
 class ChannelMessageDraft(QQModel):
     """子频道消息请求体。"""
 
@@ -117,6 +139,71 @@ class GroupMessageDraft(QQModel):
                 raise ValueError("a markdown message needs markdown")
             if self.content is not None or self.media is not None:
                 raise ValueError("a markdown message must not carry content or media")
+        elif self.media is None:
+            raise ValueError("a media message needs media.file_info")
+        return self
+
+
+class UserMessageDraft(QQModel):
+    """单聊消息请求体。
+
+    与群聊的差别只有 msg_type 多了 6（输入中状态）以及 is_wakeup，
+    所以不复用 `GroupMessageDraft`：复用会把两套枚举塞进同一个校验器，
+    校验器里得按长度判断是哪种消息，反而更难读。
+
+    msg_type 留空时按内容推断：media → 7，markdown → 2，input_notify → 6，否则 0。
+    """
+
+    msg_type: UserMessageType | None = Field(alias="msg_type", default=None)
+    content: str | None = Field(alias="content", default=None)
+    markdown: MessageMarkdown | None = Field(alias="markdown", default=None)
+    keyboard: Keyboard | None = Field(alias="keyboard", default=None)
+    media: MediaInfo | None = Field(alias="media", default=None)
+    message_reference: MessageReference | None = Field(alias="message_reference", default=None)
+    input_notify: InputNotify | None = Field(alias="input_notify", default=None)
+    msg_id: str | None = Field(alias="msg_id", default=None)
+    event_id: str | None = Field(alias="event_id", default=None)
+    msg_seq: int | None = Field(alias="msg_seq", default=None)
+    is_wakeup: bool | None = Field(alias="is_wakeup", default=None)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _infer_type(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or data.get("msg_type") is not None:
+            return data
+        if data.get("media") is not None:
+            inferred = UserMessageType.MEDIA
+        elif data.get("markdown") is not None:
+            inferred = UserMessageType.MARKDOWN
+        elif data.get("input_notify") is not None:
+            inferred = UserMessageType.INPUT_NOTIFY
+        else:
+            inferred = UserMessageType.TEXT
+        return {**data, "msg_type": inferred}
+
+    @model_validator(mode="after")
+    def _check_type(self) -> UserMessageDraft:
+        if self.is_wakeup and (self.msg_id is not None or self.event_id is not None):
+            # 召回消息不是回复, 与 msg_id / event_id 互斥
+            raise ValueError("is_wakeup cannot be combined with msg_id or event_id")
+
+        if self.msg_type is UserMessageType.TEXT:
+            if not self.content:
+                raise ValueError("a text message needs content")
+            if self.markdown is not None or self.media is not None:
+                raise ValueError("a text message must not carry markdown or media")
+            if self.input_notify is not None:
+                raise ValueError("a text message must not carry input_notify")
+        elif self.msg_type is UserMessageType.MARKDOWN:
+            if self.markdown is None:
+                raise ValueError("a markdown message needs markdown")
+            if self.content is not None or self.media is not None:
+                raise ValueError("a markdown message must not carry content or media")
+        elif self.msg_type is UserMessageType.INPUT_NOTIFY:
+            if self.input_notify is None:
+                raise ValueError("an input_notify message needs input_notify")
+            if self.content is not None or self.markdown is not None or self.media is not None:
+                raise ValueError("an input_notify message must not carry content")
         elif self.media is None:
             raise ValueError("a media message needs media.file_info")
         return self

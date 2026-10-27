@@ -8,13 +8,16 @@ from asyncio import Queue, Task, create_task, gather
 from collections import deque
 from collections.abc import Awaitable, Callable
 from inspect import iscoroutinefunction
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from async_event_bus import EmitResult, EventBus, EventContext, ExceptionStrategy
 from loguru import logger
 
 from ..model.event import EventModel, UnknownEvent, parse_event
 from .payload import GatewayPayload, OpCode
+
+if TYPE_CHECKING:
+    from ..api import ApiClient
 
 # 官方会重复推送同一个 msg_id, 所以只留最近 N 条做去重
 DEFAULT_DEDUPE_SIZE = 512
@@ -26,6 +29,7 @@ class Dispatcher:
     def __init__(
         self,
         *,
+        api: ApiClient | None = None,
         dedupe_size: int = DEFAULT_DEDUPE_SIZE,
         max_concurrent_tasks: int = 16,
         exception_strategy: ExceptionStrategy = ExceptionStrategy.IGNORE,
@@ -33,6 +37,8 @@ class Dispatcher:
         """创建分发器。
 
         Args:
+            api:                  解析后注入事件, 让 `event.reply()` 能发消息;
+                                  None 时事件里没有 api, `reply()` 会提示改用资源层。
             dedupe_size:          去重窗口大小, 0 表示关闭。
             max_concurrent_tasks: 总线同时运行的处理器上限。
             exception_strategy:   处理器抛异常时的策略, 默认记日志后继续。
@@ -44,6 +50,7 @@ class Dispatcher:
             max_concurrent_tasks=max_concurrent_tasks,
             exception_strategy=exception_strategy,
         )
+        self._api = api
         self._dedupe_size = dedupe_size
         self._seen: deque[str] = deque(maxlen=max(dedupe_size, 1))
         self._seen_ids: set[str] = set()
@@ -92,6 +99,7 @@ class Dispatcher:
         if self._is_duplicate(event):
             logger.debug("Duplicate event dropped: t={}", payload.t)
             return
+        event.bind(self._api)
         task = create_task(self._bus.emit(event))
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)

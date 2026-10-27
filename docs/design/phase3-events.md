@@ -222,14 +222,16 @@ bot = Bot(app_id=..., client_secret=...)
 
 @bot.on(GroupAtMessageCreate)
 async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
-    event = ctx.event
-    await event.reply("收到: " + event.content)
+    await ctx.event.reply("收到: " + ctx.event.content)
 ```
 
 - 事件总线用 `async-event-bus` 1.0.0（§14 D7），`Dispatcher` 只做三件事：帧 → 事件模型、按消息 `id` 去重、把事件 `emit` 进总线；订阅表、并发与异常策略都交给总线。
 - 事件模型统一继承 `EventModel`（`QQModel` + `async_event_bus.AbstractEvent`），总线按 `type(event)` 精确匹配。**精确派发是设计意图**：事件类型就是订阅键，不做基类兜底，`@bot.on(GroupAtMessageCreate)` 只收这一类；想收多类就分别注册。
 - 类型上不出现裸 `Any`：`Dispatcher` 里的总线是 `EventBus[EventContext[EventModel], None]`，每个处理器按注册的事件类型拿到 `EventContext[E]`（总线内部统一按 `EventContext[EventModel]` 存），只有 `QQModel`/`UnknownEvent.data` 这类真正「结构未知的 JSON」才保留 `Any`。
+- **事件不依赖 `api/`**：`EventModel` 用两个 `Protocol` 描述它需要的接口面 —— `GroupSender`（只有 `send_message` 一个方法）与 `ApiProtocol`（只有 `group` 属性，声明成 `@property` 才能让普通属性满足、且不用 import `ApiClient`）。`ApiClient` 结构上就满足它们，不需要适配器；一旦 `GroupResource.send_message` 的签名漂移，`Dispatcher` 里 `event.bind(self._api)` 会在 mypy 报错。
+- **`api` 是私有属性，不是字段**：`_api: ApiProtocol | None = PrivateAttr(default=None)`，配 `@property api` 只读暴露、`bind()` 供 `Dispatcher` 写入。私有属性不进字段校验、不进 `model_dump()`、不进 JSON Schema，所以既不需要 `arbitrary_types_allowed` 也不需要 `SkipJsonSchema`，更不需要 `model_rebuild`。
 - **不做二次包装**：`bot.on(EventType)` 直接把处理器转给 `bus.on(...)`，处理器收到的就是总线的 `EventContext[E]`，事件本体在 `ctx.event`；只收协程函数，传普通函数抛 `TypeError`（§14 D3），这是门面唯一的额外校验。
+- **事件不是 frozen 的**：与其它响应模型不同，`EventModel` 关掉了 frozen。`api` 在解析之后由 `Dispatcher.handle()` 注入（私有属性，不进序列化），`reply()` 的 `msg_seq` 也在事件上累计。理由：回复能力属于「这条消息」，挂在事件上用户一眼就能看到能不能回复——有 `reply()` 就是能，没有就是不能，不用再到别的对象上查能力表。代价是事件不再只读，跨处理器共享时要当成可变对象对待。
 - `bot.on_unknown()` 等价于 `bot.on(UnknownEvent)`。
 - 处理器用 `asyncio.create_task(self._bus.emit(event))` 跑，分发层不 `await`，避免慢处理器阻塞读循环；`set` 持有 task 引用防 GC。
 - 并发语义：同步回调按 `weight` 降序先跑；异步回调由总线 `asyncio.gather` 并发跑，`max_concurrent_tasks`（默认 16）限流。**同一事件的多个异步处理器不保证顺序**，需要严格顺序就合并成一个处理器。
@@ -240,11 +242,19 @@ async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
 
 ### 6.3 `event.reply()`
 
-`GroupAtMessageCreate.reply(content, *, markdown=None, media=None, keyboard=None)` 的语义：
+`GroupAtMessageCreate.reply(content, *, markdown=None, media=None, keyboard=None, msg_seq=None)` 的语义：
 
-- 自动带 `msg_id=event.id`，`msg_seq` 由 SDK 自增（每条事件从 1 开始），解决「同一 `msg_id` 重发被拒（`40054005`）」。
+- 自动带 `msg_id=event.id`，`msg_seq` 不传时由 SDK 自增（每条事件从 1 开始），解决「同一 `msg_id` 重发被拒（`40054005`）」；显式传 `msg_seq` 时以调用方为准。
 - 内部调用 `ApiClient.group.send_message(...)`，群 openid 从事件里取。
-- 频道消息事件同样提供 `reply()`，等 §5.4 取证后再实现。
+- **只在支持回复的事件类型上定义**：有没有 `reply()` 就是能不能回复，不需要能力查询接口；`ReadyEvent` 之类没有这个方法，IDE 与 mypy 直接报错。
+- `api` 由 `Dispatcher.handle()` 在解析后注入；手动 `model_validate` 出来的事件没有它，`reply()` 抛 `ValueError("reply() needs an event dispatched by Bot; ...")`，不会静默失败。
+- 频道消息事件同样提供 `reply()`，等 §5.4 取证后再实现（`AT_MESSAGE_CREATE` 目前落到 `UnknownEvent`）。
+
+### 6.3.1 接线
+
+`Bot.on(...)` / `Bot.on_unknown()` 直接转发给 `Dispatcher`，不额外包一层；
+`Bot.start()` 建 `GatewayConnection` 与 `Dispatcher.run()` 两个后台任务，`Bot.stop()` 先 `connection.close()` 再取消任务并 `dispatcher.close()`（订阅随之清空，重新 `start()` 要重新注册）。
+`api/message.py` 的 `reply(group_openid, *, msg_id=..., ...)` 是同一实现的非事件入口，资源层在 `reply_to` 有值时同样补 `msg_seq=1`。
 
 ### 6.4 去重
 
@@ -364,7 +374,7 @@ src/qqbot/
     payload.py        OpCode、GatewayPayload、intents 常量
     session.py        SessionState（session_id / seq / can_resume）
     connection.py     GatewayConnection：连接、心跳、重连
-    dispatcher.py     Dispatcher：注册表与分派
+    dispatcher.py     Dispatcher：总线的薄门面（注册校验、去重、注入 api）
     webhook.py        op 13 签名、请求验签、parse（纯函数，不依赖 aiohttp 路由）
     webhook_server.py WebhookServer：开箱即用服务器（含 TLS 终结）
   model/
@@ -376,7 +386,7 @@ tests/
   test_dispatcher.py
   test_webhook.py                签名、验签、parse（纯函数）
   test_webhook_server.py         起 aiohttp 服务打真实 HTTP
-  test_event_reply.py
+  test_event_reply.py           Bot.on / event.reply / api.message.reply / start-stop
   data/
     gateway_hello.json
     gateway_ready.json
@@ -403,13 +413,14 @@ tests/
 | T1 | `gateway/payload.py` + `model/event.py`（含 `UnknownEvent`）+ intents 常量 + 用户对象按场景拆分 | `test_gateway_payload.py` 全绿 | 无（2026-10-26 完成） |
 | T2 | `gateway/session.py` + `gateway/connection.py`：连接、Hello、Identify、READY、心跳、Resume、关闭码驱动的重连 | `test_gateway_connection.py` 全绿（5 用例） | T1（2026-10-27 完成） |
 | T3 | Resume、关闭码表、退避重连 | 关闭码与 Resume 用例全绿 | T2（2026-10-27 与 T2 一并完成） |
-| T4 | `dispatcher.py`（基于 `async-event-bus`）+ `bot.on()` + `event.reply()` | 分发与 reply 用例全绿 | T1、T3（dispatcher 于 2026-10-27 完成并用 `async-event-bus` 重写，`bot.on()` 与 `event.reply()` 待 T6 接线） |
+| T4 | `dispatcher.py`（基于 `async-event-bus`）+ `bot.on()` + `event.reply()` | 分发与 reply 用例全绿 | T1、T3（2026-10-27 完成） |
 | T5 | `webhook.py`：op 13 签名、验签、parse（纯函数） | `test_webhook.py` 全绿 | T1 |
 | T6 | `webhook_server.py`：开箱即用服务器（TLS 三种配置 + 明文告警）、端口告警、快速 ACK、优雅关闭 | `test_webhook_server.py` 全绿 | T5 |
 
 顺序：T1 → T2 → T3 → T4 → T5 → T6，T5/T6 可与 T2/T3 并行。
 
-进度：T1（2026-10-27）与 T2 + T3（2026-10-27）已完成，T4 的 `gateway/dispatcher.py` 已完成（2026-10-27 改用 `async-event-bus`，自研调度删除）；门禁 `113 passed` / `mypy` 54 files / `ruff format --check` 60 files。
+进度：T1（2026-10-27）、T2 + T3（2026-10-27）、T4（2026-10-27，`bot.on()` 与 `event.reply()` 接线完成）已完成；门禁 `118 passed` / `mypy` 55 files / `ruff format --check` 61 files。
+下一步 T5（`gateway/webhook.py`）与 T6（`WebhookServer` + 示例）。
 
 ## 12. 版本与兼容
 

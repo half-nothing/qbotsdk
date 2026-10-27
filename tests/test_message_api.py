@@ -108,8 +108,3 @@ async def test_channel_recall_uses_query_flag(bot: Bot, server: MockServer) -> N
     await bot.api.channel.recall_message(CHANNEL_ID, "msg-1", hide_tip=True)
 
     assert call_to(server, f"{MESSAGES}/msg-1").query == {"hidetip": "true"}
-
-
-async def test_message_reply_placeholder(bot: Bot) -> None:
-    with pytest.raises(NotImplementedError):
-        await bot.api.message.reply("msg-1", "hi")

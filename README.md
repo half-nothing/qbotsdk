@@ -121,6 +121,44 @@ async with Bot(app_id=..., client_secret=...) as bot:
 4. **撤回有时限**：发送后 2 分钟内可撤回，超过就失败。
 5. **`image` 与 `file_image` 二选一**：前者是 URL 由服务端转存，后者是本地字节走 `multipart`，同时给会抛 `ValueError`。
 
+## 接收事件
+
+```python
+import asyncio
+
+from async_event_bus import EventContext
+
+from qqbot import Bot
+from qqbot.model.event import GroupAtMessageCreate, UnknownEvent
+
+
+async def main() -> None:
+    async with Bot(app_id=..., client_secret=...) as bot:
+
+        @bot.on(GroupAtMessageCreate)
+        async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
+            await ctx.event.reply("收到: " + ctx.event.content)
+
+        @bot.on_unknown()
+        async def on_unknown(ctx: EventContext[UnknownEvent]) -> None:
+            print("unhandled event:", ctx.event.t)
+
+        await bot.start()  # 连上网关, 后台开始收事件, 立即返回
+        await asyncio.sleep(3600)  # 换成你的主循环
+
+
+asyncio.run(main())
+```
+
+几个要点：
+
+1. **处理器只收 `async def`**，参数是 `EventContext`，事件对象在 `ctx.event`；同步函数注册时直接抛 `TypeError`。
+2. **能不能回复看方法**：`GroupAtMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
+3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；只有群消息事件支持，其余事件只能走 `bot.api` 的显式接口。
+4. **`Bot.start()` 不做阻塞**，`bot.stop()` / `async with` 退出时才断开网关；`stop()` 会清空订阅，再次 `start()` 需要重新注册。
+5. **去重**：官方说明同一消息可能重复推送，分发器默认记住最近 512 条消息 ID 直接丢弃重复（`dedupe_size=0` 关闭）。
+6. **未建模事件**：`AT_MESSAGE_CREATE`、`C2C_MESSAGE_CREATE` 本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
+
 ## 鉴权原理
 
 1. 用 AppID 与 AppSecret 请求 `/app/getAppAccessToken`，拿到 `access_token` 与 `expires_in`，有效期通常 7200 秒。

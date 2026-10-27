@@ -62,12 +62,12 @@
 ## Phase 3 · v0.4 事件接入（≈2~3 周，SDK 核心价值）
 
 设计文档：[`docs/design/phase3-events.md`](docs/design/phase3-events.md)（14 节，含 D1–D5 拍板记录）。
-架构决策：不引入外部事件总线，`gateway/` 自己做连接、心跳、Resume 与分发；处理器统一 `async def handler(event)`。
+架构决策：事件总线用 [`async-event-bus`](https://pypi.org/project/async-event-bus/)，`gateway/` 自己做连接、心跳、Resume 与帧到事件的转换，`Dispatcher` 是总线的薄门面；处理器统一 `async def handler(ctx: EventContext[E])`，事件对象在 `ctx.event`，支持回复的事件类型自己带 `reply()` 方法（`EventModel` 因此不 frozen，`api` 由分发器注入）。
 
 - [x] T1 `gateway/payload.py`（OpCode / Intents / 关闭码表 / 错误类）+ `model/event.py` · 2026-10-27
 - [x] T2 WebSocket Gateway：Hello、Identify、READY、心跳 · 2026-10-27
 - [x] T3 Resume、关闭码处理、退避重连 · 2026-10-27（与 T2 一并完成）
-- [ ] T4 分发层 + `bot.on(...)` + `event.reply()` · `gateway/dispatcher.py` 已完成 2026-10-27（总线改用 `async-event-bus`），`bot.on` 与 `event.reply` 待 T6 接线
+- [x] T4 分发层 + `bot.on(...)` + `event.reply()` · 2026-10-27（总线 `async-event-bus`，`Bot.start()` 接网关，`event.reply()` 自动带 `msg_id` 与递增 `msg_seq`）
 - [ ] T5 WebHook 函数层：op 13 签名、请求验签、parse
 - [ ] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）
 

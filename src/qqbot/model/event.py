@@ -5,22 +5,67 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final, Protocol
 
 from async_event_bus import AbstractEvent
-from pydantic import Field
+from pydantic import ConfigDict, Field, PrivateAttr
 
 from .base import QQModel
 from .scene import Attachment, MessageElement, MessageScene
 from .user import GroupUser, GuildUser
 
+if TYPE_CHECKING:
+    from .draft import MessageMarkdown
+    from .keyboard import Keyboard
+    from .media import MediaInfo
+    from .message import GroupMessageReceipt
+
+
+class GroupSender(Protocol):
+    """ApiClient.group 里事件回复用到的那一小块。"""
+
+    async def send_message(
+        self,
+        group_openid: str,
+        *,
+        content: str | None = None,
+        markdown: MessageMarkdown | None = None,
+        media: MediaInfo | None = None,
+        keyboard: Keyboard | None = None,
+        reply_to: str | None = None,
+        event_id: str | None = None,
+        msg_seq: int | None = None,
+    ) -> GroupMessageReceipt: ...
+
+
+class ApiProtocol(Protocol):
+    """事件需要的接口面, ApiClient 结构上满足它。"""
+
+    @property
+    def group(self) -> GroupSender: ...
+
 
 class EventModel(QQModel, AbstractEvent):
-    """SDK 事件模型的公共基类。
+    """SDK 事件模型的公共基类。"""
 
-    同时继承 `QQModel`（字段校验）与 `AbstractEvent`（总线的派发键）。
-    自定义事件继承本类即可被 `Dispatcher` 接受。
-    """
+    model_config = ConfigDict(populate_by_name=True, extra="ignore", frozen=False)
+
+    # 派发前由 Dispatcher 挂上
+    _api: ApiProtocol | None = PrivateAttr(default=None)
+
+    # 同一条事件被回复多次时换 msg_seq, 否则服务端按重复消息拒掉
+    _reply_seq: int = PrivateAttr(default=0)
+
+    @property
+    def api(self) -> ApiProtocol | None:
+        """派发这条事件的 Bot 的接口入口。"""
+
+        return self._api
+
+    def bind(self, api: ApiProtocol | None) -> None:
+        """把客户端挂到事件上。"""
+
+        self._api = api
 
 
 class ReadyEvent(EventModel):
@@ -49,6 +94,39 @@ class GroupAtMessageCreate(EventModel):
     attachments: list[Attachment] = Field(alias="attachments", default_factory=list)
     mentions: list[GroupUser] = Field(alias="mentions", default_factory=list)
     msg_elements: list[MessageElement] = Field(alias="msg_elements", default_factory=list)
+
+    async def reply(
+        self,
+        content: str,
+        *,
+        markdown: MessageMarkdown | None = None,
+        media: MediaInfo | None = None,
+        keyboard: Keyboard | None = None,
+        msg_seq: int | None = None,
+    ) -> GroupMessageReceipt:
+        """回复这条群消息。
+
+        自动带本事件的 id 作为 msg_id
+        msg_seq 不传时从 1 起按事件自增
+        """
+
+        api = self.api
+        if api is None:
+            raise ValueError(
+                "reply() needs an event dispatched by Bot; use bot.api.group.send_message()"
+            )
+        if msg_seq is None:
+            self._reply_seq += 1
+            msg_seq = self._reply_seq
+        return await api.group.send_message(
+            self.group_openid,
+            content=content,
+            markdown=markdown,
+            media=media,
+            keyboard=keyboard,
+            reply_to=self.id,
+            msg_seq=msg_seq,
+        )
 
 
 class UnknownEvent(EventModel):

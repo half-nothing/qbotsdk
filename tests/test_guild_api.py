@@ -104,6 +104,7 @@ async def test_roles_result(bot: Bot, server: MockServer) -> None:
     assert isinstance(result.role_num_limit, str)
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 async def test_get_me_forwards_to_user_resource(bot: Bot, server: MockServer) -> None:
     payload = {"id": "123", "username": "tester", "avatar": "", "bot": True}
     json_route(server, "GET", "/users/@me", payload)

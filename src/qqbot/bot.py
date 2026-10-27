@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from types import TracebackType
 
-from warnings import deprecated
-
 from .api import ApiClient
 from .model.user import GuildUser
 from .module.http_client import HTTPClient
@@ -29,7 +27,6 @@ class Bot:
 
         return self._api
 
-    @deprecated("Deprecated from v0.3.0, use bot.api.user.me() instead")
     async def get_me(self) -> GuildUser:
         """已弃用：请改用 `bot.api.user.me()`，v0.3 移除。"""
 

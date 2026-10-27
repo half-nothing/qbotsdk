@@ -1,4 +1,4 @@
-﻿# Phase 3 设计：事件接入（v0.4.0）
+# Phase 3 设计：事件接入（v0.4.0）
 
 ## 1. 范围与非目标
 
@@ -70,16 +70,19 @@ bot.py  ──  Bot（门面）
 3. 发 `op 2 Identify`：
 
 ```python
-{
-    "op": 2,
-    "d": {
-        "token": f"QQBot {access_token}",
-        "intents": intents,
-        "shard": [0, 1],
-        "properties": {"$os": "linux", "$browser": "qqbot-sdk", "$device": "qqbot-sdk"},
-    },
-}
+await ws.send_str(
+    IdentifyFrame(
+        d=IdentifyData(
+            token=f"QQBot {access_token}",
+            intents=intents,
+            shard=[0, 1],
+            properties={"$os": "linux", "$browser": "qqbot-sdk", "$device": "qqbot-sdk"},
+        )
+    ).to_json()
+)
 ```
+
+进出网关的每一帧都由 `gateway/payload.py` 的 pydantic 模型承载：解析用 `GatewayPayload.model_validate_json(text)`，发送用 `Frame.to_json()`（即 `model_dump_json()`），不手工拼 dict，也不 `json.loads` 之后再 `model_validate`。`HelloFrame`、`IdentifyFrame`、`ResumeFrame`、`HeartbeatFrame` 分别对应 `op 10` / `2` / `6` / `1`。
 
 4. 收到 `op 0` 且 `t == "READY"` 才算连上，从 `d` 里取 `session_id`、`user`、`shard`，同时记下 `s` 作为后续 `seq`。
 
@@ -97,7 +100,7 @@ bot.py  ──  Bot（门面）
 | --- | --- |
 | 网络断开、`op 7 Reconnect`、`4009`、`4008` | 发 `op 6 Resume`：`{token, session_id, seq}` |
 | Resume 成功 | 收到 `t == "RESUMED"`，继续用原 `session_id`，不重建处理器 |
-| `4006`、`4007`、`9900`～`9913` | `session_id` 作废，重新 Identify |
+| `4006`、`4007`、`4900`～`4913` | `session_id` 作废，重新 Identify |
 | `4001`、`4002`、`4010`、`4011`、`4012`、`4013`、`4014`、`4914`、`4915` | 不重连，抛 `GatewayError`，让用户修配置或等权限 |
 
 重连退避：`min(backoff_base * 2 ** (attempt - 1), backoff_max)`，默认 `0.5s` 起、上限 `8s`，加 0～25% 抖动。退避参数复用 `ClientOptions`，不新增配置项。
@@ -211,24 +214,29 @@ class GatewayPayload(QQModel):
 
 ## 6. 分发层
 
-### 6.1 注册
+### 6.1 注册（事件总线用 `async-event-bus`）
 
 ```python
 bot = Bot(app_id=..., client_secret=...)
 
 
 @bot.on(GroupAtMessageCreate)
-async def on_group_at(event: GroupAtMessageCreate) -> None:
+async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
+    event = ctx.event
     await event.reply("收到: " + event.content)
 ```
 
-- `bot.on(EventType)` 装饰器把协程登记进 `dict[type[QQModel], list[Handler]]`，同一类型允许多个处理器，按注册顺序 `await`。
-- `bot.on_unknown()` 收所有未建模事件。
-- 处理器通过 `asyncio.create_task` 跑，分发层不 `await` 它，避免一个慢处理器阻塞后续事件；用 `set` 持有 task 引用，防止被 GC。
+- 事件总线用 `async-event-bus` 1.0.0（§14 D7），`Dispatcher` 只做三件事：帧 → 事件模型、按消息 `id` 去重、把事件 `emit` 进总线；订阅表、并发与异常策略都交给总线。
+- 事件模型统一继承 `EventModel`（`QQModel` + `async_event_bus.AbstractEvent`），总线按 `type(event)` 精确匹配。**精确派发是设计意图**：事件类型就是订阅键，不做基类兜底，`@bot.on(GroupAtMessageCreate)` 只收这一类；想收多类就分别注册。
+- 类型上不出现裸 `Any`：`Dispatcher` 里的总线是 `EventBus[EventContext[EventModel], None]`，每个处理器按注册的事件类型拿到 `EventContext[E]`（总线内部统一按 `EventContext[EventModel]` 存），只有 `QQModel`/`UnknownEvent.data` 这类真正「结构未知的 JSON」才保留 `Any`。
+- **不做二次包装**：`bot.on(EventType)` 直接把处理器转给 `bus.on(...)`，处理器收到的就是总线的 `EventContext[E]`，事件本体在 `ctx.event`；只收协程函数，传普通函数抛 `TypeError`（§14 D3），这是门面唯一的额外校验。
+- `bot.on_unknown()` 等价于 `bot.on(UnknownEvent)`。
+- 处理器用 `asyncio.create_task(self._bus.emit(event))` 跑，分发层不 `await`，避免慢处理器阻塞读循环；`set` 持有 task 引用防 GC。
+- 并发语义：同步回调按 `weight` 降序先跑；异步回调由总线 `asyncio.gather` 并发跑，`max_concurrent_tasks`（默认 16）限流。**同一事件的多个异步处理器不保证顺序**，需要严格顺序就合并成一个处理器。
 
 ### 6.2 异常隔离
 
-处理器抛异常时 `logger.exception` 记录，不外抛、不影响其它处理器与心跳。`asyncio.CancelledError` 例外，原样抛出。
+总线配 `ExceptionStrategy.IGNORE`：处理器抛异常只记日志，不影响同一事件的其它处理器，也不影响心跳与读循环；`bot.on()` 的包装层不额外 catch，唯一的例外是 `asyncio.CancelledError` 原样向上传播。
 
 ### 6.3 `event.reply()`
 
@@ -393,20 +401,20 @@ tests/
 | 切片 | 内容 | 验收 | 依赖 |
 | --- | --- | --- | --- |
 | T1 | `gateway/payload.py` + `model/event.py`（含 `UnknownEvent`）+ intents 常量 + 用户对象按场景拆分 | `test_gateway_payload.py` 全绿 | 无（2026-10-26 完成） |
-| T2 | `gateway/connection.py`：连接、Hello、Identify、READY、心跳 | `test_gateway_connection.py` 全绿 | T1 |
-| T3 | Resume、关闭码表、退避重连 | 关闭码与 Resume 用例全绿 | T2 |
-| T4 | `dispatcher.py` + `bot.on()` + `event.reply()` | 分发与 reply 用例全绿 | T1、T3 |
+| T2 | `gateway/session.py` + `gateway/connection.py`：连接、Hello、Identify、READY、心跳、Resume、关闭码驱动的重连 | `test_gateway_connection.py` 全绿（5 用例） | T1（2026-10-27 完成） |
+| T3 | Resume、关闭码表、退避重连 | 关闭码与 Resume 用例全绿 | T2（2026-10-27 与 T2 一并完成） |
+| T4 | `dispatcher.py`（基于 `async-event-bus`）+ `bot.on()` + `event.reply()` | 分发与 reply 用例全绿 | T1、T3（dispatcher 于 2026-10-27 完成并用 `async-event-bus` 重写，`bot.on()` 与 `event.reply()` 待 T6 接线） |
 | T5 | `webhook.py`：op 13 签名、验签、parse（纯函数） | `test_webhook.py` 全绿 | T1 |
 | T6 | `webhook_server.py`：开箱即用服务器（TLS 三种配置 + 明文告警）、端口告警、快速 ACK、优雅关闭 | `test_webhook_server.py` 全绿 | T5 |
 
 顺序：T1 → T2 → T3 → T4 → T5 → T6，T5/T6 可与 T2/T3 并行。
 
-进度：T1 已完成（2026-10-27），门禁 `100 passed` / `mypy` 49 files / `ruff format --check` 55 files。
+进度：T1（2026-10-27）与 T2 + T3（2026-10-27）已完成，T4 的 `gateway/dispatcher.py` 已完成（2026-10-27 改用 `async-event-bus`，自研调度删除）；门禁 `113 passed` / `mypy` 54 files / `ruff format --check` 60 files。
 
 ## 12. 版本与兼容
 
 - 版本 `0.4.0`，Phase 2 的公开接口全部不变。
-- 依赖新增 `cryptography`（Ed25519 签名与验签）；`aiohttp` 已在依赖树里，默认服务器不引入新依赖；TLS 用标准库 `ssl`（`SSLContext` + `load_cert_chain`），也不需要新依赖。
+- 依赖新增 `cryptography`（Ed25519 签名与验签）与 `async-event-bus`（事件总线）；`aiohttp` 已在依赖树里，默认服务器不引入新依赖；TLS 用标准库 `ssl`（`SSLContext` + `load_cert_chain`），也不需要新依赖。
 - `Bot` 构造新增两个可选参数：`bot_secret: str | None = None`、`intents: int | None = None`。
 - `bot.start()` / `bot.close()` 成为推荐用法；`Bot.get_me()` 继续保留（已标弃用）。
 - `api/message.py` 的 `reply()` 从 `NotImplementedError` 改成真实实现，因为依赖 `event.reply()` 提供的 `msg_id`/`msg_seq`；无事件上下文的调用改为抛 `ValueError("reply() needs msg_id; use the event layer or send_message()")`。
@@ -429,6 +437,7 @@ tests/
 | D4 | 默认 intents 是否带 `GUILD_MEMBERS` | 已定：不带，未申请权限时会直接断连 |
 | D5 | `AT_MESSAGE_CREATE` / `C2C_MESSAGE_CREATE` 是否本期补齐 | 已定：本期只做 `UnknownEvent`，实现前先取证 |
 | D6 | 用户对象一个类还是按场景拆 | 已定：按场景拆成 `User` / `GuildUser` / `GroupUser`，基类只有 `id`，跨场景用 `openid` 属性（§5.6） |
+| D7 | 事件总线自研还是用现成库 | 已定：用 `async-event-bus` 1.0.0（用户指定）。不自研调度与并发控制；`Dispatcher` 只保留「帧 → 事件 → 去重 → emit」四步，处理器异常走 `ExceptionStrategy.IGNORE`（§6.1、§6.2） |
 
 ### 14.1 D1 的对比记录
 

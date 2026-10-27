@@ -11,7 +11,7 @@ from .draft import (
     MessageMarkdown,
     MessageReference,
 )
-from .event import GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
+from .event import EventModel, GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
 from .group import (
     Group,
     GroupBotState,
@@ -56,6 +56,7 @@ __all__ = [
     "ChannelMessageDraft",
     "ChannelSubType",
     "ChannelType",
+    "EventModel",
     "FileType",
     "Group",
     "GroupAtMessageCreate",

@@ -1,10 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""网关层的协议常量与载荷模型。
-
-只放「与连接无关」的东西：opcode、intents 位、关闭码表、错误类。
-连接生命周期在 connection.py，别在这里 import aiohttp。
-"""
+"""网关层的协议常量与载荷模型。"""
 
 from __future__ import annotations
 
@@ -32,7 +28,7 @@ class OpCode(IntEnum):
 
 
 class Intents:
-    """intents 位。官方按「基础事件 / 需申请」分两档，默认只开基础事件那一档。"""
+    """intents 位。官方分成基础事件与需申请两档，默认只开基础事件那一档。"""
 
     GUILDS: ClassVar[int] = 1 << 0
     GUILD_MEMBERS: ClassVar[int] = 1 << 1
@@ -46,18 +42,86 @@ class Intents:
     AUDIO_ACTION: ClassVar[int] = 1 << 29
     PUBLIC_GUILD_MESSAGES: ClassVar[int] = 1 << 30
 
-    # 传了没权限的 intent 会被直接断开(4013/4014), 所以不默认开 GUILD_MEMBERS
+    # 传了没权限的 intent 会被直接断开
     DEFAULT: ClassVar[int] = GUILDS | PUBLIC_GUILD_MESSAGES | GROUP_AND_C2C_EVENT
 
 
 class GatewayPayload(QQModel):
-    """网关下发的任意一帧。`d` 的结构由 `op` 与 `t` 决定，这里不做细化。"""
+    """网关下发的任意一帧。d 的结构由 op 与 t 决定，这里不做细化。"""
 
     id: str | None = Field(alias="id", default=None)
     op: OpCode = Field(alias="op")
     d: Any = Field(alias="d", default=None)
     s: int | None = Field(alias="s", default=None)
     t: str | None = Field(alias="t", default=None)
+
+
+class Frame(QQModel):
+    """整帧的基类。"""
+
+    op: OpCode
+
+    def to_json(self) -> str:
+        """序列化成可直接经 WebSocket 发送的文本。"""
+
+        return self.model_dump_json()
+
+
+class HelloData(QQModel):
+    """op 10 的 d。"""
+
+    heartbeat_interval: int
+
+
+class HelloFrame(Frame):
+    """连接建立后服务端下发的第一帧。"""
+
+    op: OpCode = OpCode.HELLO
+    d: HelloData
+
+
+class IdentifyData(QQModel):
+    """op 2 的 d。"""
+
+    token: str
+    intents: int
+    shard: list[int]
+    properties: dict[str, str]
+
+
+class IdentifyFrame(Frame):
+    """鉴权帧。"""
+
+    op: OpCode = OpCode.IDENTIFY
+    d: IdentifyData
+
+
+class ResumeData(QQModel):
+    """op 6 的 d。"""
+
+    token: str
+    session_id: str
+    seq: int | None = None
+
+
+class ResumeFrame(Frame):
+    """恢复会话帧。"""
+
+    op: OpCode = OpCode.RESUME
+    d: ResumeData
+
+
+class HeartbeatFrame(Frame):
+    """心跳帧；d 是最近收到的 s，一次都还没收到就是 null。"""
+
+    op: OpCode = OpCode.HEARTBEAT
+    d: int | None = None
+
+
+class HeartbeatAckFrame(Frame):
+    """心跳回执。"""
+
+    op: OpCode = OpCode.HEARTBEAT_ACK
 
 
 class CloseAction(StrEnum):
@@ -102,7 +166,7 @@ _CLOSE_ACTIONS: Final[dict[int, CloseAction]] = {
     GatewayCloseCode.BANNED: CloseAction.STOP,
 }
 
-# 4900~4913 是官方内部的「连接被重置」区间, 重连即可
+# 4900~4913 是官方内部的连接被重置区间, 重连即可
 _INTERNAL_ERROR_RANGE: Final[range] = range(4900, 4914)
 
 

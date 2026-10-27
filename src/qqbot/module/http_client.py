@@ -165,6 +165,17 @@ class HTTPClient:
         self._session = session
         return session
 
+    async def get_session(self) -> ClientSession:
+        """给网关层复用同一个 ClientSession。"""
+
+        return await self._get_session()
+
+    async def access_token(self) -> str:
+        """取当前可用的 access_token，供网关 Identify / Resume 使用。"""
+
+        session = await self._get_session()
+        return await self._token_manager.get_token(session)
+
     async def request(
         self,
         method: str,

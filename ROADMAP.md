@@ -65,9 +65,9 @@
 架构决策：不引入外部事件总线，`gateway/` 自己做连接、心跳、Resume 与分发；处理器统一 `async def handler(event)`。
 
 - [x] T1 `gateway/payload.py`（OpCode / Intents / 关闭码表 / 错误类）+ `model/event.py` · 2026-10-27
-- [ ] T2 WebSocket Gateway：Hello、Identify、READY、心跳
-- [ ] T3 Resume、关闭码处理、退避重连
-- [ ] T4 分发层 + `bot.on(...)` + `event.reply()`
+- [x] T2 WebSocket Gateway：Hello、Identify、READY、心跳 · 2026-10-27
+- [x] T3 Resume、关闭码处理、退避重连 · 2026-10-27（与 T2 一并完成）
+- [ ] T4 分发层 + `bot.on(...)` + `event.reply()` · `gateway/dispatcher.py` 已完成 2026-10-27（总线改用 `async-event-bus`），`bot.on` 与 `event.reply` 待 T6 接线
 - [ ] T5 WebHook 函数层：op 13 签名、请求验签、parse
 - [ ] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）
 

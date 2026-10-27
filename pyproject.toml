@@ -10,7 +10,8 @@ dependencies = [
     "pydantic>=2.13.4",
     "yarl>=1.24.5",
     "loguru>=0.7.3",
-    "cryptography>=50.0.2"
+    "cryptography>=50.0.2",
+    "async-event-bus>=1.0.0",
 ]
 requires-python = ">=3.12"
 readme = "README.md"

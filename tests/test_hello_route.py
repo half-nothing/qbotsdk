@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import aiohttp
 import aiohttp.web
+import pytest
 
 from qqbot.bot import Bot
 from tests.support import MockServer
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 async def test_get_me_injects_authorization_header(bot: Bot, server: MockServer) -> None:
     async def me_handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response(

@@ -7,16 +7,10 @@ from __future__ import annotations
 from ssl import PROTOCOL_TLS_SERVER, SSLContext
 from typing import TYPE_CHECKING
 
-from aiohttp.web import Application, AppRunner, Request, Response, TCPSite, json_response
+from aiohttp.web import Application, AppRunner, TCPSite
 from loguru import logger
-from pydantic import ValidationError
 
-from .payload import GatewayPayload, OpCode
-from .webhook import (
-    build_ack_payload,
-    build_validation_response,
-    verify_webhook_signature,
-)
+from .handler import build_webhook_handler
 
 if TYPE_CHECKING:
     from .dispatcher import Dispatcher
@@ -26,9 +20,6 @@ CALLBACK_PORTS = frozenset({80, 443, 8080, 8443})
 
 # 明文监听这些端口时大概率是忘了配证书
 _TLS_PORTS = frozenset({443, 8443})
-
-_SIGNATURE_HEADER = "X-Signature-Ed25519"
-_TIMESTAMP_HEADER = "X-Signature-Timestamp"
 
 
 class WebhookServer:
@@ -76,6 +67,7 @@ class WebhookServer:
 
         self._dispatcher = dispatcher
         self._bot_secret = bot_secret
+        self._handler = build_webhook_handler(dispatcher, bot_secret)
         self._host = host
         self._port = port
         self._path = path
@@ -103,7 +95,7 @@ class WebhookServer:
             raise RuntimeError("webhook server is already started")
 
         app = Application()
-        app.router.add_post(self._path, self._handle)
+        app.router.add_post(self._path, self._handler)
         runner = AppRunner(app)
         await runner.setup()
         site = TCPSite(runner, self._host, self._port, ssl_context=self._ssl_context)
@@ -140,38 +132,6 @@ class WebhookServer:
         traceback: object | None,
     ) -> None:
         await self.close()
-
-    async def _handle(self, request: Request) -> Response:
-        # 签名体是时间戳 + 原始报文, 所以只能读原始字节, 不能先 request.json()
-        body = await request.read()
-        try:
-            payload = GatewayPayload.model_validate_json(body)
-        except ValidationError:
-            return Response(status=400, text="invalid payload")
-
-        if payload.op is OpCode.CALLBACK_VALIDATION:
-            return self._validation_response(payload)
-
-        signature = request.headers.get(_SIGNATURE_HEADER, "")
-        timestamp = request.headers.get(_TIMESTAMP_HEADER, "")
-        if not signature or not timestamp:
-            return Response(status=401, text="missing signature")
-        if not verify_webhook_signature(self._bot_secret, signature, timestamp, body):
-            return Response(status=401, text="invalid signature")
-
-        # 官方要求快速 ACK, 处理慢会被重推, 所以先回包再分发
-        self._dispatcher.handle(payload)
-        return json_response(build_ack_payload())
-
-    def _validation_response(self, payload: GatewayPayload) -> Response:
-        data = payload.d
-        if not isinstance(data, dict):
-            return Response(status=400, text="invalid validation payload")
-        plain_token = data.get("plain_token")
-        event_ts = data.get("event_ts")
-        if not isinstance(plain_token, str) or not isinstance(event_ts, str):
-            return Response(status=400, text="invalid validation payload")
-        return json_response(build_validation_response(self._bot_secret, plain_token, event_ts))
 
     def _warn_about_port(self) -> None:
         if self._ssl_context is None and self._port in _TLS_PORTS:

@@ -1,5 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
+from .handler import WebhookHandler, build_webhook_handler
 from .payload import (
     CloseAction,
     Frame,
@@ -49,9 +50,11 @@ __all__ = [
     "ResumeFrame",
     "SessionStartLimit",
     "SessionState",
+    "WebhookHandler",
     "WebhookServer",
     "build_ack_payload",
     "build_validation_response",
+    "build_webhook_handler",
     "close_action",
     "parse_webhook_event",
     "verify_webhook_signature",

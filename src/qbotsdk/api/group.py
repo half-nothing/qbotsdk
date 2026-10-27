@@ -99,6 +99,9 @@ class GroupResource:
         被动回复有效期为 5 分钟, 每条消息最多回 5 次。
         同一个 msg_id + msg_seq 重复发送会被拒
         要回第二次请显式传 msg_seq=2
+
+        keyboard 只在 Markdown 消息上渲染: 只传 content + keyboard 时,
+        content 会被自动搬进 markdown 并把 msg_type 置 2。
         """
 
         path = f"/v2/groups/{group_openid}/messages"

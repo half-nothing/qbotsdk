@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""网关下发的 `t` 事件模型。"""
+"""网关下发的 t 事件模型。"""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from .draft import MessageMarkdown
     from .keyboard import Keyboard
     from .media import MediaInfo
-    from .message import GroupMessageReceipt, Message, UserMessageReceipt
+    from .message import GroupMessageReceipt, UserMessageReceipt
 
 # 官方限制: 群聊每条消息最多被动回复 5 次, 单聊 4 次, 超出会返回 40034128
 GROUP_REPLY_LIMIT = 5
@@ -151,7 +151,7 @@ class GroupAtMessageCreate(EventModel):
 
     async def reply(
         self,
-        content: str,
+        content: str | None = None,
         *,
         markdown: MessageMarkdown | None = None,
         media: MediaInfo | None = None,
@@ -162,6 +162,7 @@ class GroupAtMessageCreate(EventModel):
 
         自动带本事件的 id 作为 msg_id
         msg_seq 不传时从 1 起按事件自增, 官方上限是每条消息 5 次
+        有 markdown 时忽略 content, 两种消息不能同时带
         """
 
         api = self.api
@@ -169,6 +170,8 @@ class GroupAtMessageCreate(EventModel):
             raise ValueError(
                 "reply() needs an event dispatched by Bot; use bot.api.group.send_message()"
             )
+        if markdown is not None:
+            content = None
         if msg_seq is None:
             self._reply_seq += 1
             msg_seq = self._reply_seq
@@ -201,7 +204,7 @@ class C2CMessageCreate(EventModel):
 
     async def reply(
         self,
-        content: str,
+        content: str | None = None,
         *,
         markdown: MessageMarkdown | None = None,
         media: MediaInfo | None = None,
@@ -211,7 +214,7 @@ class C2CMessageCreate(EventModel):
         """回复这条单聊消息。
 
         自动带本事件的 id 作为 msg_id, 被动回复窗口 60 分钟、每条消息最多回 4 次。
-        msg_seq 不传时从 1 起按事件自增。
+        msg_seq 不传时从 1 起按事件自增; 有 markdown 时忽略 content。
         """
 
         api = self.api
@@ -219,6 +222,8 @@ class C2CMessageCreate(EventModel):
             raise ValueError(
                 "reply() needs an event dispatched by Bot; use bot.api.user_message.send_message()"
             )
+        if markdown is not None:
+            content = None
         if msg_seq is None:
             self._reply_seq += 1
             msg_seq = self._reply_seq
@@ -244,14 +249,14 @@ class ChannelMessageCreate(Message, EventModel):
 
     async def reply(
         self,
-        content: str,
+        content: str | None = None,
         *,
         markdown: MessageMarkdown | None = None,
         image: str | None = None,
     ) -> Message:
         """回复这条频道消息。
 
-        自动带本事件的 id 作为 msg_id, 频道被动回复窗口是 5 分钟。
+        自动带本事件的 id 作为 msg_id, 频道被动回复窗口是 5 分钟; 有 markdown 时忽略 content。
         """
 
         api = self.api

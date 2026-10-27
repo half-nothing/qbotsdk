@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-from aiohttp import ClientSession, TCPConnector
+from aiohttp import ClientSession, TCPConnector, web
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
@@ -21,6 +21,7 @@ from cryptography.x509.oid import NameOID
 from loguru import logger
 
 from qbotsdk.bot import Bot
+from qbotsdk.gateway.handler import build_webhook_handler
 from qbotsdk.gateway.webhook import build_validation_response
 from qbotsdk.gateway.webhook_server import WebhookServer
 from qbotsdk.model.event import GroupAtMessageCreate
@@ -228,3 +229,78 @@ async def test_non_callback_port_warns(bot: Bot) -> None:
         logger.remove(sink_id)
 
     assert any("not in the callback port list" in message for message in messages)
+
+
+async def test_broken_event_is_acked_not_crashed(bot: Bot) -> None:
+    # 报文是合法帧但字段对不上模型: 重推也解不出来, 所以记日志后照常 ACK
+    body = b'{"op": 0, "t": "READY", "s": 1, "d": {}}'
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
+    await server.start()
+    try:
+        async with (
+            ClientSession() as session,
+            session.post(
+                server.url,
+                data=body,
+                headers={
+                    "X-Signature-Ed25519": sign(BOT_SECRET, TIMESTAMP, body),
+                    "X-Signature-Timestamp": TIMESTAMP,
+                },
+            ) as response,
+        ):
+            assert response.status == 200
+            assert await response.json() == {"op": 12, "d": {}}
+    finally:
+        await server.close()
+
+
+async def test_handler_builder_mounts_on_own_app(bot: Bot) -> None:
+    received: list[GroupAtMessageCreate] = []
+
+    @bot.on(GroupAtMessageCreate)
+    async def handler(ctx: EventContext[GroupAtMessageCreate]) -> None:
+        received.append(ctx.event)
+
+    app = web.Application()
+    app.router.add_post("/custom", build_webhook_handler(bot.dispatcher, BOT_SECRET))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    assert runner.addresses
+    url = f"http://127.0.0.1:{runner.addresses[0][1]}/custom"
+
+    try:
+        validation = (
+            b'{"op": 13, "d": {"plain_token": "Arq0D5A61EgUu4OxUvOp", "event_ts": "1725442341"}}'
+        )
+        async with ClientSession() as session:
+            async with session.post(url, data=validation) as response:
+                assert response.status == 200
+                assert (await response.json())["plain_token"] == "Arq0D5A61EgUu4OxUvOp"
+
+            body = read_frame("gateway_group_at_message_create.json").encode()
+            async with session.post(
+                url,
+                data=body,
+                headers={
+                    "X-Signature-Ed25519": sign(BOT_SECRET, TIMESTAMP, body),
+                    "X-Signature-Timestamp": TIMESTAMP,
+                },
+            ) as response:
+                assert response.status == 200
+                assert await response.json() == {"op": 12, "d": {}}
+
+            async with session.post(url, data=body) as response:
+                assert response.status == 401
+
+            async with session.post(url, data=b"not json") as response:
+                assert response.status == 400
+
+        for _ in range(50):
+            if received:
+                break
+            await sleep(0.02)
+        assert len(received) == 1
+    finally:
+        await runner.cleanup()

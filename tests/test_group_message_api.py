@@ -136,6 +136,18 @@ async def test_group_send_keyboard_payload(bot: Bot, server: MockServer) -> None
     assert button["action"]["unsupport_tips"] == "此操作暂不支持"
 
 
+async def test_group_send_keyboard_lifts_text_to_markdown(bot: Bot, server: MockServer) -> None:
+    # 实测: msg_type 不是 2 时按钮不显示, 所以文本会被本地搬进 markdown
+    json_route(server, "POST", MESSAGES, snapshot("group_message_receipt.json"))
+
+    await bot.api.group.send_message(GROUP, content="hi", keyboard=_keyboard())
+
+    body = call_to(server, MESSAGES).json
+    assert body["msg_type"] == 2
+    assert body["markdown"] == {"content": "hi"}
+    assert "content" not in body
+
+
 async def test_group_recall_returns_none(bot: Bot, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response({})

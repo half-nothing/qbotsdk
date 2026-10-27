@@ -8,7 +8,7 @@ from .adapter import Adapter, AdapterContext, WebhookAdapter, WebSocketAdapter
 from .api import ApiClient
 from .bot import Bot
 from .exceptions import APIError, ErrorCode, QQBotError, RateLimitExceededError, TransportError
-from .gateway import WebhookServer
+from .gateway import WebhookServer, build_webhook_handler
 from .model import (
     Channel,
     ChannelMessageCreate,
@@ -72,4 +72,5 @@ __all__ = [
     "WebhookAdapter",
     "WebhookServer",
     "__version__",
+    "build_webhook_handler",
 ]

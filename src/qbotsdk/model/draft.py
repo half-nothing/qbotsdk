@@ -36,6 +36,29 @@ class MessageMarkdown(QQModel):
     )
 
 
+def _lift_keyboard_to_markdown(data: Any) -> Any:
+    """把带 keyboard 的纯文本消息升成 Markdown 消息。
+
+    实测: msg_type 不是 2 时平台照样返回成功, 但按钮不会显示,
+    所以 SDK 在本地就把文本搬进 markdown, 调用方不用记这条规则。
+    """
+
+    if not isinstance(data, dict) or data.get("keyboard") is None:
+        return data
+
+    msg_type = data.get("msg_type", 0)
+    if msg_type is not None and int(msg_type) not in (0, 2):
+        raise ValueError("a keyboard message must be a markdown message (msg_type=2)")
+
+    markdown = data.get("markdown")
+    if markdown is None:
+        content = data.get("content")
+        if not content:
+            raise ValueError("a keyboard message needs content or markdown")
+        markdown = {"content": content}
+    return {**data, "content": None, "markdown": markdown, "msg_type": 2}
+
+
 class GroupMessageType(IntEnum):
     """群聊消息类型, 对应 msg_type。"""
 
@@ -117,6 +140,7 @@ class GroupMessageDraft(QQModel):
     @model_validator(mode="before")
     @classmethod
     def _infer_type(cls, data: Any) -> Any:
+        data = _lift_keyboard_to_markdown(data)
         if not isinstance(data, dict) or data.get("msg_type") is not None:
             return data
         if data.get("media") is not None:
@@ -169,6 +193,7 @@ class UserMessageDraft(QQModel):
     @model_validator(mode="before")
     @classmethod
     def _infer_type(cls, data: Any) -> Any:
+        data = _lift_keyboard_to_markdown(data)
         if not isinstance(data, dict) or data.get("msg_type") is not None:
             return data
         if data.get("media") is not None:

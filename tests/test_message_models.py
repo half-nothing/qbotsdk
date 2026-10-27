@@ -12,10 +12,19 @@ import pytest
 from pydantic import ValidationError
 
 from qbotsdk.model import (
+    Button,
+    ButtonAction,
+    ButtonActionType,
+    ButtonPermission,
+    ButtonPermissionType,
+    ButtonRenderData,
     ChannelMessageDraft,
     GroupMessageDraft,
     GroupMessageReceipt,
     GroupMessageType,
+    Keyboard,
+    KeyboardContent,
+    KeyboardRow,
     Message,
     MessageMarkdown,
     MessageReference,
@@ -121,6 +130,45 @@ def test_group_draft_rejects_mismatched_type() -> None:
 
     with pytest.raises(ValidationError, match="needs media"):
         GroupMessageDraft(msg_type=GroupMessageType.MEDIA)
+
+
+def test_keyboard_lifts_text_to_markdown() -> None:
+    draft = GroupMessageDraft(content="hi", keyboard=_keyboard())
+
+    # 平台只在 Markdown 消息上渲染按钮, 文本被搬进 markdown
+    assert draft.msg_type is GroupMessageType.MARKDOWN
+    assert draft.content is None
+    assert draft.markdown is not None
+    assert draft.markdown.content == "hi"
+
+
+def test_keyboard_rejects_other_message_types() -> None:
+    with pytest.raises(ValidationError, match="must be a markdown message"):
+        GroupMessageDraft.model_validate(
+            {"msg_type": 7, "media": {"file_info": "f1"}, "keyboard": _keyboard()}
+        )
+
+
+def _keyboard() -> Keyboard:
+    return Keyboard(
+        content=KeyboardContent(
+            rows=[
+                KeyboardRow(
+                    buttons=[
+                        Button(
+                            id="btn-1",
+                            render_data=ButtonRenderData(label="点我", visited_label="点过了"),
+                            action=ButtonAction(
+                                type=ButtonActionType.CALLBACK,
+                                data="btn-1",
+                                permission=ButtonPermission(type=ButtonPermissionType.EVERYONE),
+                            ),
+                        )
+                    ]
+                )
+            ]
+        )
+    )
 
 
 def test_markdown_drops_deprecated_template_fields() -> None:

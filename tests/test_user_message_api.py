@@ -13,6 +13,17 @@ import pytest
 
 from qbotsdk.bot import Bot
 from qbotsdk.model.draft import MessageMarkdown
+from qbotsdk.model.keyboard import (
+    Button,
+    ButtonAction,
+    ButtonActionType,
+    ButtonPermission,
+    ButtonPermissionType,
+    ButtonRenderData,
+    Keyboard,
+    KeyboardContent,
+    KeyboardRow,
+)
 from qbotsdk.model.media import FileType, MediaInfo
 from qbotsdk.model.message import UserMessageReceipt
 from tests.support import MockServer
@@ -74,6 +85,40 @@ async def test_send_markdown_is_type_2(bot: Bot, server: MockServer) -> None:
 
     body = body_of(server, MESSAGES)
     assert body["msg_type"] == 2
+    assert "content" not in body
+
+
+def keyboard() -> Keyboard:
+    return Keyboard(
+        content=KeyboardContent(
+            rows=[
+                KeyboardRow(
+                    buttons=[
+                        Button(
+                            id="btn-1",
+                            render_data=ButtonRenderData(label="点我", visited_label="点过了"),
+                            action=ButtonAction(
+                                type=ButtonActionType.CALLBACK,
+                                data="btn-1",
+                                permission=ButtonPermission(type=ButtonPermissionType.EVERYONE),
+                            ),
+                        )
+                    ]
+                )
+            ]
+        )
+    )
+
+
+async def test_send_keyboard_lifts_text_to_markdown(bot: Bot, server: MockServer) -> None:
+    # 平台只在 Markdown 消息上渲染按钮, 文本会在本地被搬进 markdown
+    json_route(server, "POST", MESSAGES, snapshot("group_message_receipt.json"))
+
+    await bot.api.user_message.send_message(USER, content="hi", keyboard=keyboard())
+
+    body = body_of(server, MESSAGES)
+    assert body["msg_type"] == 2
+    assert body["markdown"] == {"content": "hi"}
     assert "content" not in body
 
 

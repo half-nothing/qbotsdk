@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
+from ssl import PROTOCOL_TLS_SERVER, SSLContext
 from typing import TYPE_CHECKING
-from ssl import SSLContext, PROTOCOL_TLS_SERVER
 
-from aiohttp.web import AppRunner, TCPSite, Application, Request, Response, json_response
+from aiohttp.web import Application, AppRunner, Request, Response, TCPSite, json_response
 from loguru import logger
 from pydantic import ValidationError
 
@@ -163,7 +163,7 @@ class WebhookServer:
         self._bot.dispatcher.handle(payload)
         return json_response(build_ack_payload())
 
-    def _validation_response(self, payload: GatewayPayload) -> web.Response:
+    def _validation_response(self, payload: GatewayPayload) -> Response:
         data = payload.d
         if not isinstance(data, dict):
             return Response(status=400, text="invalid validation payload")

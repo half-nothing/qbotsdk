@@ -59,7 +59,7 @@
 - [x] 消息模型：频道 `Message`（官方示例 12 字段）、群 `GroupMessageReceipt`、`UploadedFile` · T1
 - [x] `HTTPClient` 支持 `multipart/form-data`，新增 `ClientOptions.retry_post`（默认关）· T2
 
-## Phase 3 · v0.4 事件接入（≈2~3 周，SDK 核心价值）
+## Phase 3 · v0.4 事件接入（已关账 2026-10-27）
 
 设计文档：[`docs/design/phase3-events.md`](docs/design/phase3-events.md)（14 节，含 D1–D5 拍板记录）。
 架构决策：事件总线用 [`async-event-bus`](https://pypi.org/project/async-event-bus/)，`gateway/` 自己做连接、心跳、Resume 与帧到事件的转换，`Dispatcher` 是总线的薄门面；处理器统一 `async def handler(ctx: EventContext[E])`，事件对象在 `ctx.event`，支持回复的事件类型自己带 `reply()` 方法（`EventModel` 因此不 frozen，`api` 由分发器注入）。
@@ -76,6 +76,12 @@
 
 ## Phase 4 · v0.5+ 补全与发布
 
-- [ ] 群聊/单聊主动消息发送 API
-- [ ] 论坛、音频等长尾接口
-- [ ] 发布到 PyPI；语义化版本策略；`CHANGELOG.md`
+计划文档：[`docs/design/phase4-plan.md`](docs/design/phase4-plan.md)（单聊全链路、主动消息配额、交互闭环、长尾接口、发布）。
+
+- [ ] P1 单聊发送 / 撤回 / 富媒体上传
+- [ ] P2 `C2C_MESSAGE_CREATE` 事件与 `reply()`
+- [ ] P3 主动消息配额层（本地令牌桶、被动回复次数拦截）
+- [ ] P4 `AT_MESSAGE_CREATE` 与 `INTERACTION_CREATE`（需先取证）
+- [ ] P5 表情表态等长尾接口
+- [ ] P6 `CHANGELOG.md`、`release.yml`、PyPI 发布
+- [ ] P7 VitePress 文档站（骨架 + 指南 + API 自动生成 + Pages 部署）

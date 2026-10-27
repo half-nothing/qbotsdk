@@ -20,6 +20,10 @@ if TYPE_CHECKING:
     from .media import MediaInfo
     from .message import GroupMessageReceipt, UserMessageReceipt
 
+# 官方限制: 群聊每条消息最多被动回复 5 次, 单聊 4 次, 超出会返回 40034128
+GROUP_REPLY_LIMIT = 5
+C2C_REPLY_LIMIT = 4
+
 
 class GroupSender(Protocol):
     """ApiClient.group 里事件回复用到的那一小块。"""
@@ -128,7 +132,7 @@ class GroupAtMessageCreate(EventModel):
         """回复这条群消息。
 
         自动带本事件的 id 作为 msg_id
-        msg_seq 不传时从 1 起按事件自增
+        msg_seq 不传时从 1 起按事件自增, 官方上限是每条消息 5 次
         """
 
         api = self.api
@@ -139,6 +143,8 @@ class GroupAtMessageCreate(EventModel):
         if msg_seq is None:
             self._reply_seq += 1
             msg_seq = self._reply_seq
+        if msg_seq > GROUP_REPLY_LIMIT:
+            raise ValueError("passive reply limit reached")
         return await api.group.send_message(
             self.group_openid,
             content=content,
@@ -187,6 +193,8 @@ class C2CMessageCreate(EventModel):
         if msg_seq is None:
             self._reply_seq += 1
             msg_seq = self._reply_seq
+        if msg_seq > C2C_REPLY_LIMIT:
+            raise ValueError("passive reply limit reached")
         return await api.user_message.send_message(
             self.author.user_openid,
             content=content,

@@ -152,6 +152,12 @@ class HTTPClient:
         trace_config.on_request_exception.append(_on_request_exception)
         return trace_config
 
+    @property
+    def options(self) -> ClientOptions:
+        """资源层要读限流开关与配额, 只读暴露给它们。"""
+
+        return self._options
+
     async def _get_session(self) -> ClientSession:
         if self._session is not None and not self._session.closed:
             return self._session

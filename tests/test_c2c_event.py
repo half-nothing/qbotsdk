@@ -119,9 +119,20 @@ async def test_reply_accepts_explicit_sequence() -> None:
     api = FakeApi()
     event.bind(cast("Any", api))
 
-    await event.reply("hi", msg_seq=7)
+    await event.reply("hi", msg_seq=3)
 
-    assert api.user_message.calls[0]["msg_seq"] == 7
+    assert api.user_message.calls[0]["msg_seq"] == 3
+
+
+async def test_reply_rejects_sequence_over_limit() -> None:
+    event = C2CMessageCreate.model_validate(load_object("c2c_message_create.json"))
+    api = FakeApi()
+    event.bind(cast("Any", api))
+
+    with pytest.raises(ValueError, match="passive reply limit reached"):
+        await event.reply("hi", msg_seq=5)
+
+    assert api.user_message.calls == []
 
 
 async def test_reply_without_bot_raises() -> None:

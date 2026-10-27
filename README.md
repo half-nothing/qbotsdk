@@ -128,6 +128,7 @@ async with Bot(app_id=..., client_secret=...) as bot:
 4. **撤回有时限**：发送后 2 分钟内可撤回，超过就失败。
 5. **`image` 与 `file_image` 二选一**：前者是 URL 由服务端转存，后者是本地字节走 `multipart`，同时给会抛 `ValueError`。
 6. **单聊富媒体只支持 URL**：`user_message.upload_file` 只实现 `url` 方式，官方未给单聊 `file_data` 的字段表，本地文件请先上传到可访问地址。
+7. **本地配额默认开启**：`ClientOptions.respect_rate_limits=True`（默认）时，`send_message` 按 `openid` 做进程内令牌桶（群聊与单聊都是 20 条/分钟，可用 `rate_limits={"group": 30, "c2c": 10}` 覆盖），超限抛 `RateLimitExceededError`，请求不会发出去。令牌桶只在**本进程**有效，多实例部署仍会撞服务端 `40034100`，那条路径照常抛 `APIError`。关掉它：`ClientOptions(respect_rate_limits=False)`。
 
 ## 接收事件
 
@@ -166,7 +167,7 @@ asyncio.run(main())
 
 1. **处理器只收 `async def`**，参数是 `EventContext`，事件对象在 `ctx.event`；同步函数注册时直接抛 `TypeError`。
 2. **能不能回复看方法**：`GroupAtMessageCreate` 与 `C2CMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
-3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；群聊每条消息最多回 5 次、单聊 4 次，超出请显式传 `msg_seq` 或改走 `bot.api`。
+3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；群聊每条消息最多回 5 次、单聊 4 次，第 6 次（单聊第 5 次）在本地直接抛 `ValueError("passive reply limit reached")`，不用等服务端的 `40034128`。
 4. **`Bot.start()` 不做阻塞**，`bot.stop()` / `async with` 退出时才断开网关；`stop()` 会清空订阅，再次 `start()` 需要重新注册。
 5. **去重**：官方说明同一消息可能重复推送，分发器默认记住最近 512 条消息 ID 直接丢弃重复（`dedupe_size=0` 关闭）。
 6. **未建模事件**：`AT_MESSAGE_CREATE`、`INTERACTION_CREATE` 等本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 
@@ -23,6 +24,10 @@ class ClientOptions:
     max_retry_after: float = 30.0
     # POST 是否参与 5xx 与网络异常重试
     retry_post: bool = False
+    # 主动消息是否走本地令牌桶; 关掉就完全交给服务端频控
+    respect_rate_limits: bool = True
+    # 覆盖默认限流(条/分钟), 键为 "group" 与 "c2c", 0 表示不限
+    rate_limits: Mapping[str, float] | None = None
 
     def __post_init__(self) -> None:
         if self.max_attempts < 1:
@@ -33,3 +38,6 @@ class ClientOptions:
             raise ValueError("backoff values must not be negative")
         if self.max_retry_after < 0:
             raise ValueError("max_retry_after must not be negative")
+        for scope, limit in (self.rate_limits or {}).items():
+            if limit < 0:
+                raise ValueError(f"rate limit for {scope} must not be negative")

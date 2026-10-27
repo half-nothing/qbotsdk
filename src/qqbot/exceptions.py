@@ -136,6 +136,31 @@ class APIError(QQBotError):
         return describe_code(_as_int(self.code))
 
 
+class RateLimitExceededError(QQBotError):
+    """本地令牌桶判定「这一发会超限」时抛出，不打到服务端。
+
+    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`，
+    那条路径依旧走 `APIError`。
+    """
+
+    def __init__(
+        self,
+        scope: str,
+        key: str,
+        retry_after: float,
+        *,
+        limit: float,
+    ) -> None:
+        self.scope = scope
+        self.key = key
+        self.retry_after = retry_after
+        self.limit = limit
+        super().__init__(
+            f"local rate limit reached for {scope}:{key} "
+            f"({limit:g} per minute), retry in {retry_after:.2f}s"
+        )
+
+
 def _as_int(value: object) -> int:
     if isinstance(value, bool):
         return 0

@@ -21,6 +21,7 @@ from ..model.media import FileType, MediaInfo, UploadedFile
 from ..model.message import GroupMessageReceipt
 from ..module.http_client import HTTPClient
 from ..module.pagination import paginate
+from ..module.rate_limit import RateLimiter
 from ._parse import expect_object
 
 # 二进制直传上限，官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
@@ -29,8 +30,9 @@ _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
 class GroupResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HTTPClient, *, limiter: RateLimiter | None = None) -> None:
         self._http = http
+        self._limiter = limiter
 
     async def get(self, group_openid: str) -> Group:
         """群基本信息，频率限制 30 QPM。"""
@@ -105,6 +107,8 @@ class GroupResource:
         """
 
         path = f"/v2/groups/{group_openid}/messages"
+        if self._limiter is not None:
+            self._limiter.check("group", group_openid)
         if reply_to is not None and msg_seq is None:
             msg_seq = 1
         draft = GroupMessageDraft(

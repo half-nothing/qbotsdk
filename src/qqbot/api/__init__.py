@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from ..module.http_client import HTTPClient
+from ..module.rate_limit import RateLimiter
 from .channel import ChannelResource
 from .group import GroupResource
 from .guild import GuildResource
@@ -27,9 +28,12 @@ class ApiClient:
     """六个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
 
     def __init__(self, http: HTTPClient) -> None:
+        options = http.options
+        # 关掉限流就整层不建桶, 资源层拿到的 limiter 为 None
+        limiter = RateLimiter(options.rate_limits) if options.respect_rate_limits else None
         self.user = UserResource(http)
         self.guild = GuildResource(http)
-        self.group = GroupResource(http)
+        self.group = GroupResource(http, limiter=limiter)
         self.channel = ChannelResource(http)
         self.message = MessageResource(http)
-        self.user_message = UserMessageResource(http)
+        self.user_message = UserMessageResource(http, limiter=limiter)

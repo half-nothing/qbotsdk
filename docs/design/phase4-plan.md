@@ -145,7 +145,7 @@ docs/
 | --- | --- | --- |
 | P1 | 单聊发送 + 撤回 + 上传（`api/user_message.py`、`UserMessageResource`、`UserMessageDraft`） | `test_user_message_api.py` 全绿 |
 | P2 | `C2C_MESSAGE_CREATE` 事件 + `reply()` | `test_c2c_event.py` 全绿 |
-| P3 | 主动消息配额层（`RateLimiter`、`respect_rate_limits`、被动回复次数拦截） | `test_rate_limit.py` |
+| P3 | 主动消息配额层（`RateLimiter`、`respect_rate_limits`、被动回复次数拦截） | `test_rate_limit.py` 全绿 |
 | P4 | `AT_MESSAGE_CREATE` + `INTERACTION_CREATE`（先取证） | 两个事件的快照与用例 |
 | P5 | 表情表态 + 论坛/音频按需 | 各一个用例 |
 | P6 | `CHANGELOG.md`、`release.yml`、PyPI | tag 触发后能在 PyPI 看到版本 |
@@ -154,6 +154,8 @@ docs/
 进度：P1 已完成（2026-10-27），新增 `api/user_message.py`、`UserMessageDraft`、`UserMessageType`、`InputNotify`；单聊上传只实现 `url` 方式，二进制直传的字段表官方没给，未取证不实现。
 
 P2 已完成（2026-10-27）：新增 `C2CMessageCreate`（`C2CUser` 作者、`msg_elements` 递归、`message_scene`）与事件上的 `reply()`；`MessageElement.content` 按官方改成 `str`，元素作者单独用 `ElementAuthor`（元素层不保证 `id`），`ARKData` 补卡片数据；`tests/data/c2c_message_create.json` 与 `c2c_message_create_quote.json` 两个快照，门禁 154 passed / mypy 62 / format 70。
+
+P3 已完成（2026-10-27）：`src/qqbot/module/rate_limit.py` 的 `TokenBucket`（容量 = 每分钟条数，按 `capacity / 60` 每秒回填，允许一分钟突发）与 `RateLimiter`（按 `(scope, key)` 分桶，桶上限 4096 个，`scope` 未配置或配额为 0 视为不限流）；`ClientOptions` 加 `respect_rate_limits: bool = True` 与 `rate_limits: Mapping[str, float] | None`（键 `group`/`c2c`，负值在构造期抛 `ValueError`）；`ApiClient` 按开关建一个 limiter 交给 `GroupResource` 与 `UserMessageResource`，两者在 `send_message` 里按 openid 扣令牌，取不到抛 `RateLimitExceededError`（带 `scope`/`key`/`retry_after`/`limit`），请求不发出去；事件侧第 6 次（单聊第 5 次）被动回复在本地抛 `ValueError("passive reply limit reached")`。`tests/test_rate_limit.py` 12 用例，门禁 167 passed / mypy 64 / format 72。
 
 ## 9. 已拍板（2026-10-27）
 

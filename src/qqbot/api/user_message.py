@@ -13,12 +13,14 @@ from ..model.keyboard import Keyboard
 from ..model.media import FileType, MediaInfo, UploadedFile
 from ..model.message import UserMessageReceipt
 from ..module.http_client import HTTPClient
+from ..module.rate_limit import RateLimiter
 from ._parse import expect_object
 
 
 class UserMessageResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HTTPClient, *, limiter: RateLimiter | None = None) -> None:
         self._http = http
+        self._limiter = limiter
 
     async def send_message(
         self,
@@ -41,6 +43,8 @@ class UserMessageResource:
         """
 
         path = f"/v2/users/{user_openid}/messages"
+        if self._limiter is not None:
+            self._limiter.check("c2c", user_openid)
         if reply_to is not None and msg_seq is None:
             msg_seq = 1
         draft = UserMessageDraft(

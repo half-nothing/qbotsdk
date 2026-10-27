@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from qqbot.gateway.webhook import (
+from qbotsdk.gateway.webhook import (
     build_ack_payload,
     build_validation_response,
     parse_webhook_event,

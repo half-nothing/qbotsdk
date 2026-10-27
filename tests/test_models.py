@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from qqbot.model import (
+from qbotsdk.model import (
     Channel,
     ChannelType,
     Guild,

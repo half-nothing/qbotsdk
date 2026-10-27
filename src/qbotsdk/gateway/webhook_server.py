@@ -51,7 +51,7 @@ class WebhookServer:
         *,
         host: str = "0.0.0.0",
         port: int = 8443,
-        path: str = "/qqbot",
+        path: str = "/qbotsdk",
         certfile: str | None = None,
         keyfile: str | None = None,
         ssl_context: SSLContext | None = None,

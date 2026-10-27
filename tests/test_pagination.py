@@ -8,7 +8,7 @@ from typing import Any
 
 import aiohttp.web
 
-from qqbot.bot import Bot
+from qbotsdk.bot import Bot
 from tests.support import MockServer
 
 

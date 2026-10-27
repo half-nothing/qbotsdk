@@ -62,7 +62,7 @@ jobs:
           with ZipFile(wheels[0]) as archive:
               names = archive.namelist()
 
-          if not any(name.endswith("qqbot/py.typed") for name in names):
+          if not any(name.endswith("qbotsdk/py.typed") for name in names):
               raise SystemExit("py.typed is missing from the wheel")
           if any(name.startswith("tests/") or name.startswith("docs/") for name in names):
               raise SystemExit("tests or docs leaked into the wheel")
@@ -76,9 +76,45 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-  release:
-    name: Draft GitHub release
+  publish:
+    name: Publish to PyPI
     needs: build
+    if: startsWith(github.ref, "refs/tags/v")
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/qbotsdk
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check the tag matches the version
+        run: |
+          version=$(python -c "import pathlib, tomllib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$version" != "$tag" ]; then
+            echo "tag $tag does not match version $version"
+            exit 1
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  release:
+    name: GitHub release
+    needs: [build, publish]
+    if: ${{ !cancelled() && needs.publish.result != 'failure' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -87,11 +123,11 @@ jobs:
           name: dist
           path: dist
 
-      - name: Create draft release
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           name: ${{ inputs.tag || github.ref_name }}
-          draft: true
+          draft: false
           generate_release_notes: true
           files: dist/*

@@ -20,10 +20,10 @@ from cryptography.hazmat.primitives.asymmetric import ed25519, rsa
 from cryptography.x509.oid import NameOID
 from loguru import logger
 
-from qqbot.bot import Bot
-from qqbot.gateway.webhook import build_validation_response
-from qqbot.gateway.webhook_server import WebhookServer
-from qqbot.model.event import GroupAtMessageCreate
+from qbotsdk.bot import Bot
+from qbotsdk.gateway.webhook import build_validation_response
+from qbotsdk.gateway.webhook_server import WebhookServer
+from qbotsdk.model.event import GroupAtMessageCreate
 from tests.support import read_frame
 
 if TYPE_CHECKING:

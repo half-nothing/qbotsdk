@@ -8,9 +8,9 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-import qqbot.module.http_client
-import qqbot.module.token_manager
-from qqbot.bot import Bot
+import qbotsdk.module.http_client
+import qbotsdk.module.token_manager
+from qbotsdk.bot import Bot
 from tests.support import TOKEN_PATH, MockServer, add_token_route
 
 
@@ -28,8 +28,8 @@ async def server() -> AsyncIterator[MockServer]:
 def point_at(server: MockServer, monkeypatch: pytest.MonkeyPatch) -> None:
     """把 BASE_URL / TOKEN_URL 指向本地服务，模块路径与设计文档一致。"""
 
-    monkeypatch.setattr(qqbot.module.token_manager, "TOKEN_URL", f"{server.url}{TOKEN_PATH}")
-    monkeypatch.setattr(qqbot.module.http_client, "BASE_URL", server.url)
+    monkeypatch.setattr(qbotsdk.module.token_manager, "TOKEN_URL", f"{server.url}{TOKEN_PATH}")
+    monkeypatch.setattr(qbotsdk.module.http_client, "BASE_URL", server.url)
 
 
 @pytest.fixture

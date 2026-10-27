@@ -1,4 +1,4 @@
-# qq-bot-sdk 开发快捷命令。
+# qbotsdk 开发快捷命令。
 #
 # 需要 GNU Make。Windows 上装一个即可：`winget install ezwinports.make`
 # 或 `choco install make`；用 Git Bash / MSYS2 时通常自带。
@@ -13,7 +13,7 @@ RUN = $(PDM) run
 .PHONY: help install install-frozen lint lint-fix fmt fmt-check typecheck test test-v check clean
 
 help: ## 列出可用命令
-	@echo qq-bot-sdk 常用命令:
+	@echo qbotsdk 常用命令:
 	@echo   make install          安装依赖
 	@echo   make install-frozen   按 pdm.lock 锁定安装，与 CI 一致
 	@echo   make lint            ruff check
@@ -56,5 +56,5 @@ test-v: ## pytest -v
 check: lint fmt-check typecheck test ## 四项门禁全跑
 
 clean: ## 清理缓存与构建产物
-	$(RUN) python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('.mypy_cache', '.pytest_cache', '.ruff_cache', 'build', 'dist', 'src/qqbot.egg-info')]"
+	$(RUN) python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('.mypy_cache', '.pytest_cache', '.ruff_cache', 'build', 'dist', 'src/qbotsdk.egg-info')]"
 	$(RUN) python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path('.').rglob('__pycache__')]"

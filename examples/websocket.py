@@ -16,9 +16,8 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qqbot import Bot
-from qqbot.api import message
-from qqbot.model.event import (
+from qbotsdk import Bot
+from qbotsdk.model.event import (
     C2CMessageCreate,
     ChannelMessageCreate,
     GroupAtMessageCreate,

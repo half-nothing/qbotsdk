@@ -11,9 +11,9 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.model.draft import MessageMarkdown
-from qqbot.model.message import Message
+from qbotsdk.bot import Bot
+from qbotsdk.model.draft import MessageMarkdown
+from qbotsdk.model.message import Message
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

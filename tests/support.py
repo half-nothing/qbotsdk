@@ -18,7 +18,7 @@ from typing import Any
 import aiohttp
 import aiohttp.web
 
-from qqbot.gateway.payload import (
+from qbotsdk.gateway.payload import (
     GatewayPayload,
     HeartbeatAckFrame,
     HelloData,

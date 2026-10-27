@@ -15,8 +15,8 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qqbot import Bot, WebhookServer
-from qqbot.model.event import GroupAtMessageCreate
+from qbotsdk import Bot, WebhookServer
+from qbotsdk.model.event import GroupAtMessageCreate
 
 # 打开 TRACE 级别，输出底层网络日志
 logger.remove()
@@ -43,7 +43,7 @@ async def main() -> None:
             bot_secret=os.environ["QQ_BOT_SECRET"],
             host="0.0.0.0",
             port=8443,
-            path="/qqbot",
+            path="/qbotsdk",
             certfile=certfile,
             keyfile=keyfile,
         )

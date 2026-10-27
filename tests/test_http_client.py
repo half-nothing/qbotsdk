@@ -10,10 +10,10 @@ import aiohttp.web
 import pytest
 from aiohttp import FormData
 
-import qqbot.module.http_client
-from qqbot.exceptions import APIError, ErrorCode, TransportError
-from qqbot.module.http_client import HTTPClient
-from qqbot.options import ClientOptions
+import qbotsdk.module.http_client
+from qbotsdk.exceptions import APIError, ErrorCode, TransportError
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, MockServer, add_token_route
 
 
@@ -24,7 +24,7 @@ def sleeps(monkeypatch: pytest.MonkeyPatch) -> list[float]:
     async def fake_sleep(seconds: float) -> None:
         recorded.append(seconds)
 
-    monkeypatch.setattr(qqbot.module.http_client, "_sleep", fake_sleep)
+    monkeypatch.setattr(qbotsdk.module.http_client, "_sleep", fake_sleep)
     return recorded
 
 

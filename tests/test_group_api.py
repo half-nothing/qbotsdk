@@ -10,8 +10,8 @@ from typing import Any
 
 import aiohttp.web
 
-from qqbot.bot import Bot
-from qqbot.model.group import GroupMemberRole, MuteMode, RecvMsgSetting
+from qbotsdk.bot import Bot
+from qbotsdk.model.group import GroupMemberRole, MuteMode, RecvMsgSetting
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

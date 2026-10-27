@@ -1,5 +1,5 @@
 [project]
-name = "qq-bot-sdk"
+name = "qbotsdk"
 version = "0.5.0"
 description = "Unofficial QQ robot SDK"
 authors = [

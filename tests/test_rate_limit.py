@@ -11,11 +11,11 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.exceptions import APIError, RateLimitExceededError
-from qqbot.model.event import C2CMessageCreate, GroupAtMessageCreate
-from qqbot.module.rate_limit import RateLimiter, TokenBucket
-from qqbot.options import ClientOptions
+from qbotsdk.bot import Bot
+from qbotsdk.exceptions import APIError, RateLimitExceededError
+from qbotsdk.model.event import C2CMessageCreate, GroupAtMessageCreate
+from qbotsdk.module.rate_limit import RateLimiter, TokenBucket
+from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, MockServer, add_token_route
 
 DATA = Path(__file__).parent / "data"
@@ -53,7 +53,7 @@ def clock() -> FakeClock:
 
 
 def snapshot_receipt() -> Any:
-    from qqbot.model.message import GroupMessageReceipt
+    from qbotsdk.model.message import GroupMessageReceipt
 
     return GroupMessageReceipt.model_validate(snapshot("group_message_receipt.json"))
 

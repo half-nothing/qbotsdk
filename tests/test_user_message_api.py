@@ -11,10 +11,10 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.model.draft import MessageMarkdown
-from qqbot.model.media import FileType, MediaInfo
-from qqbot.model.message import UserMessageReceipt
+from qbotsdk.bot import Bot
+from qbotsdk.model.draft import MessageMarkdown
+from qbotsdk.model.media import FileType, MediaInfo
+from qbotsdk.model.message import UserMessageReceipt
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

@@ -10,12 +10,12 @@ from collections.abc import AsyncIterator, Callable
 
 import pytest
 
-import qqbot.module.http_client
-import qqbot.module.token_manager
-from qqbot.gateway.connection import GatewayConnection
-from qqbot.gateway.payload import GatewayError, Intents
-from qqbot.module.http_client import HTTPClient
-from qqbot.options import ClientOptions
+import qbotsdk.module.http_client
+import qbotsdk.module.token_manager
+from qbotsdk.gateway.connection import GatewayConnection
+from qbotsdk.gateway.payload import GatewayError, Intents
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, FakeGateway
 
 pytestmark = pytest.mark.usefixtures("gateway")
@@ -27,8 +27,8 @@ OPTIONS = ClientOptions(backoff_base=0.001, backoff_max=0.01)
 async def gateway(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeGateway]:
     gw = FakeGateway()
     await gw.start()
-    monkeypatch.setattr(qqbot.module.token_manager, "TOKEN_URL", f"{gw.url}{TOKEN_PATH}")
-    monkeypatch.setattr(qqbot.module.http_client, "BASE_URL", gw.url)
+    monkeypatch.setattr(qbotsdk.module.token_manager, "TOKEN_URL", f"{gw.url}{TOKEN_PATH}")
+    monkeypatch.setattr(qbotsdk.module.http_client, "BASE_URL", gw.url)
     try:
         yield gw
     finally:

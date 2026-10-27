@@ -17,14 +17,14 @@ from typing import Any, cast
 import pytest
 from pydantic import ValidationError
 
-from qqbot.gateway.payload import (
+from qbotsdk.gateway.payload import (
     CloseAction,
     GatewayPayload,
     Intents,
     OpCode,
     close_action,
 )
-from qqbot.model.event import GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
+from qbotsdk.model.event import GroupAtMessageCreate, ReadyEvent, ResumedEvent, UnknownEvent
 
 DATA = Path(__file__).parent / "data"
 

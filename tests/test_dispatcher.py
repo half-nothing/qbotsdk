@@ -9,9 +9,9 @@ import asyncio
 import pytest
 from async_event_bus import EventContext
 
-from qqbot.gateway.dispatcher import Dispatcher
-from qqbot.gateway.payload import GatewayPayload
-from qqbot.model.event import GroupAtMessageCreate, UnknownEvent
+from qbotsdk.gateway.dispatcher import Dispatcher
+from qbotsdk.gateway.payload import GatewayPayload
+from qbotsdk.model.event import GroupAtMessageCreate, UnknownEvent
 from tests.support import load_frame
 
 GROUP_FRAME = "gateway_group_at_message_create.json"

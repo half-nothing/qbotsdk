@@ -48,8 +48,8 @@ from .session import GatewayInfo, SessionState
 _DEFAULT_SHARD = (0, 1)
 _IDENTIFY_PROPERTIES = {
     "$os": platform,
-    "$browser": "qqbot-sdk",
-    "$device": "qqbot-sdk",
+    "$browser": "qbotsdk-sdk",
+    "$device": "qbotsdk-sdk",
 }
 # 连续两个心跳周期没收到 op 11 就认为连接已死
 _PENDING_ACK_LIMIT = 2

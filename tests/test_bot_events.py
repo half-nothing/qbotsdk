@@ -12,11 +12,11 @@ import aiohttp.web
 import pytest
 from async_event_bus import EventContext
 
-import qqbot.module.http_client
-import qqbot.module.token_manager
-from qqbot.bot import Bot
-from qqbot.model.event import GroupAtMessageCreate, ReadyEvent
-from qqbot.options import ClientOptions
+import qbotsdk.module.http_client
+import qbotsdk.module.token_manager
+from qbotsdk.bot import Bot
+from qbotsdk.model.event import GroupAtMessageCreate, ReadyEvent
+from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, FakeGateway, MockServer, load_frame
 
 GROUP = "group-1"
@@ -124,8 +124,8 @@ async def test_api_message_reply_delegates(bot: Bot, server: MockServer) -> None
 async def fake_gateway(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeGateway]:
     gw = FakeGateway()
     await gw.start()
-    monkeypatch.setattr(qqbot.module.token_manager, "TOKEN_URL", f"{gw.url}{TOKEN_PATH}")
-    monkeypatch.setattr(qqbot.module.http_client, "BASE_URL", gw.url)
+    monkeypatch.setattr(qbotsdk.module.token_manager, "TOKEN_URL", f"{gw.url}{TOKEN_PATH}")
+    monkeypatch.setattr(qbotsdk.module.http_client, "BASE_URL", gw.url)
     try:
         yield gw
     finally:

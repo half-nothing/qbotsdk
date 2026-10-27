@@ -11,9 +11,9 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.exceptions import TransportError
-from qqbot.model.channel import Channel, ChannelType
+from qbotsdk.bot import Bot
+from qbotsdk.exceptions import TransportError
+from qbotsdk.model.channel import Channel, ChannelType
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

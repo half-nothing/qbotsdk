@@ -10,9 +10,9 @@ import aiohttp
 import aiohttp.web
 import pytest
 
-import qqbot.module.token_manager
-from qqbot.exceptions import APIError
-from qqbot.module.token_manager import TokenManager
+import qbotsdk.module.token_manager
+from qbotsdk.exceptions import APIError
+from qbotsdk.module.token_manager import TokenManager
 from tests.support import TOKEN_PATH, MockServer, add_token_route
 
 EXPIRES_IN = 7200
@@ -23,7 +23,7 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> dict[str, float]:
     """把 monotonic 换成可推进的假时钟，时间相关断言不真等。"""
 
     now = {"value": 1000.0}
-    monkeypatch.setattr(qqbot.module.token_manager, "monotonic", lambda: now["value"])
+    monkeypatch.setattr(qbotsdk.module.token_manager, "monotonic", lambda: now["value"])
     return now
 
 

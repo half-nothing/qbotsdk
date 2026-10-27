@@ -11,9 +11,9 @@ from typing import Any, cast
 
 import pytest
 
-from qqbot.model.event import C2CMessageCreate, EventModel, parse_event
-from qqbot.model.message import UserMessageReceipt
-from qqbot.model.user import C2CUser
+from qbotsdk.model.event import C2CMessageCreate, EventModel, parse_event
+from qbotsdk.model.message import UserMessageReceipt
+from qbotsdk.model.user import C2CUser
 
 _DATA = Path(__file__).parent / "data"
 
@@ -150,7 +150,7 @@ def test_c2c_event_is_not_frozen() -> None:
 
 
 def test_event_models_map_contains_c2c() -> None:
-    from qqbot.model.event import EVENT_MODELS
+    from qbotsdk.model.event import EVENT_MODELS
 
     assert EVENT_MODELS["C2C_MESSAGE_CREATE"] is C2CMessageCreate
     assert issubclass(C2CMessageCreate, EventModel)

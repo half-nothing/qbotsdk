@@ -15,7 +15,7 @@ from typing import Any, cast
 
 import pytest
 
-from qqbot.model.event import InteractionCode, InteractionCreate, InteractionType, parse_event
+from qbotsdk.model.event import InteractionCode, InteractionCreate, InteractionType, parse_event
 
 DATA_DIR = Path(__file__).parent / "data"
 

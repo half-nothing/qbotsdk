@@ -11,9 +11,9 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.model.draft import MessageMarkdown
-from qqbot.model.keyboard import (
+from qbotsdk.bot import Bot
+from qbotsdk.model.draft import MessageMarkdown
+from qbotsdk.model.keyboard import (
     Button,
     ButtonAction,
     ButtonActionType,
@@ -24,8 +24,8 @@ from qqbot.model.keyboard import (
     KeyboardContent,
     KeyboardRow,
 )
-from qqbot.model.media import MediaInfo
-from qqbot.model.message import GroupMessageReceipt
+from qbotsdk.model.media import MediaInfo
+from qbotsdk.model.message import GroupMessageReceipt
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

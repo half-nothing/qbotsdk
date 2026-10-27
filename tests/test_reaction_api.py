@@ -16,8 +16,8 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.model.reaction import EmojiType, ReactionTargetType, ReactionUsers
+from qbotsdk.bot import Bot
+from qbotsdk.model.reaction import EmojiType, ReactionTargetType, ReactionUsers
 from tests.support import MockServer
 
 CHANNEL = "channel-1"

@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from qqbot.model import (
+from qbotsdk.model import (
     Button,
     ButtonAction,
     ButtonActionType,

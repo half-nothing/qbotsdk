@@ -6,7 +6,7 @@ import aiohttp
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
+from qbotsdk.bot import Bot
 from tests.support import MockServer
 
 

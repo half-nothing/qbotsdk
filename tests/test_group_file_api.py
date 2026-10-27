@@ -11,8 +11,8 @@ from typing import Any
 import aiohttp.web
 import pytest
 
-from qqbot.bot import Bot
-from qqbot.model.media import FileType, UploadedFile
+from qbotsdk.bot import Bot
+from qbotsdk.model.media import FileType, UploadedFile
 from tests.support import MockServer
 
 DATA = Path(__file__).parent / "data"

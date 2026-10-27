@@ -14,8 +14,8 @@ from typing import Any, cast
 
 import pytest
 
-from qqbot.model.event import ChannelMessageCreate, parse_event
-from qqbot.model.message import MessageAttachment
+from qbotsdk.model.event import ChannelMessageCreate, parse_event
+from qbotsdk.model.message import MessageAttachment
 
 DATA_DIR = Path(__file__).parent / "data"
 

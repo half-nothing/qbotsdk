@@ -138,7 +138,13 @@ import asyncio
 from async_event_bus import EventContext
 
 from qqbot import Bot
-from qqbot.model.event import C2CMessageCreate, GroupAtMessageCreate, UnknownEvent
+from qqbot.model.event import (
+    C2CMessageCreate,
+    ChannelMessageCreate,
+    GroupAtMessageCreate,
+    InteractionCreate,
+    UnknownEvent,
+)
 
 
 async def main() -> None:
@@ -151,6 +157,14 @@ async def main() -> None:
         @bot.on(C2CMessageCreate)
         async def on_c2c(ctx: EventContext[C2CMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
+
+        @bot.on(ChannelMessageCreate)
+        async def on_channel_at(ctx: EventContext[ChannelMessageCreate]) -> None:
+            await ctx.event.reply("收到: " + ctx.event.content)
+
+        @bot.on(InteractionCreate)
+        async def on_interaction(ctx: EventContext[InteractionCreate]) -> None:
+            await ctx.event.respond()  # 不回应客户端会一直 loading
 
         @bot.on_unknown()
         async def on_unknown(ctx: EventContext[UnknownEvent]) -> None:
@@ -166,11 +180,13 @@ asyncio.run(main())
 几个要点：
 
 1. **处理器只收 `async def`**，参数是 `EventContext`，事件对象在 `ctx.event`；同步函数注册时直接抛 `TypeError`。
-2. **能不能回复看方法**：`GroupAtMessageCreate` 与 `C2CMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
+2. **能不能回复看方法**：`GroupAtMessageCreate`、`C2CMessageCreate`、`ChannelMessageCreate` 上有 `reply()`，其它事件没有这个方法——类型检查与 IDE 提示会直接告诉你，不需要额外的能力查询。
 3. **`ctx.event.reply()` 自动补 `msg_id`**，并在同一条事件上把 `msg_seq` 从 1 自增，避免撞上「重复消息」；群聊每条消息最多回 5 次、单聊 4 次，第 6 次（单聊第 5 次）在本地直接抛 `ValueError("passive reply limit reached")`，不用等服务端的 `40034128`。
 4. **`Bot.start()` 不做阻塞**，`bot.stop()` / `async with` 退出时才断开网关；`stop()` 会清空订阅，再次 `start()` 需要重新注册。
 5. **去重**：官方说明同一消息可能重复推送，分发器默认记住最近 512 条消息 ID 直接丢弃重复（`dedupe_size=0` 关闭）。
-6. **未建模事件**：`AT_MESSAGE_CREATE`、`INTERACTION_CREATE` 等本期还没有模型，统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
+6. **互动回调必须回应**：`InteractionCreate` 的 `type` 为 11（消息按钮）或 12（快捷菜单）时要调 `respond()`，否则客户端一直 loading；`respond(InteractionCode.ADMIN_ONLY)` 可以把结果回给客户端，同一个 `id` 只能回应一次。
+7. **`AT_MESSAGE_CREATE` 的字段出处**：官方 api-v2 没有这个事件的事件体页面，`ChannelMessageCreate` 直接继承「消息对象(Message)」表格建模，字段与频道发送接口的响应同源；`GUILD_MEMBERS` 不在默认 intents 里，频道成员相关事件需要显式传 `intents`。
+8. **未建模事件**：没登记的事件（如 `GUILD_CREATE`、`MESSAGE_DELETE`）统一落到 `on_unknown`，`ctx.event.t` 是原始事件名。
 
 ### Webhook 接入
 

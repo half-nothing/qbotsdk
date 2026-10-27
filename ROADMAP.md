@@ -81,7 +81,7 @@
 - [x] P1 单聊发送 / 撤回 / 富媒体上传 · 2026-10-27（`api/user_message.py`、`UserMessageDraft` 带 msg_type 6、上传只实现 url）
 - [x] P2 `C2C_MESSAGE_CREATE` 事件与 `reply()` · 2026-10-27（`C2CMessageCreate`、`C2CUser`、事件上的 `reply()` 自增 msg_seq）
 - [x] P3 主动消息配额层（本地令牌桶、被动回复次数拦截） · 2026-10-27（`module/rate_limit.py`、`ClientOptions.respect_rate_limits`/`rate_limits`、`RateLimitExceededError`）
-- [ ] P4 `AT_MESSAGE_CREATE` 与 `INTERACTION_CREATE`（需先取证）
+- [x] P4 `AT_MESSAGE_CREATE` 与 `INTERACTION_CREATE` · 2026-10-27（频道 @ 事件、互动回调与 `PUT /interactions/{id}`）
 - [ ] P5 表情表态等长尾接口
 - [ ] P6 `CHANGELOG.md`、`release.yml`、PyPI 发布
 - [ ] P7 VitePress 文档站（骨架 + 指南 + API 自动生成 + Pages 部署）

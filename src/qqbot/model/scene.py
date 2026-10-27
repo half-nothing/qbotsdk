@@ -17,8 +17,23 @@ from pydantic import Field, field_validator
 from .base import QQModel
 
 
+def split_ext(value: object) -> object:
+    """把官方 ext 的 ["k=v", ...] 切成字典；不是列表就原样返回。"""
+
+    if not isinstance(value, list):
+        return value
+    pairs: dict[str, str] = {}
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        key, sep, val = item.partition("=")
+        if sep and key:
+            pairs[key] = val
+    return pairs
+
+
 class MessageScene(QQModel):
-    """`message_scene` 里的场景信息。"""
+    """message_scene 里的场景信息。"""
 
     source: str = Field(alias="source", default="")
     ext: dict[str, str] = Field(alias="ext", default_factory=dict)
@@ -26,16 +41,7 @@ class MessageScene(QQModel):
     @field_validator("ext", mode="before")
     @classmethod
     def _split_ext(cls, value: object) -> object:
-        if not isinstance(value, list):
-            return value
-        pairs: dict[str, str] = {}
-        for item in value:
-            if not isinstance(item, str):
-                continue
-            key, sep, val = item.partition("=")
-            if sep and key:
-                pairs[key] = val
-        return pairs
+        return split_ext(value)
 
 
 class Attachment(QQModel):

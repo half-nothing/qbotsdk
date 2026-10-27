@@ -16,12 +16,12 @@ from .user import GuildUser
 
 
 class Member(QQModel):
-    """`GET /guilds/{guild_id}/members` 的数组元素。"""
+    """GET /guilds/{guild_id}/members 的数组元素。"""
 
     user: GuildUser = Field(alias="user")
-    nick: str = Field(alias="nick")
-    roles: list[str] = Field(alias="roles")
+    nick: str | None = Field(alias="nick", default=None)
+    roles: list[str] = Field(alias="roles", default_factory=list)
     joined_at: datetime = Field(alias="joined_at")
-    deaf: bool = Field(alias="deaf")
-    mute: bool = Field(alias="mute")
-    pending: bool = Field(alias="pending")
+    deaf: bool = Field(alias="deaf", default=False)
+    mute: bool = Field(alias="mute", default=False)
+    pending: bool = Field(alias="pending", default=False)

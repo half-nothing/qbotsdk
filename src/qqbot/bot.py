@@ -40,8 +40,6 @@ class Bot:
 
     @property
     def api(self) -> ApiClient:
-        """五个资源域：`api.user` / `api.guild` / `api.channel` / `api.group` / `api.message`。"""
-
         return self._api
 
     @property
@@ -77,7 +75,7 @@ class Bot:
     async def start(self) -> None:
         """连上网关并在后台开始收事件, 立即返回。
 
-        处理器的注册可以放在 `start()` 之前或之后, 不影响已经开始的事件。
+        处理器的注册可以放在 start() 之前或之后, 不影响已经开始的事件。
         """
 
         if self._connection is not None:
@@ -97,7 +95,7 @@ class Bot:
     async def stop(self) -> None:
         """断开网关并停掉后台任务。
 
-        停止后订阅会被清空, 再次 `start()` 需要重新注册处理器。
+        停止后订阅会被清空, 再次 start() 需要重新注册处理器。
         """
 
         if self._connection is not None:

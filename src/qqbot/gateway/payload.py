@@ -43,7 +43,8 @@ class Intents:
     PUBLIC_GUILD_MESSAGES: ClassVar[int] = 1 << 30
 
     # 传了没权限的 intent 会被直接断开
-    DEFAULT: ClassVar[int] = GUILDS | PUBLIC_GUILD_MESSAGES | GROUP_AND_C2C_EVENT
+    # INTERACTION 是官方标注的基础事件, 不开就收不到按钮回调
+    DEFAULT: ClassVar[int] = GUILDS | PUBLIC_GUILD_MESSAGES | GROUP_AND_C2C_EVENT | INTERACTION
 
 
 class GatewayPayload(QQModel):

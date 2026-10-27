@@ -277,6 +277,15 @@ class HTTPClient:
     ) -> object:
         return await self.request("POST", path, params=params, json=json)
 
+    async def put(
+        self,
+        path: str,
+        *,
+        params: Mapping[str, str | int] | None = None,
+        json: Mapping[str, object] | None = None,
+    ) -> object:
+        return await self.request("PUT", path, params=params, json=json)
+
     async def post_form(
         self,
         path: str,

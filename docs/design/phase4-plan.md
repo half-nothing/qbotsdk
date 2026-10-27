@@ -146,7 +146,7 @@ docs/
 | P1 | 单聊发送 + 撤回 + 上传（`api/user_message.py`、`UserMessageResource`、`UserMessageDraft`） | `test_user_message_api.py` 全绿 |
 | P2 | `C2C_MESSAGE_CREATE` 事件 + `reply()` | `test_c2c_event.py` 全绿 |
 | P3 | 主动消息配额层（`RateLimiter`、`respect_rate_limits`、被动回复次数拦截） | `test_rate_limit.py` 全绿 |
-| P4 | `AT_MESSAGE_CREATE` + `INTERACTION_CREATE`（先取证） | 两个事件的快照与用例 |
+| P4 | `AT_MESSAGE_CREATE` + `INTERACTION_CREATE`（已取证） | 两个事件的快照与用例 |
 | P5 | 表情表态 + 论坛/音频按需 | 各一个用例 |
 | P6 | `CHANGELOG.md`、`release.yml`、PyPI | tag 触发后能在 PyPI 看到版本 |
 | P7 | VitePress 文档站：骨架 + 七篇指南 + API 自动生成 + Pages 部署（`design/` 不进站） | 本地 `docs:build` 通过且产物里没有 `design/`，CI 的生成物校验为绿 |
@@ -156,6 +156,9 @@ docs/
 P2 已完成（2026-10-27）：新增 `C2CMessageCreate`（`C2CUser` 作者、`msg_elements` 递归、`message_scene`）与事件上的 `reply()`；`MessageElement.content` 按官方改成 `str`，元素作者单独用 `ElementAuthor`（元素层不保证 `id`），`ARKData` 补卡片数据；`tests/data/c2c_message_create.json` 与 `c2c_message_create_quote.json` 两个快照，门禁 154 passed / mypy 62 / format 70。
 
 P3 已完成（2026-10-27）：`src/qqbot/module/rate_limit.py` 的 `TokenBucket`（容量 = 每分钟条数，按 `capacity / 60` 每秒回填，允许一分钟突发）与 `RateLimiter`（按 `(scope, key)` 分桶，桶上限 4096 个，`scope` 未配置或配额为 0 视为不限流）；`ClientOptions` 加 `respect_rate_limits: bool = True` 与 `rate_limits: Mapping[str, float] | None`（键 `group`/`c2c`，负值在构造期抛 `ValueError`）；`ApiClient` 按开关建一个 limiter 交给 `GroupResource` 与 `UserMessageResource`，两者在 `send_message` 里按 openid 扣令牌，取不到抛 `RateLimitExceededError`（带 `scope`/`key`/`retry_after`/`limit`），请求不发出去；事件侧第 6 次（单聊第 5 次）被动回复在本地抛 `ValueError("passive reply limit reached")`。`tests/test_rate_limit.py` 12 用例，门禁 167 passed / mypy 64 / format 72。
+
+P4 已完成（2026-10-27）：取证结论是 `INTERACTION_CREATE` 与互动响应接口都有完整表格与三个示例（`interactions_interaction_id.put.html` 回应 `PUT /interactions/{interaction_id}`，请求体只有 `code` 0–5，无响应体，50 QPS）；`AT_MESSAGE_CREATE` 在官方 api-v2 没有独立事件页（`autogen/event/at_message_create.html` 回落到「启动接入」），因此事件体按「消息对象(Message)」表格建模，`Message` 补上 `edited_timestamp`/`attachments`/`mentions`/`member`/`ark`/`seq`/`seq_in_channel`/`message_reference` 八个表格字段，`ChannelMessageCreate` 直接继承它并复用发送接口做 `reply()`。`INTERACTION_CREATE` 收 `type`（11 消息按钮、12 快捷菜单、13 消息反馈、14 清空会话、15 故事集、16 切换模型、18 用户授权、19 群授权、20 群授权状态）、`scene`、`chat_type`、`data{type, resolved{...}}`，`needs_response` 只对 11/12 为真，`respond(code)` 走 `api.interaction`。默认 intents 追加 `INTERACTION`（官方基础事件，不加收不到按钮回调）。新增 `api/interaction.py` 与 `HTTPClient.put`，`Member.nick/deaf/mute/pending` 改为可缺省（消息对象的 `member` 只带部分字段）。`tests/test_interaction_event.py` 7 用例、`tests/test_channel_event.py` 5 用例，门禁 179 passed / mypy 67 / format 75。
+
 
 ## 9. 已拍板（2026-10-27）
 

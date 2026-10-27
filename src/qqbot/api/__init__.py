@@ -9,6 +9,7 @@ from ..module.rate_limit import RateLimiter
 from .channel import ChannelResource
 from .group import GroupResource
 from .guild import GuildResource
+from .interaction import InteractionResource
 from .message import MessageResource
 from .user import UserResource
 from .user_message import UserMessageResource
@@ -18,6 +19,7 @@ __all__ = [
     "ChannelResource",
     "GroupResource",
     "GuildResource",
+    "InteractionResource",
     "MessageResource",
     "UserMessageResource",
     "UserResource",
@@ -25,7 +27,7 @@ __all__ = [
 
 
 class ApiClient:
-    """六个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
+    """七个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
 
     def __init__(self, http: HTTPClient) -> None:
         options = http.options
@@ -37,3 +39,4 @@ class ApiClient:
         self.channel = ChannelResource(http)
         self.message = MessageResource(http)
         self.user_message = UserMessageResource(http, limiter=limiter)
+        self.interaction = InteractionResource(http)

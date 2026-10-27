@@ -14,7 +14,15 @@ from typing import Any
 from pydantic import Field
 
 from .base import QQModel
+from .draft import MessageReference
+from .member import Member
 from .user import GuildUser
+
+
+class MessageAttachment(QQModel):
+    """消息附件。官方只给了下载地址。"""
+
+    url: str = Field(alias="url")
 
 
 class MessageExtInfo(QQModel):
@@ -24,11 +32,7 @@ class MessageExtInfo(QQModel):
 
 
 class MessageReceipt(QQModel):
-    """发送消息的返回值。
-
-    群聊与单聊是同一个形状: 只有消息 ID 与时间戳, 撤回时需要这里的 `id`。
-    频道不同, 返回完整 `Message`。
-    """
+    """发送消息的返回值。"""
 
     id: str = Field(alias="id")
     timestamp: datetime = Field(alias="timestamp")
@@ -44,7 +48,11 @@ class UserMessageReceipt(MessageReceipt):
 
 
 class Message(QQModel):
-    """频道消息对象, 频道发送消息接口的返回值。"""
+    """频道消息对象。
+
+    来源官方消息对象表格:
+    https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/template/model.html
+    """
 
     id: str = Field(alias="id")
     channel_id: str = Field(alias="channel_id")
@@ -59,3 +67,13 @@ class Message(QQModel):
     pinned: bool = Field(alias="pinned")
     type: int = Field(alias="type")
     flags: int = Field(alias="flags")
+    # 以下字段来自 Message 表格, 发送响应示例里没有
+    edited_timestamp: datetime | None = Field(alias="edited_timestamp", default=None)
+    attachments: list[MessageAttachment] = Field(alias="attachments", default_factory=list)
+    mentions: list[GuildUser] = Field(alias="mentions", default_factory=list)
+    member: Member | None = Field(alias="member", default=None)
+    ark: dict[str, Any] | None = Field(alias="ark", default=None)
+    # 官方标注 seq 只在消息事件中有值、2022-08-01 后废弃
+    seq: int | None = Field(alias="seq", default=None)
+    seq_in_channel: str | None = Field(alias="seq_in_channel", default=None)
+    message_reference: MessageReference | None = Field(alias="message_reference", default=None)

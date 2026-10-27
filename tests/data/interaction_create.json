@@ -1,0 +1,17 @@
+{
+  "application_id": "1904842048",
+  "chat_type": 2,
+  "data": {
+    "resolved": {
+      "button_data": "confirm:once",
+      "button_id": "allow-once"
+    },
+    "type": 11
+  },
+  "id": "1b13d569-4610-4ab9-bc51-feecc5def6d4",
+  "scene": "c2c",
+  "timestamp": "2026-07-20T21:53:54+08:00",
+  "type": 11,
+  "user_openid": "A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4",
+  "version": 1
+}

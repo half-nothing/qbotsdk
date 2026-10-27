@@ -86,7 +86,10 @@ def test_resumed_allows_empty_body() -> None:
 def test_default_intents() -> None:
     assert (
         Intents.DEFAULT
-        == Intents.GUILDS | Intents.PUBLIC_GUILD_MESSAGES | Intents.GROUP_AND_C2C_EVENT
+        == Intents.GUILDS
+        | Intents.PUBLIC_GUILD_MESSAGES
+        | Intents.GROUP_AND_C2C_EVENT
+        | Intents.INTERACTION
     )
     assert Intents.DEFAULT & Intents.GUILD_MEMBERS == 0
 

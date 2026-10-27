@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING
 from .group import GroupResource
 
 if TYPE_CHECKING:
-    from ..model.draft import MessageMarkdown
-    from ..model.keyboard import Keyboard
-    from ..model.media import MediaInfo
-    from ..model.message import GroupMessageReceipt
-    from ..module.http_client import HTTPClient
+    from qbotsdk.model.draft import MessageMarkdown
+    from qbotsdk.model.keyboard import Keyboard
+    from qbotsdk.model.media import MediaInfo
+    from qbotsdk.model.message import GroupMessageReceipt
+    from qbotsdk.module.http_client import HTTPClient
 
 
 class MessageResource:

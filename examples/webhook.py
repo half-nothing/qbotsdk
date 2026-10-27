@@ -15,7 +15,7 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, WebhookServer
+from qbotsdk import Bot, WebhookAdapter
 from qbotsdk.model.event import GroupAtMessageCreate
 
 # 打开 TRACE 级别，输出底层网络日志
@@ -30,6 +30,14 @@ async def main() -> None:
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
         client_secret=os.environ["QQ_BOT_APP_SECRET"],
+        adapter=WebhookAdapter(
+            os.environ["QQ_BOT_SECRET"],
+            host="0.0.0.0",
+            port=8443,
+            path="/qbotsdk",
+            certfile=certfile,
+            keyfile=keyfile,
+        ),
     ) as bot:
 
         @bot.on(GroupAtMessageCreate)
@@ -38,21 +46,9 @@ async def main() -> None:
             print(f"群 {event.group_openid} 收到: {event.content}")
             await event.reply(f"收到: {event.content}")
 
-        server = WebhookServer(
-            bot,
-            bot_secret=os.environ["QQ_BOT_SECRET"],
-            host="0.0.0.0",
-            port=8443,
-            path="/qbotsdk",
-            certfile=certfile,
-            keyfile=keyfile,
-        )
-        await server.start()
-        print(f"Webhook 已启动: {server.url}")
-        try:
-            await asyncio.Event().wait()
-        finally:
-            await server.close()
+        await bot.start()
+        print(f"Webhook 已启动，端口 {bot.adapter.port}")
+        await asyncio.Event().wait()
 
 
 asyncio.run(main())

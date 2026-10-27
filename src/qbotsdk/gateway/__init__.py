@@ -19,6 +19,7 @@ from .payload import (
     ResumeFrame,
     close_action,
 )
+from .session import GatewayInfo, SessionStartLimit, SessionState
 from .webhook import (
     build_ack_payload,
     build_validation_response,
@@ -34,6 +35,7 @@ __all__ = [
     "GatewayCloseCode",
     "GatewayClosedError",
     "GatewayError",
+    "GatewayInfo",
     "GatewayPayload",
     "HeartbeatAckFrame",
     "HeartbeatFrame",
@@ -45,6 +47,8 @@ __all__ = [
     "OpCode",
     "ResumeData",
     "ResumeFrame",
+    "SessionStartLimit",
+    "SessionState",
     "WebhookServer",
     "build_ack_payload",
     "build_validation_response",

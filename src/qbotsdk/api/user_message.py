@@ -8,12 +8,13 @@
 
 from __future__ import annotations
 
-from ..model.draft import InputNotify, MessageMarkdown, UserMessageDraft
-from ..model.keyboard import Keyboard
-from ..model.media import FileType, MediaInfo, UploadedFile
-from ..model.message import UserMessageReceipt
-from ..module.http_client import HTTPClient
-from ..module.rate_limit import RateLimiter
+from qbotsdk.model.draft import InputNotify, MessageMarkdown, UserMessageDraft
+from qbotsdk.model.keyboard import Keyboard
+from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
+from qbotsdk.model.message import UserMessageReceipt
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.rate_limit import RateLimiter
+
 from ._parse import expect_object
 
 

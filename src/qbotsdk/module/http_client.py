@@ -23,9 +23,10 @@ from aiohttp import (
 from loguru import logger
 from yarl import URL
 
-from ..constant import AUTHORIZATION_SCHEME, BASE_URL, TRACE_ID_HEADER
-from ..exceptions import APIError, TransportError, error_code_of
-from ..options import ClientOptions
+from qbotsdk.constant import AUTHORIZATION_SCHEME, BASE_URL, TRACE_ID_HEADER
+from qbotsdk.exceptions import APIError, TransportError, error_code_of
+from qbotsdk.options import ClientOptions
+
 from .token_manager import TokenManager
 
 # 5xx 与网络异常无法确认服务端是否已处理, 只对有幂等语义的方法重试

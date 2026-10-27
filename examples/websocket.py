@@ -5,6 +5,7 @@
 运行前设置环境变量：
     QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证
     QQ_BOT_INTENTS                     可选，十进制 intents；不设则用 Intents.DEFAULT
+    QQ_BOT_SESSION_FILE                可选，会话落盘路径；不设则不持久化
 """
 
 import asyncio
@@ -16,7 +17,7 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot
+from qbotsdk import Bot, FileSessionStorage, WebSocketAdapter
 from qbotsdk.model.event import (
     C2CMessageCreate,
     ChannelMessageCreate,
@@ -30,13 +31,22 @@ logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
 
-async def main() -> None:
+def build_adapter() -> WebSocketAdapter:
     raw_intents = os.environ.get("QQ_BOT_INTENTS")
+    session_file = os.environ.get("QQ_BOT_SESSION_FILE")
 
+    return WebSocketAdapter(
+        intents=int(raw_intents) if raw_intents else None,
+        # 会话落盘, 进程重启后直接 Resume；不设则用内存存储
+        session_storage=FileSessionStorage(session_file) if session_file else None,
+    )
+
+
+async def main() -> None:
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
         client_secret=os.environ["QQ_BOT_APP_SECRET"],
-        intents=int(raw_intents) if raw_intents else None,
+        adapter=build_adapter(),
     ) as bot:
 
         @bot.on(GroupAtMessageCreate)

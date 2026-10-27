@@ -23,10 +23,12 @@ from aiohttp import (
 )
 from loguru import logger
 
-from ..exceptions import TransportError
-from ..model.event import ReadyEvent
-from ..module.http_client import HTTPClient
-from ..options import ClientOptions
+from qbotsdk.exceptions import TransportError
+from qbotsdk.model.event import ReadyEvent
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.options import ClientOptions
+from qbotsdk.storage import MemorySessionStorage, SessionData, SessionStorage
+
 from .payload import (
     CloseAction,
     GatewayClosedError,
@@ -72,11 +74,13 @@ class GatewayConnection:
         options: ClientOptions | None = None,
         intents: int | None = None,
         shard: tuple[int, int] = _DEFAULT_SHARD,
+        session_storage: SessionStorage | None = None,
     ) -> None:
         self._http = http
         self._options = options or ClientOptions()
         self._intents = Intents.DEFAULT if intents is None else intents
         self._shard = shard
+        self._storage = session_storage if session_storage is not None else MemorySessionStorage()
         self.session = SessionState()
         # 读出来的事件先放这里，分发层从这里取
         self.events: Queue[GatewayPayload] = Queue()
@@ -86,6 +90,7 @@ class GatewayConnection:
         self._closed = False
         self._pending_acks = 0
         self._established = False
+        self._restored = False
 
     @property
     def intents(self) -> int:
@@ -94,6 +99,7 @@ class GatewayConnection:
     async def run(self) -> None:
         """常驻循环直到 close() 或不可恢复的关闭码。"""
 
+        await self._restore_session()
         attempt = 0
         while not self._closed:
             self._established = False
@@ -107,7 +113,7 @@ class GatewayConnection:
             if action is CloseAction.RESUME and not self.session.can_resume:
                 action = CloseAction.IDENTIFY
             if action is CloseAction.IDENTIFY:
-                self.session.reset()
+                await self._drop_session()
             attempt = 0 if self._established else attempt + 1
             delay = self._backoff(attempt)
             logger.info("Reconnecting gateway in {:.2f}s (action={})", delay, action.name)
@@ -119,6 +125,8 @@ class GatewayConnection:
         if self._ws is not None and not self._ws.closed:
             await self._ws.close()
         self._ws = None
+        # 把攒着的 seq 落盘, 下次启动才能接着 Resume
+        await self._storage.close()
 
     async def _connection_once(self) -> CloseAction:
         url = await self._resolve_url()
@@ -165,6 +173,30 @@ class GatewayConnection:
         if action is CloseAction.STOP:
             raise GatewayClosedError(code, action, "the gateway asked us not to reconnect")
         return action
+
+    async def _restore_session(self) -> None:
+        """从存储恢复上次的会话，恢复不了就当作新会话。"""
+
+        if self._restored:
+            return
+        self._restored = True
+        data = await self._storage.load()
+        if data is None:
+            return
+        self.session.update(session_id=data.session_id, seq=data.seq)
+        logger.info("Restored gateway session {} (seq={})", data.session_id, data.seq)
+
+    async def _save_session(self) -> None:
+        session_id = self.session.session_id
+        if session_id is None:
+            return
+        await self._storage.save(SessionData(session_id=session_id, seq=self.session.seq))
+
+    async def _drop_session(self) -> None:
+        """会话作废：内存和存储一起清空。"""
+
+        self.session.reset()
+        await self._storage.clear()
 
     async def _resolve_url(self) -> str:
         if self._gateway_url is None:
@@ -225,22 +257,25 @@ class GatewayConnection:
             if message.type is not WSMsgType.TEXT:
                 continue
             payload = GatewayPayload.model_validate_json(message.data)
-            action = self._handle(payload)
+            action = await self._handle(payload)
             if action is not None:
                 return action
         return None
 
-    def _handle(self, payload: GatewayPayload) -> CloseAction | None:
+    async def _handle(self, payload: GatewayPayload) -> CloseAction | None:
         if payload.op is OpCode.DISPATCH:
             self.session.update(seq=payload.s)
-            self._established = True
-            self.events.put_nowait(payload)
             if payload.t == "READY":
                 ready = ReadyEvent.model_validate(payload.d)
                 self.session.update(session_id=ready.session_id)
+                await self._save_session()
                 logger.info("Gateway session ready: {}", ready.session_id)
-            elif payload.t == "RESUMED":
-                logger.info("Gateway session resumed: {}", self.session.session_id)
+            else:
+                await self._save_session()
+                if payload.t == "RESUMED":
+                    logger.info("Gateway session resumed: {}", self.session.session_id)
+            self._established = True
+            self.events.put_nowait(payload)
             return None
         if payload.op is OpCode.HEARTBEAT_ACK:
             self._pending_acks = 0
@@ -250,7 +285,7 @@ class GatewayConnection:
             return CloseAction.RESUME
         if payload.op is OpCode.INVALID_SESSION:
             logger.warning("Gateway invalidated the session, identifying again")
-            self.session.reset()
+            await self._drop_session()
             return CloseAction.IDENTIFY
         # Hello / Heartbeat 等其余 op 不需要处理
         return None

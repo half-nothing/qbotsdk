@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from ..module.http_client import HTTPClient
-from ..module.rate_limit import RateLimiter
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.rate_limit import RateLimiter
+
 from .channel import ChannelResource
 from .group import GroupResource
 from .guild import GuildResource

@@ -94,13 +94,13 @@ async def bot() -> AsyncIterator[Bot]:
 
 def test_certfile_needs_keyfile(bot: Bot) -> None:
     with pytest.raises(ValueError, match="certfile and keyfile must be provided together"):
-        WebhookServer(bot, BOT_SECRET, certfile="cert.pem")
+        WebhookServer(bot.dispatcher, BOT_SECRET, certfile="cert.pem")
 
 
 def test_ssl_context_excludes_certfile(bot: Bot) -> None:
     with pytest.raises(ValueError, match="ssl_context cannot be combined"):
         WebhookServer(
-            bot,
+            bot.dispatcher,
             BOT_SECRET,
             certfile="cert.pem",
             keyfile="key.pem",
@@ -109,7 +109,7 @@ def test_ssl_context_excludes_certfile(bot: Bot) -> None:
 
 
 async def test_validation_request_is_answered(bot: Bot) -> None:
-    server = WebhookServer(bot, BOT_SECRET, host="127.0.0.1", port=0)
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
     await server.start()
     try:
         payload = (
@@ -135,7 +135,7 @@ async def test_event_is_acked_and_dispatched(bot: Bot) -> None:
         received.append(ctx.event)
 
     body = read_frame("gateway_group_at_message_create.json").encode()
-    server = WebhookServer(bot, BOT_SECRET, host="127.0.0.1", port=0)
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
     await server.start()
     try:
         async with (
@@ -164,7 +164,7 @@ async def test_event_is_acked_and_dispatched(bot: Bot) -> None:
 
 async def test_bad_signature_is_rejected(bot: Bot) -> None:
     body = read_frame("gateway_group_at_message_create.json").encode()
-    server = WebhookServer(bot, BOT_SECRET, host="127.0.0.1", port=0)
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
     await server.start()
     try:
         async with ClientSession() as session:
@@ -184,7 +184,7 @@ async def test_bad_signature_is_rejected(bot: Bot) -> None:
 
 
 async def test_invalid_payload_is_rejected(bot: Bot) -> None:
-    server = WebhookServer(bot, BOT_SECRET, host="127.0.0.1", port=0)
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
     await server.start()
     try:
         async with (
@@ -199,7 +199,7 @@ async def test_invalid_payload_is_rejected(bot: Bot) -> None:
 async def test_tls_certificate_is_loaded(bot: Bot, tmp_path: Path) -> None:
     certfile, keyfile = write_self_signed_cert(tmp_path)
     server = WebhookServer(
-        bot, BOT_SECRET, host="127.0.0.1", port=0, certfile=certfile, keyfile=keyfile
+        bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0, certfile=certfile, keyfile=keyfile
     )
     await server.start()
     try:
@@ -220,7 +220,7 @@ async def test_tls_certificate_is_loaded(bot: Bot, tmp_path: Path) -> None:
 async def test_non_callback_port_warns(bot: Bot) -> None:
     messages: list[str] = []
     sink_id = logger.add(lambda message: messages.append(str(message)), level="WARNING")
-    server = WebhookServer(bot, BOT_SECRET, host="127.0.0.1", port=0)
+    server = WebhookServer(bot.dispatcher, BOT_SECRET, host="127.0.0.1", port=0)
     try:
         await server.start()
         await server.close()

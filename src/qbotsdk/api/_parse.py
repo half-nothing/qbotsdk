@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from ..exceptions import TransportError
+from qbotsdk.exceptions import TransportError
 
 
 def expect_object(payload: object, path: str) -> dict[str, object]:

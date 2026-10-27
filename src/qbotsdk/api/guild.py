@@ -6,12 +6,13 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from ..model.channel import Channel
-from ..model.guild import Guild
-from ..model.member import Member
-from ..model.role import RolesResult
-from ..module.http_client import HTTPClient
-from ..module.pagination import paginate
+from qbotsdk.model.channel import Channel
+from qbotsdk.model.guild import Guild
+from qbotsdk.model.member import Member
+from qbotsdk.model.role import RolesResult
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.pagination import paginate
+
 from ._parse import expect_list, expect_object
 
 

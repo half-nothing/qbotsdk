@@ -11,8 +11,8 @@
 
 - **全异步**：基于 `asyncio` 与 `aiohttp`，所有接口均为异步接口。
 - **登录态自动维护**：`access_token` 自动换取、缓存、到期前刷新。
-- **连接与重连**：WebSocket 自动心跳、断线重连与 Resume。
-- **两种事件接入**：同时支持 WebSocket 与 WebHook。
+- **连接与重连**：WebSocket 适配器自动心跳、断线重连与 Resume。
+- **接入方式可插拔**：默认走 WebSocket 长连接，也可以换成 Webhook 回调，或自己实现 `Adapter`。
 - **消息即对象**：收到的事件可以直接 `await event.reply(...)`。
 - **容错内置**：429 按 `Retry-After` 重试，幂等请求遇 5xx 与网络异常退避重试，本地令牌桶限流，错误统一成 `QQBotError` 体系。
 - **类型完整**：pydantic v2 模型、全量类型标注、随包分发 `py.typed`。
@@ -69,6 +69,8 @@ asyncio.run(main())
 
 ## 接收事件
 
+默认走 WebSocket 长连接，换接入方式就传 `adapter=`，`start()` 的用法不变。下面是长连接：
+
 ```python
 import asyncio
 
@@ -101,16 +103,70 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+不传 `adapter` 等价于 `adapter=WebSocketAdapter()`；自己实现接入方式只需两个方法：
+`start(context)` 里把事件塞进 `context.dispatcher.handle(payload)`，`stop()` 里收摊。
+
+会话状态默认存在内存里（进程重启就从 Identify 重来）。想跨进程续连，换成文件或 Redis 存储：
+会话 ID 一变就立刻落盘，序号合并成每秒最多一次，而且有定时兜底——即使之后没有新事件，
+待写的值最迟 `flush_interval`（默认 1 秒）后也会写进去；`close()` 时再强制刷一次。
+下次启动直接 Resume，停机期间平台暂存的事件会被补发；文件读不出来或会话被平台作废时自动回到 Identify。
+
+```python
+from qbotsdk import WebSocketAdapter
+from qbotsdk.storage import FileSessionStorage
+
+WebSocketAdapter(session_storage=FileSessionStorage(".qbotsdk-session.json"))
+
+# Redis 在可选依赖里, 没装时连类都取不到
+from qbotsdk.storage import RedisSessionStorage
+
+# 给完整地址
+WebSocketAdapter(session_storage=RedisSessionStorage.from_url("redis://:pwd@10.0.0.5:6379/2"))
+
+# 或者只给零件, 地址由 SDK 拼（密码里的 @ / : 不用自己转义）
+storage = RedisSessionStorage.from_url(host="10.0.0.5", port=6379, password="pwd", db=2)
+WebSocketAdapter(session_storage=storage)
+
+# Unix domain socket, 以及指定 RESP 协议版本
+RedisSessionStorage.from_url(unix_socket="/var/run/redis/redis.sock", db=2, protocol=3)
+```
+
+也可以直接把现成的客户端交给 SDK，配置（连接池、集群、代理）都按你自己的来：
+
+```python
+from redis.asyncio import Redis
+
+from qbotsdk.storage import RedisSessionStorage
+
+storage = RedisSessionStorage(Redis(host="10.0.0.5", port=6379))
+```
+
+这种情形 `decode_responses` 不一定开着，`load()` 对返回的字节和字符串都能处理。
+
+Redis 存储要先装 `pip install qbotsdk[redis]`；没装时 `RedisSessionStorage` 会抛 `ImportError`
+并提示装哪个额外依赖，而 `qbotsdk.storage` 本身照常导入、不拉起 redis。
+
 ### Webhook 接入
 
 在[管理端](https://q.qq.com/qqbot/#/developer/webhook-setting)填好回调地址并勾选要监听的事件后，
-事件就改走 HTTP 推送，代码里不需要再调 `bot.start()`
+事件就改走 HTTP 推送，把适配器换成 `WebhookAdapter` 就行，`start()` 的用法不变：
 
 ```python
-from qbotsdk.gateway import WebhookServer
+from qbotsdk import Bot, WebhookAdapter
 
-server = WebhookServer(
-    bot,
+bot = Bot(
+    app_id=...,
+    client_secret=...,
+    adapter=WebhookAdapter(
+        "机器人密钥",
+        port=8443,
+        path="/qbotsdk",
+        certfile="certs/fullchain.pem",
+        keyfile="certs/privkey.pem",
+    ),
+)
+await bot.start()
+```
     bot_secret=...,
     port=8443,
     path="/qbotsdk",

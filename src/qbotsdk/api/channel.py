@@ -8,10 +8,11 @@ from pathlib import Path
 
 from aiohttp import FormData
 
-from ..model.channel import Channel
-from ..model.draft import ChannelMessageDraft, MessageMarkdown, MessageReference
-from ..model.message import Message
-from ..module.http_client import HTTPClient
+from qbotsdk.model.channel import Channel
+from qbotsdk.model.draft import ChannelMessageDraft, MessageMarkdown, MessageReference
+from qbotsdk.model.message import Message
+from qbotsdk.module.http_client import HTTPClient
+
 from ._parse import expect_object
 
 # 官方支持 multipart 直传时就这几种图片类型, 其余按二进制流发

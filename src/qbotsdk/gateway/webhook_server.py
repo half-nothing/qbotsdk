@@ -19,7 +19,7 @@ from .webhook import (
 )
 
 if TYPE_CHECKING:
-    from ..bot import Bot
+    from .dispatcher import Dispatcher
 
 # 平台允许在管理端配置的回调端口
 CALLBACK_PORTS = frozenset({80, 443, 8080, 8443})
@@ -32,12 +32,12 @@ _TIMESTAMP_HEADER = "X-Signature-Timestamp"
 
 
 class WebhookServer:
-    """把事件回调转发给 Bot 的分发器。
+    """把事件回调转发给分发器。
 
-    典型用法：
+    一般通过 `WebhookAdapter` 使用, 也可以用这个低层实现接进自己的 aiohttp 应用：
 
     ```python
-    server = WebhookServer(bot, bot_secret="...", certfile="cert.pem", keyfile="key.pem")
+    server = WebhookServer(bot.dispatcher, "secret", certfile="cert.pem", keyfile="key.pem")
     await server.start()
     ...
     await server.close()
@@ -46,7 +46,7 @@ class WebhookServer:
 
     def __init__(
         self,
-        bot: Bot,
+        dispatcher: Dispatcher,
         bot_secret: str,
         *,
         host: str = "0.0.0.0",
@@ -59,7 +59,7 @@ class WebhookServer:
         """创建服务器，但先不监听。
 
         Args:
-            bot:        事件最终交给 bot.dispatcher 分发。
+            dispatcher: 事件最终交给它分发。
             bot_secret: 机器人密钥，用于验签与 op 13 应答。
             host:       监听地址。
             port:       监听端口，0 表示让操作系统挑一个空闲端口。
@@ -74,7 +74,7 @@ class WebhookServer:
         if ssl_context is not None and certfile is not None:
             raise ValueError("ssl_context cannot be combined with certfile and keyfile")
 
-        self._bot = bot
+        self._dispatcher = dispatcher
         self._bot_secret = bot_secret
         self._host = host
         self._port = port
@@ -160,7 +160,7 @@ class WebhookServer:
             return Response(status=401, text="invalid signature")
 
         # 官方要求快速 ACK, 处理慢会被重推, 所以先回包再分发
-        self._bot.dispatcher.handle(payload)
+        self._dispatcher.handle(payload)
         return json_response(build_ack_payload())
 
     def _validation_response(self, payload: GatewayPayload) -> Response:

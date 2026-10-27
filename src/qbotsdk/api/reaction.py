@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from ..model.reaction import ReactionUsers
-from ..model.user import GuildUser
-from ..module.http_client import HTTPClient
-from ..module.pagination import paginate
+from qbotsdk.model.reaction import ReactionUsers
+from qbotsdk.model.user import GuildUser
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.pagination import paginate
 
 _MAX_LIMIT = 100
 _DEFAULT_LIMIT = 20

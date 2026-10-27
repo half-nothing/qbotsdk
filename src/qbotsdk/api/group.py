@@ -8,20 +8,15 @@ from collections.abc import AsyncIterator
 
 from aiohttp import FormData
 
-from ..model.draft import GroupMessageDraft, MessageMarkdown
-from ..model.group import (
-    Group,
-    GroupBotState,
-    GroupMember,
-    GroupMembersPage,
-    GroupMuteState,
-)
-from ..model.keyboard import Keyboard
-from ..model.media import FileType, MediaInfo, UploadedFile
-from ..model.message import GroupMessageReceipt
-from ..module.http_client import HTTPClient
-from ..module.pagination import paginate
-from ..module.rate_limit import RateLimiter
+from qbotsdk.model.draft import GroupMessageDraft, MessageMarkdown
+from qbotsdk.model.group import Group, GroupBotState, GroupMember, GroupMembersPage, GroupMuteState
+from qbotsdk.model.keyboard import Keyboard
+from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
+from qbotsdk.model.message import GroupMessageReceipt
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.pagination import paginate
+from qbotsdk.module.rate_limit import RateLimiter
+
 from ._parse import expect_object
 
 # 二进制直传上限，官方文档对图片/语音写 20MB、视频 30MB、文件 200MB

@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from time import monotonic
 
-from ..exceptions import RateLimitExceededError
+from qbotsdk.exceptions import RateLimitExceededError
 
 # 官方给出的默认值
 DEFAULT_LIMITS: dict[str, float] = {"group": 20.0, "c2c": 20.0}

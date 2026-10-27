@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from ..model.base import QQModel
+from qbotsdk.model.base import QQModel
 
 
 class SessionStartLimit(QQModel):

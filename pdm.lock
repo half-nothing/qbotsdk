@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "dev"]
+groups = ["default", "dev", "redis"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.1"
-content_hash = "sha256:2d2b48d064e299af4adabd0100c91eac848ce4e89cd53c7df040c5310b5ecdac"
+content_hash = "sha256:a2ca9e2e382438ea0a10b750a6043df14d624af65e46462369b998589ca4bba1"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -1215,6 +1215,20 @@ dependencies = [
 files = [
     {file = "pytest_asyncio-1.4.1-py3-none-any.whl", hash = "sha256:507afa78ec77c6661164ef1a2368bc7820383fd1a14b2a7f813de8b5a92949cc"},
     {file = "pytest_asyncio-1.4.1.tar.gz", hash = "sha256:e8266eb094e5ee9ffdb2068c9836f33e209ea77a970eb846933d416b5602669b"},
+]
+
+[[package]]
+name = "redis"
+version = "8.1.0"
+requires_python = ">=3.10"
+summary = "Python client for Redis database and key-value store"
+groups = ["dev", "redis"]
+dependencies = [
+    "async-timeout>=4.0.3; python_full_version < \"3.11.3\"",
+]
+files = [
+    {file = "redis-8.1.0-py3-none-any.whl", hash = "sha256:a4fe1aac3d3b3cc791d4b3d5931c5a956045dc951ee74d1c913ee3ac4d2ee9fb"},
+    {file = "redis-8.1.0.tar.gz", hash = "sha256:6e1a19beef9225c83efd689c7e6b7da2d5215b1f42cd13b7fc3714d0a09c7b25"},
 ]
 
 [[package]]

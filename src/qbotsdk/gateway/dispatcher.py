@@ -13,11 +13,12 @@ from typing import TYPE_CHECKING, cast
 from async_event_bus import EmitResult, EventBus, EventContext, ExceptionStrategy
 from loguru import logger
 
-from ..model.event import EventModel, UnknownEvent, parse_event
+from qbotsdk.model.event import EventModel, UnknownEvent, parse_event
+
 from .payload import GatewayPayload, OpCode
 
 if TYPE_CHECKING:
-    from ..api import ApiClient
+    from qbotsdk.api import ApiClient
 
 # 官方会重复推送同一个 msg_id, 所以只留最近 N 条做去重
 DEFAULT_DEDUPE_SIZE = 512

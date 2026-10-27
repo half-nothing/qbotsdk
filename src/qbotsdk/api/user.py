@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from ..model.guild import Guild
-from ..model.user import GuildUser
-from ..module.http_client import HTTPClient
-from ..module.pagination import paginate
+from qbotsdk.model.guild import Guild
+from qbotsdk.model.user import GuildUser
+from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.pagination import paginate
+
 from ._parse import expect_list, expect_object
 
 _ME_PATH = "/users/@me"

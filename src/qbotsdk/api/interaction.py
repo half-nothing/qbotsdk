@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from ..module.http_client import HTTPClient
+from qbotsdk.module.http_client import HTTPClient
 
 
 class InteractionResource:

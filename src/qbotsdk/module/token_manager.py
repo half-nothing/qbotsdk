@@ -9,9 +9,9 @@ from aiohttp import ClientError, ClientResponseError, ClientSession
 from loguru import logger
 from pydantic import ValidationError
 
-from ..constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
-from ..exceptions import APIError, TransportError, error_code_of
-from ..model.token import Token
+from qbotsdk.constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
+from qbotsdk.exceptions import APIError, TransportError, error_code_of
+from qbotsdk.model.token import Token
 
 # 提前60s刷新，平台只在旧token到期前60s内才签发新token, 且旧token在这60s内仍有效
 _REFRESH_BUFFER_SECONDS = 60

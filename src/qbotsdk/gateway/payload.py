@@ -9,7 +9,7 @@ from typing import Any, ClassVar, Final
 
 from pydantic import Field
 
-from ..model.base import QQModel
+from qbotsdk.model.base import QQModel
 
 
 class OpCode(IntEnum):

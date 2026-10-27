@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
+from .adapter import Adapter, AdapterContext, WebhookAdapter, WebSocketAdapter
 from .api import ApiClient
 from .bot import Bot
 from .exceptions import APIError, ErrorCode, QQBotError, RateLimitExceededError, TransportError
@@ -26,9 +29,17 @@ from .model import (
     User,
 )
 from .options import ClientOptions
+from .storage import FileSessionStorage, MemorySessionStorage, SessionData, SessionStorage
+
+try:
+    __version__ = version("qbotsdk")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "0.0.0"
 
 __all__ = [
     "APIError",
+    "Adapter",
+    "AdapterContext",
     "ApiClient",
     "Bot",
     "Channel",
@@ -36,6 +47,7 @@ __all__ = [
     "ChannelMessageDraft",
     "ClientOptions",
     "ErrorCode",
+    "FileSessionStorage",
     "Group",
     "GroupBotState",
     "GroupMember",
@@ -47,11 +59,17 @@ __all__ = [
     "GuildUser",
     "InteractionCreate",
     "Member",
+    "MemorySessionStorage",
     "Message",
     "QQBotError",
     "RateLimitExceededError",
     "Role",
+    "SessionData",
+    "SessionStorage",
     "TransportError",
     "User",
+    "WebSocketAdapter",
+    "WebhookAdapter",
     "WebhookServer",
+    "__version__",
 ]

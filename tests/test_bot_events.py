@@ -14,6 +14,7 @@ from async_event_bus import EventContext
 
 import qbotsdk.module.http_client
 import qbotsdk.module.token_manager
+from qbotsdk.adapter import WebhookAdapter, WebSocketAdapter
 from qbotsdk.bot import Bot
 from qbotsdk.model.event import GroupAtMessageCreate, ReadyEvent
 from qbotsdk.options import ClientOptions
@@ -134,7 +135,7 @@ async def fake_gateway(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeGat
 
 async def test_start_connects_and_dispatches(fake_gateway: FakeGateway) -> None:
     seen: list[str] = []
-    bot = Bot("app", "secret", options=OPTIONS)
+    bot = Bot("app", "secret", options=OPTIONS, adapter=WebSocketAdapter())
 
     @bot.on(ReadyEvent)
     async def handler(ctx: EventContext[ReadyEvent]) -> None:
@@ -149,10 +150,41 @@ async def test_start_connects_and_dispatches(fake_gateway: FakeGateway) -> None:
 
 
 async def test_start_twice_is_rejected(fake_gateway: FakeGateway) -> None:
-    bot = Bot("app", "secret", options=OPTIONS)
+    bot = Bot("app", "secret", options=OPTIONS, adapter=WebSocketAdapter())
     try:
         await bot.start()
         with pytest.raises(RuntimeError, match="already started"):
             await bot.start()
+    finally:
+        await bot.close()
+
+
+async def test_default_adapter_is_websocket(fake_gateway: FakeGateway) -> None:
+    bot = Bot("app", "secret", options=OPTIONS)
+    seen: list[str] = []
+
+    @bot.on(ReadyEvent)
+    async def handler(ctx: EventContext[ReadyEvent]) -> None:
+        seen.append(ctx.event.session_id)
+
+    try:
+        assert isinstance(bot.adapter, WebSocketAdapter)
+        await bot.start()
+        await wait_until(lambda: seen == ["xxxxxx"])
+        assert fake_gateway.connections == 1
+    finally:
+        await bot.close()
+
+
+async def test_webhook_adapter_starts_a_server() -> None:
+    bot = Bot(
+        "app",
+        "secret",
+        adapter=WebhookAdapter("bot-secret", host="127.0.0.1", port=0),
+    )
+    try:
+        await bot.start()
+        assert isinstance(bot.adapter, WebhookAdapter)
+        assert bot.adapter.port != 0
     finally:
         await bot.close()

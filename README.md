@@ -5,7 +5,6 @@
 [![Python](https://img.shields.io/badge/Python-3.12%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/github/license/half-nothing/qbotsdk)](./LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/qbotsdk)](https://pypi.org/project/qbotsdk/)
-> QQ官方文档：https://bot.q.qq.com/wiki/develop/api-v2
 
 ## 特性
 

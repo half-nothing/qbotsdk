@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": "144115218677521112",
+      "username": "Alice",
+      "avatar": "",
+      "bot": false,
+      "public_flags": 0,
+      "system": false
+    },
+    {
+      "id": "144115218677521113",
+      "username": "Bob",
+      "avatar": "",
+      "bot": false
+    }
+  ],
+  "cookie": "page-2",
+  "is_end": false
+}

@@ -84,10 +84,14 @@ Phase 4 的目标不是再堆接口，而是把「机器人能正常运营」缺
 
 ## 7. 目标五：发布
 
-- `CHANGELOG.md`：按 Phase 回溯整理 0.1.0 → 0.4.0，之后按 Keep a Changelog 维护。
+- `CHANGELOG.md`：按 Phase 回溯整理 0.1.0 → 0.5.0，之后按 Keep a Changelog 维护。
 - 版本策略：0.x 期间 minor 可破坏（已在 Phase 3 的 `get_me` 弃用处示范），1.0 起严格 semver。
-- PyPI：用 Trusted Publishing（OIDC）而不是长期 token，`release.yml` 由 tag 触发，先 `pdm build` 再 `pdm publish`。
-- 仓库仍无 remote：**这条得先有 GitHub 仓库**，否则 Actions 与信任发布都只是文件。
+- **本期不发布 PyPI**（2026-10-27 用户决定）：先做线上测试，`release.yml` 只负责
+  `pdm build` 产物校验与 GitHub Release 草稿，草稿里挂 `dist/*` 供安装验证。
+  校验脚本检查 wheel 里有 `py.typed`、且没有 `tests/` 与 `docs/` 泄漏。
+- PyPI 留到线上测试通过后再接：届时用 Trusted Publishing（OIDC）而不是长期 token，
+  在 `release.yml` 末尾追加 `pdm publish` 即可，草稿转正式发布。
+- 仓库仍无 remote：**这条得先有 GitHub 仓库**，否则 Actions 与发布都只是文件。
 
 ## 7.5 文档站（VitePress）
 
@@ -148,7 +152,7 @@ docs/
 | P3 | 主动消息配额层（`RateLimiter`、`respect_rate_limits`、被动回复次数拦截） | `test_rate_limit.py` 全绿 |
 | P4 | `AT_MESSAGE_CREATE` + `INTERACTION_CREATE`（已取证） | 两个事件的快照与用例 |
 | P5 | 表情表态 + 论坛/音频按需 | 各一个用例 |
-| P6 | `CHANGELOG.md`、`release.yml`、PyPI | tag 触发后能在 PyPI 看到版本 |
+| P6 | `CHANGELOG.md`、`release.yml`（构建 + GitHub Release 草稿，不发布 PyPI） | tag 触发后草稿里挂着 sdist 与 wheel |
 | P7 | VitePress 文档站：骨架 + 七篇指南 + API 自动生成 + Pages 部署（`design/` 不进站） | 本地 `docs:build` 通过且产物里没有 `design/`，CI 的生成物校验为绿 |
 
 进度：P1 已完成（2026-10-27），新增 `api/user_message.py`、`UserMessageDraft`、`UserMessageType`、`InputNotify`；单聊上传只实现 `url` 方式，二进制直传的字段表官方没给，未取证不实现。
@@ -158,6 +162,10 @@ P2 已完成（2026-10-27）：新增 `C2CMessageCreate`（`C2CUser` 作者、`m
 P3 已完成（2026-10-27）：`src/qqbot/module/rate_limit.py` 的 `TokenBucket`（容量 = 每分钟条数，按 `capacity / 60` 每秒回填，允许一分钟突发）与 `RateLimiter`（按 `(scope, key)` 分桶，桶上限 4096 个，`scope` 未配置或配额为 0 视为不限流）；`ClientOptions` 加 `respect_rate_limits: bool = True` 与 `rate_limits: Mapping[str, float] | None`（键 `group`/`c2c`，负值在构造期抛 `ValueError`）；`ApiClient` 按开关建一个 limiter 交给 `GroupResource` 与 `UserMessageResource`，两者在 `send_message` 里按 openid 扣令牌，取不到抛 `RateLimitExceededError`（带 `scope`/`key`/`retry_after`/`limit`），请求不发出去；事件侧第 6 次（单聊第 5 次）被动回复在本地抛 `ValueError("passive reply limit reached")`。`tests/test_rate_limit.py` 12 用例，门禁 167 passed / mypy 64 / format 72。
 
 P4 已完成（2026-10-27）：取证结论是 `INTERACTION_CREATE` 与互动响应接口都有完整表格与三个示例（`interactions_interaction_id.put.html` 回应 `PUT /interactions/{interaction_id}`，请求体只有 `code` 0–5，无响应体，50 QPS）；`AT_MESSAGE_CREATE` 在官方 api-v2 没有独立事件页（`autogen/event/at_message_create.html` 回落到「启动接入」），因此事件体按「消息对象(Message)」表格建模，`Message` 补上 `edited_timestamp`/`attachments`/`mentions`/`member`/`ark`/`seq`/`seq_in_channel`/`message_reference` 八个表格字段，`ChannelMessageCreate` 直接继承它并复用发送接口做 `reply()`。`INTERACTION_CREATE` 收 `type`（11 消息按钮、12 快捷菜单、13 消息反馈、14 清空会话、15 故事集、16 切换模型、18 用户授权、19 群授权、20 群授权状态）、`scene`、`chat_type`、`data{type, resolved{...}}`，`needs_response` 只对 11/12 为真，`respond(code)` 走 `api.interaction`。默认 intents 追加 `INTERACTION`（官方基础事件，不加收不到按钮回调）。新增 `api/interaction.py` 与 `HTTPClient.put`，`Member.nick/deaf/mute/pending` 改为可缺省（消息对象的 `member` 只带部分字段）。`tests/test_interaction_event.py` 7 用例、`tests/test_channel_event.py` 5 用例，门禁 179 passed / mypy 67 / format 75。
+
+P5 部分完成（2026-10-27）：表情表态三件套（`api/reaction.py` 的 `add` / `remove` / `users` / `iter_users`，`model/reaction.py` 的 `Emoji` / `MessageReaction` / `ReactionUsers` 等），门禁 187 passed / mypy 70 / format 78。**取证缺口**：官方 api-v2 侧没有 reactions 的接口页（`channels_..._reactions_type_id.put.html` 直接回落首页），路径与返回 `true` 取自 Python SDK 接口页，`Emoji` / `MessageReaction` 字段取自 openapi 的对象表；论坛 threads 与音频 actions 仍未取证，按「未取证不实现」留在后续。
+
+P6 完成（2026-10-27）：`CHANGELOG.md` 回溯 0.1.0 → 0.5.0（Keep a Changelog 格式）；`.github/workflows/release.yml` 由 tag `v*` 或手动输入 tag 触发，跑四项门禁 + `pdm build`，校验 wheel 含 `py.typed` 且不含 `tests/`、`docs/`，上传 `dist/*` 并创建 **GitHub Release 草稿**。按用户决定本期**不发布 PyPI**（先做线上测试），P7 文档站搁置。版本号同步升到 0.5.0。
 
 
 ## 9. 已拍板（2026-10-27）

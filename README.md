@@ -3,7 +3,7 @@
 非官方 QQ 机器人 SDK。封装官方 API v2 的鉴权、频道与群组 REST 能力、消息发送/撤回以及事件接入，异步优先，全量类型标注。
 
 > 官方文档：<https://bot.q.qq.com/wiki/develop/api-v2/>
-> 当前版本 `0.4.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询 + 频道与群消息发送/撤回 + 群富媒体上传 + WebSocket / Webhook 事件接入」。后续规划见 [ROADMAP.md](ROADMAP.md)。
+> 当前版本 `0.5.0`，能力面为「鉴权 + 机器人自身信息 + 频道/子频道/成员/身份组只读查询 + 群组只读查询 + 频道/群/单聊消息发送与撤回 + 富媒体上传 + 表情表态 + 互动回调 + WebSocket / Webhook 事件接入」。变更见 [CHANGELOG.md](CHANGELOG.md)，后续规划见 [ROADMAP.md](ROADMAP.md)。
 
 ## 特性
 
@@ -92,7 +92,10 @@ if __name__ == "__main__":
 | `bot.api.channel.recall_message(channel_id, message_id)` | 撤回频道消息，2 分钟内有效 |
 | `bot.api.group.send_message(group_openid, content="hi")` | 发群消息，返回 `GroupMessageReceipt` |
 | `bot.api.group.upload_file(group_openid, FileType.IMAGE, url=...)` | 上传群富媒体，返回 `file_info` |
-| `iter_guilds` / `iter_members` / `bot.api.group.iter_members` | 自动翻页，频道成员按 `user.id` 去重 |
+| `bot.api.reaction.add(channel_id, message_id, EmojiType.SYSTEM, "4")` | 给频道消息发表情表态 |
+| `bot.api.reaction.remove(channel_id, message_id, EmojiType.SYSTEM, "4")` | 删除自己发的表态 |
+| `bot.api.reaction.users(channel_id, message_id, EmojiType.SYSTEM, emoji_id="4")` | 表态用户列表单页，`limit` 1–100 |
+| `iter_guilds` / `iter_members` / `bot.api.group.iter_members` / `bot.api.reaction.iter_users` | 自动翻页，频道成员与表态用户按 `id` 去重 |
 
 频道与群组是两套 ID 体系，不能混用：频道的 `guild_id` / `channel_id` / `user.id` 与群组的 `group_openid` / `member_openid` 互不相通。群接口都在 `/v2` 前缀下，且多数要求白名单权限（错误码 `11253`）。
 
@@ -263,6 +266,16 @@ CI 在 Python 3.12 / 3.13 / 3.14 三个版本上跑同一套检查，见 [`.gith
 装了 GNU Make 的可以直接用根目录的 [`Makefile`](Makefile)：`make check` 一次跑完四项门禁，`make help` 列出全部快捷命令。
 
 文案约定：异常消息与日志统一英文（例如 `GET /users/@me request failed: ...`），注释与文档保持中文。
+
+## 发布
+
+```bash
+pdm build        # 产出 dist/ 下的 sdist 与 wheel
+```
+
+打 `v*` 标签或手动触发 [`.github/workflows/release.yml`](.github/workflows/release.yml) 后，CI 会先跑四项门禁，再构建并校验产物（wheel 必须带 `py.typed`、不能把 `tests/` 与 `docs/` 打进去），最后在 GitHub 上创建**草稿** Release 并挂上 `dist/*`。
+
+当前**不发布到 PyPI**：等线上环境跑通后再接 Trusted Publishing（OIDC），复用同一个工作流末尾追加 `pdm publish` 即可。版本记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 许可证
 

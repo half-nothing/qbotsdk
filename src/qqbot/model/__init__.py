@@ -58,6 +58,14 @@ from .message import (
     MessageReceipt,
     UserMessageReceipt,
 )
+from .reaction import (
+    Emoji,
+    EmojiType,
+    MessageReaction,
+    ReactionTarget,
+    ReactionTargetType,
+    ReactionUsers,
+)
 from .role import Role, RolesResult
 from .scene import ARKData, Attachment, ElementAuthor, MessageElement, MessageScene
 from .token import Token
@@ -81,6 +89,8 @@ __all__ = [
     "ChannelSubType",
     "ChannelType",
     "ElementAuthor",
+    "Emoji",
+    "EmojiType",
     "EventModel",
     "FileType",
     "Group",
@@ -109,12 +119,16 @@ __all__ = [
     "MessageElement",
     "MessageExtInfo",
     "MessageMarkdown",
+    "MessageReaction",
     "MessageReceipt",
     "MessageReference",
     "MessageScene",
     "MuteMode",
     "PrivateType",
     "QQModel",
+    "ReactionTarget",
+    "ReactionTargetType",
+    "ReactionUsers",
     "ReadyEvent",
     "RecvMsgSetting",
     "ResumedEvent",

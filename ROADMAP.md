@@ -82,6 +82,6 @@
 - [x] P2 `C2C_MESSAGE_CREATE` 事件与 `reply()` · 2026-10-27（`C2CMessageCreate`、`C2CUser`、事件上的 `reply()` 自增 msg_seq）
 - [x] P3 主动消息配额层（本地令牌桶、被动回复次数拦截） · 2026-10-27（`module/rate_limit.py`、`ClientOptions.respect_rate_limits`/`rate_limits`、`RateLimitExceededError`）
 - [x] P4 `AT_MESSAGE_CREATE` 与 `INTERACTION_CREATE` · 2026-10-27（频道 @ 事件、互动回调与 `PUT /interactions/{id}`）
-- [ ] P5 表情表态等长尾接口
-- [ ] P6 `CHANGELOG.md`、`release.yml`、PyPI 发布
-- [ ] P7 VitePress 文档站（骨架 + 指南 + API 自动生成 + Pages 部署）
+- [x] P5 表情表态（论坛 threads 与音频 actions 未取证，留后续）
+- [x] P6 `CHANGELOG.md`、`release.yml`（构建 + GitHub Release 草稿；**不发布 PyPI**，等线上测试通过再接） · 2026-10-27
+- [ ] P7 VitePress 文档站（骨架 + 指南 + API 自动生成 + Pages 部署）· 已搁置

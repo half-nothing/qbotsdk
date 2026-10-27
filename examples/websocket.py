@@ -45,7 +45,7 @@ def build_adapter() -> WebSocketAdapter:
 async def main() -> None:
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
-        client_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_secret=os.environ["QQ_BOT_APP_SECRET"],
         adapter=build_adapter(),
     ) as bot:
 

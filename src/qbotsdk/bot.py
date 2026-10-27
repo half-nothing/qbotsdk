@@ -23,15 +23,15 @@ class Bot:
     """默认用 WebSocket 长连接收事件，换接入方式就传 `adapter=`。
 
     ```python
-    bot = Bot(app_id, client_secret)  # 等价于 adapter=WebSocketAdapter()
-    bot = Bot(app_id, client_secret, adapter=WebhookAdapter(...))
+    bot = Bot(app_id, app_secret)  # 等价于 adapter=WebSocketAdapter()
+    bot = Bot(app_id, app_secret, adapter=WebhookAdapter(...))
     ```
     """
 
     def __init__(
         self,
         app_id: str,
-        client_secret: str,
+        app_secret: str,
         *,
         adapter: Adapter | None = None,
         options: ClientOptions | None = None,
@@ -40,12 +40,12 @@ class Bot:
 
         Args:
             app_id:        机器人 AppID。
-            client_secret: 机器人 AppSecret。
-            adapter:       接入方式, 不传用 `WebSocketAdapter()`。
-            options:       客户端配置, 见 `ClientOptions`。
+            app_secret:    机器人 AppSecret。
+            adapter:       接入方式, 不传用 WebSocketAdapter()。
+            options:       客户端配置, 见 ClientOptions。
         """
 
-        self._http = HTTPClient(app_id, client_secret, options=options)
+        self._http = HTTPClient(app_id, app_secret, options=options)
         self._api = ApiClient(self._http)
         self._adapter: Adapter = adapter if adapter is not None else WebSocketAdapter()
         self._dispatcher = Dispatcher(api=self._api)

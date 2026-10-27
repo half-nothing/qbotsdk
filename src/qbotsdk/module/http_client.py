@@ -135,12 +135,12 @@ class HTTPClient:
     def __init__(
         self,
         app_id: str,
-        client_secret: str,
+        app_secret: str,
         *,
         options: ClientOptions | None = None,
     ) -> None:
         self._options = options if options is not None else ClientOptions()
-        self._token_manager = TokenManager(app_id, client_secret)
+        self._token_manager = TokenManager(app_id, app_secret)
         self._session: ClientSession | None = None
         self._trace_config = self._make_trace_config()
 

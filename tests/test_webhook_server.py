@@ -86,7 +86,7 @@ def write_self_signed_cert(directory: Path) -> tuple[str, str]:
 
 @pytest.fixture
 async def bot() -> AsyncIterator[Bot]:
-    instance = Bot(app_id="app", client_secret=BOT_SECRET)
+    instance = Bot(app_id="app", app_secret=BOT_SECRET)
     try:
         yield instance
     finally:

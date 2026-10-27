@@ -53,8 +53,8 @@ async def main() -> None:
     # 将环境变量QQ_BOT_APP_SECRET设为获取到的AppSecret
     # 如果您选择直接替换对应内容，请不要将携带敏感信息的文件提交到仓库
     async with Bot(
-        app_id=os.environ["QQ_BOT_APP_ID"],
-        client_secret=os.environ["QQ_BOT_APP_SECRET"],
+            app_id=os.environ["QQ_BOT_APP_ID"],
+            app_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
         me = await bot.api.user.me()
         print(f"登录成功：{me.username}")
@@ -69,7 +69,7 @@ asyncio.run(main())
 
 ## 接收事件
 
-默认走 WebSocket 长连接，换接入方式就传 `adapter=`，`start()` 的用法不变。下面是长连接：
+默认走 WebSocket 长连接
 
 ```python
 import asyncio
@@ -82,8 +82,7 @@ from qbotsdk.model.event import C2CMessageCreate, GroupAtMessageCreate, Interact
 
 async def main() -> None:
     # 认证信息的具体获取方式请查看“快速开始”章节
-    async with Bot(app_id=..., client_secret=...) as bot:
-
+    async with Bot(app_id=..., app_secret=...) as bot:
         @bot.on(GroupAtMessageCreate)
         async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
@@ -94,7 +93,8 @@ async def main() -> None:
 
         @bot.on(InteractionCreate)
         async def on_interaction(ctx: EventContext[InteractionCreate]) -> None:
-            await ctx.event.respond()  # 不回应客户端会一直 loading
+            if ctx.event.needs_response:
+                await ctx.event.respond()  # 不回应客户端会一直 loading
 
         await bot.start()
         await asyncio.sleep(3600)
@@ -103,37 +103,38 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-不传 `adapter` 等价于 `adapter=WebSocketAdapter()`；自己实现接入方式只需两个方法：
-`start(context)` 里把事件塞进 `context.dispatcher.handle(payload)`，`stop()` 里收摊。
+bot的`adapter`参数默认为`WebSocketAdapter`，可以显式指定为`WebhookAdapter`  
+也可以自行实现`Adapter`从而扩展更多接入方式，自行实现的`Adapter`需要继承`qbotsdk.adapter.Adapter`并实现两个抽象方法
 
-会话状态默认存在内存里（进程重启就从 Identify 重来）。想跨进程续连，换成文件或 Redis 存储：
-会话 ID 一变就立刻落盘，序号合并成每秒最多一次，而且有定时兜底——即使之后没有新事件，
-待写的值最迟 `flush_interval`（默认 1 秒）后也会写进去；`close()` 时再强制刷一次。
-下次启动直接 Resume，停机期间平台暂存的事件会被补发；文件读不出来或会话被平台作废时自动回到 Identify。
+`WebSocketAdapter`的会话状态默认存在内存里  
+如果想关闭后自动续连，可以在构造`WebSocketAdapter`的时候传递参数`session_storage=`  
+可选值为`MemorySessionStorage`, `FileSessionStorage`, `RedisSessionStorage`, 默认为`MemorySessionStorage`
 
 ```python
 from qbotsdk import WebSocketAdapter
 from qbotsdk.storage import FileSessionStorage
 
-WebSocketAdapter(session_storage=FileSessionStorage(".qbotsdk-session.json"))
+# 若不传存储路径，默认路径为软件运行目录下的.session.json文件
+WebSocketAdapter(session_storage=FileSessionStorage())
 
-# Redis 在可选依赖里, 没装时连类都取不到
+# Redis 在可选依赖里, 使用前需要先安装qbotsdk[redis]
 from qbotsdk.storage import RedisSessionStorage
 
 # 给完整地址
 WebSocketAdapter(session_storage=RedisSessionStorage.from_url("redis://:pwd@10.0.0.5:6379/2"))
 
-# 或者只给零件, 地址由 SDK 拼（密码里的 @ / : 不用自己转义）
+# 或者只给零件, 地址由SDK拼
 storage = RedisSessionStorage.from_url(host="10.0.0.5", port=6379, password="pwd", db=2)
 WebSocketAdapter(session_storage=storage)
 
-# Unix domain socket, 以及指定 RESP 协议版本
+# Unix domain socket, 以及指定RESP协议版本
 RedisSessionStorage.from_url(unix_socket="/var/run/redis/redis.sock", db=2, protocol=3)
 ```
 
-也可以直接把现成的客户端交给 SDK，配置（连接池、集群、代理）都按你自己的来：
+也可以直接把现成的Redis客户端交给SDK
 
 ```python
+# 特别注意，SDK需要的Redis实例全限定名是redis.asyncio.Redis
 from redis.asyncio import Redis
 
 from qbotsdk.storage import RedisSessionStorage
@@ -141,22 +142,19 @@ from qbotsdk.storage import RedisSessionStorage
 storage = RedisSessionStorage(Redis(host="10.0.0.5", port=6379))
 ```
 
-这种情形 `decode_responses` 不一定开着，`load()` 对返回的字节和字符串都能处理。
-
-Redis 存储要先装 `pip install qbotsdk[redis]`；没装时 `RedisSessionStorage` 会抛 `ImportError`
-并提示装哪个额外依赖，而 `qbotsdk.storage` 本身照常导入、不拉起 redis。
 
 ### Webhook 接入
 
-在[管理端](https://q.qq.com/qqbot/#/developer/webhook-setting)填好回调地址并勾选要监听的事件后，
-事件就改走 HTTP 推送，把适配器换成 `WebhookAdapter` 就行，`start()` 的用法不变：
+在[QQ机器人管理后台](https://q.qq.com/qqbot/dashboard/manage)填好回调地址并勾选要监听的事件后，
+事件就改走 HTTP 推送，代码层面仅需把适配器换成 `WebhookAdapter`：
 
 ```python
 from qbotsdk import Bot, WebhookAdapter
 
 bot = Bot(
+    # 认证信息的具体获取方式请查看“快速开始”章节
     app_id=...,
-    client_secret=...,
+    app_secret=...,
     adapter=WebhookAdapter(
         "机器人密钥",
         port=8443,
@@ -167,17 +165,26 @@ bot = Bot(
 )
 await bot.start()
 ```
-    bot_secret=...,
-    port=8443,
-    path="/qbotsdk",
-    certfile="certs/fullchain.pem",
-    keyfile="certs/privkey.pem",
-)
-await server.start()
+
+没有公网地址时用反向代理或内网穿透把请求转到本机，务必原样透传 body 和两个签名头，任何改写都会导致验签失败。
+
+如果事件要接进自己已有的aiohttp应用，不用起整套服务器，挂一个处理函数就行：
+
+```python
+from aiohttp import web
+
+from qbotsdk import Bot, build_webhook_handler
+
+bot = Bot(app_id=..., app_secret=...)
+app = web.Application()
+app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, "机器人密钥"))
 ```
 
-长连接与回调建议只选一种：两边同时开会收到重复推送，分发器虽然按事件 `id` 做了去重，但没必要浪费一次请求。  
-没有公网地址时用反向代理或内网穿透把请求转到本机，务必原样透传 body 和两个签名头，任何改写都会导致验签失败。
+如果要使用flask等其他http框架，仿照该处理函数写一遍处理函数即可。
+
+## 示例
+
+具体示例请见[examples文件夹](examples/README.md)。
 
 ## 第三方依赖
 
@@ -200,7 +207,7 @@ await server.start()
 - [cryptography](https://github.com/pyca/cryptography)：ed25519 签名与验签。
 - [yarl](https://github.com/aio-libs/yarl)：URL 拼接。
 - 腾讯官方 Python SDK 文档与社区实现：心跳、Resume、关闭码语义对照过。
-- 所有反馈过的使用者：错误码与平台行为变化靠实际运行对齐。
+- 所有反馈过的使用者。
 
 ## 许可证
 

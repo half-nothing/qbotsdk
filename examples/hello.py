@@ -63,7 +63,7 @@ async def show_group(bot: Bot, group_openid: str) -> None:
 async def main() -> None:
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
-        client_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
         me = await bot.api.user.me()
         print(f"登录成功: {me.username} (id={me.id})")

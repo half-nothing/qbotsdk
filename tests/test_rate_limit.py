@@ -107,7 +107,7 @@ async def test_send_hits_local_limit(
     add_token_route(server)
     json_route(server, "POST", GROUP_PATH, snapshot("group_message_receipt.json"))
     options = ClientOptions(rate_limits={"group": 1.0})
-    async with Bot(app_id="app", client_secret="secret", options=options) as bot:
+    async with Bot(app_id="app", app_secret="secret", options=options) as bot:
         await bot.api.group.send_message(GROUP, content="one")
         with pytest.raises(RateLimitExceededError) as info:
             await bot.api.group.send_message(GROUP, content="two")
@@ -123,7 +123,7 @@ async def test_respect_rate_limits_off_sends_every_time(server: MockServer, poin
     add_token_route(server)
     json_route(server, "POST", C2C_PATH, snapshot("group_message_receipt.json"))
     options = ClientOptions(respect_rate_limits=False, rate_limits={"c2c": 1.0})
-    async with Bot(app_id="app", client_secret="secret", options=options) as bot:
+    async with Bot(app_id="app", app_secret="secret", options=options) as bot:
         for _ in range(3):
             await bot.api.user_message.send_message(USER, content="hi")
 
@@ -140,7 +140,7 @@ async def test_server_rate_limit_is_not_swallowed(server: MockServer, point_at: 
         )
 
     server.route("POST", GROUP_PATH, handler)
-    async with Bot(app_id="app", client_secret="secret") as bot:
+    async with Bot(app_id="app", app_secret="secret") as bot:
         with pytest.raises(APIError) as info:
             await bot.api.group.send_message(GROUP, content="hi")
 

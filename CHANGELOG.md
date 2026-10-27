@@ -15,6 +15,14 @@
 
 ### 记录
 
+- 新增 `build_webhook_handler(dispatcher, bot_secret)`：把回调接进自有的 aiohttp 应用时
+  只需 `app.router.add_post(path, build_webhook_handler(bot.dispatcher, secret))`，
+  地址校验应答、验签、先 ACK 再分发都在里面；`WebhookServer` 内部也改用它，
+  更底层的 `parse_webhook_event`、`verify_webhook_signature`、`build_validation_response`、
+  `build_ack_payload` 四个纯函数继续导出。
+- 群聊与单聊消息带 `keyboard` 时自动升成 Markdown 消息（`msg_type=2`），
+  只传 `content` 的文本会被搬进 `markdown`：实测 `msg_type` 不是 2 时平台照样返回成功，
+  但按钮不会显示；`media` / `input_notify` 与 `keyboard` 同时传会在本地报错。
 - 新增会话存储抽象 `SessionStorage`：内置内存、文件、Redis 三种实现，
   `WebSocketAdapter(session_storage=...)` 可跨进程续连；默认内存存储，
   文件存储的会话 ID 一变就落盘、序号每秒最多写一次，另有定时兜底保证事件停下后待写的值也会落盘，

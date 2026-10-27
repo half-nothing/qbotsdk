@@ -31,7 +31,7 @@ class FileSessionStorage(SessionStorage):
 
     def __init__(
         self,
-        path: str | Path,
+        path: str | Path = ".session.json",
         *,
         flush_interval: float = 1.0,
         clock: Callable[[], float] = monotonic,

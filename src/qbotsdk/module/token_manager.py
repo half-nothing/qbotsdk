@@ -36,12 +36,12 @@ class TokenManager:
     def __init__(
         self,
         app_id: str,
-        client_secret: str,
+        app_secret: str,
         *,
         refresh_buffer: float = _REFRESH_BUFFER_SECONDS,
     ) -> None:
         self._app_id = app_id
-        self._client_secret = client_secret
+        self._client_secret = app_secret
         self._refresh_buffer = refresh_buffer
         self._access_token: str | None = None
         self._refresh_at: float = 0.0

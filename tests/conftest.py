@@ -35,5 +35,5 @@ def point_at(server: MockServer, monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 async def bot(server: MockServer, point_at: None) -> AsyncIterator[Bot]:
     add_token_route(server)
-    async with Bot(app_id="app", client_secret="secret") as instance:
+    async with Bot(app_id="app", app_secret="secret") as instance:
         yield instance

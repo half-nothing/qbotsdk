@@ -127,7 +127,7 @@ async def send_image(bot: Bot, event: GroupAtMessageCreate) -> None:
 async def main() -> None:
     async with Bot(
         app_id=os.environ["QQ_BOT_APP_ID"],
-        client_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_secret=os.environ["QQ_BOT_APP_SECRET"],
         adapter=build_adapter(),
     ) as bot:
 

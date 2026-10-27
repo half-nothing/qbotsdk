@@ -68,7 +68,7 @@
 - [x] T2 WebSocket Gateway：Hello、Identify、READY、心跳 · 2026-10-27
 - [x] T3 Resume、关闭码处理、退避重连 · 2026-10-27（与 T2 一并完成）
 - [x] T4 分发层 + `bot.on(...)` + `event.reply()` · 2026-10-27（总线 `async-event-bus`，`Bot.start()` 接网关，`event.reply()` 自动带 `msg_id` 与递增 `msg_seq`）
-- [ ] T5 WebHook 函数层：op 13 签名、请求验签、parse
+- [x] T5 WebHook 函数层：op 13 签名、请求验签、parse · 2026-10-27（`gateway/webhook.py`，官方向量入测）
 - [ ] T6 `WebhookServer`：开箱即用服务器（TLS 终结、快速 ACK、优雅关闭）
 
 

@@ -1,0 +1,37 @@
+{
+  "op": 0,
+  "s": 3,
+  "t": "GROUP_MESSAGE_CREATE",
+  "id": "GROUP_MESSAGE_CREATE:fake",
+  "d": {
+    "author": {
+      "bot": false,
+      "id": "member-1",
+      "member_openid": "member-1",
+      "member_role": "owner",
+      "union_openid": "",
+      "username": "user-a"
+    },
+    "content": "<@member-2> 11",
+    "group_id": "group-1",
+    "group_openid": "group-1",
+    "id": "ROBOT1.0_group_msg",
+    "mentions": [
+      {
+        "bot": false,
+        "id": "member-2",
+        "is_you": false,
+        "member_openid": "member-2",
+        "member_role": "member",
+        "scope": "single",
+        "username": "user-b"
+      }
+    ],
+    "message_scene": {
+      "ext": ["msg_idx=REFIDX_FAKE", "auth_token=fake-token"],
+      "source": "default"
+    },
+    "message_type": 0,
+    "timestamp": "2026-10-28T10:29:49+08:00"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "op": 0,
+  "s": 3,
+  "t": "GROUP_MESSAGE_CREATE",
+  "d": {
+    "id": "ROBOT1.0_group_msg",
+    "author": {
+      "id": "member-1",
+      "member_openid": "member-1",
+      "union_openid": "union-1"
+    },
+    "content": "<@member-2> 你好 <@all>",
+    "group_openid": "group-1",
+    "timestamp": "2024-01-01T00:00:00+08:00",
+    "message_type": 0,
+    "message_scene": {
+      "source": "default",
+      "ext": ["msg_idx=102", "auth_token=token-2"]
+    },
+    "mentions": [
+      {
+        "id": "bot-1",
+        "member_openid": "bot-1",
+        "is_you": true
+      },
+      {
+        "id": "member-2",
+        "member_openid": "member-2"
+      }
+    ],
+    "attachments": [],
+    "msg_elements": []
+  }
+}

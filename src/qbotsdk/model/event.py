@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Final, Protocol
@@ -14,7 +16,7 @@ from pydantic import ConfigDict, Field, PrivateAttr, field_validator
 from .base import QQModel
 from .message import Message
 from .scene import ARKData, Attachment, MessageElement, MessageScene, split_ext
-from .user import C2CUser, GroupUser, GuildUser
+from .user import C2CUser, GroupUser, GuildUser, MentionUser
 
 if TYPE_CHECKING:
     from .draft import MessageMarkdown
@@ -25,6 +27,11 @@ if TYPE_CHECKING:
 # 官方限制: 群聊每条消息最多被动回复 5 次, 单聊 4 次, 超出会返回 40034128
 GROUP_REPLY_LIMIT = 5
 C2C_REPLY_LIMIT = 4
+
+# 群聊 content 里的 @ 标记: `<@member_openid>` 或 `<@all>`, 频道消息里还会出现 `<@!openid>`
+_MENTION_TAG = re.compile(r"<@!?([^>]+)>")
+# 剥掉 @ 机器人 之后可能留下连续空格, 归成一个
+_TIDY_SPACES = re.compile(r"[ \t]{2,}")
 
 
 class GroupSender(Protocol):
@@ -135,8 +142,19 @@ class ResumedEvent(EventModel):
     """t = RESUMED，Resume 补发完成后下发。官方 `d` 是空对象。"""
 
 
-class GroupAtMessageCreate(EventModel):
-    """t = GROUP_AT_MESSAGE_CREATE，群聊里 @ 机器人。"""
+@dataclass(frozen=True, slots=True)
+class RenderedMentions:
+    """`render_mentions_indexed` 的结果。
+
+    `text` 里的 `@0`、`@1` 按出现顺序对应 `mentions` 的下标, 用 `mentions[0]` 取回成员对象。
+    """
+
+    text: str
+    mentions: tuple[MentionUser, ...]
+
+
+class _GroupMessageBase(EventModel):
+    """群聊消息事件的公共字段：@ 机器人与全量模式下的载荷一致。"""
 
     id: str = Field(alias="id")
     author: GroupUser = Field(alias="author")
@@ -146,7 +164,7 @@ class GroupAtMessageCreate(EventModel):
     message_type: int | None = Field(alias="message_type", default=None)
     message_scene: MessageScene | None = Field(alias="message_scene", default=None)
     attachments: list[Attachment] = Field(alias="attachments", default_factory=list)
-    mentions: list[GroupUser] = Field(alias="mentions", default_factory=list)
+    mentions: list[MentionUser] = Field(alias="mentions", default_factory=list)
     msg_elements: list[MessageElement] = Field(alias="msg_elements", default_factory=list)
 
     async def reply(
@@ -186,6 +204,88 @@ class GroupAtMessageCreate(EventModel):
             reply_to=self.id,
             msg_seq=msg_seq,
         )
+
+    @property
+    def mentioned_me(self) -> bool:
+        """机器人自己是否被 @。全量模式下群里每条消息都会下发, 靠 mentions 里的 is_you 判断。"""
+
+        return any(user.is_you for user in self.mentions)
+
+    @property
+    def mentions_by_openid(self) -> dict[str, MentionUser]:
+        """按 member_openid 索引的 mentions。
+
+        content 里的 <@member_openid> 只能拿到 openid, 要靠这张表还原成成员对象。
+        """
+
+        return {user.member_openid: user for user in self.mentions}
+
+    def render_mentions(self, *, strip_me: bool = False) -> str:
+        """把 content 里的 @ 标记换成人类可读的 @昵称, 原始 content 保持不变。
+
+        <@member_openid> 换成 @昵称, 昵称缺失时退回 openid
+        <@all> 换成 @全体成员，找不到对应 mention 的标记原样换成 @openid
+        strip_me=True 时去掉@机器人自己的那一段
+        """
+
+        return self._render(code=False, strip_me=strip_me).text
+
+    def render_mentions_indexed(self, *, strip_me: bool = False) -> RenderedMentions:
+        """把 content 里的 @ 标记换成按出现顺序编号的 @0、@1, 给代码定位成员用。
+
+        昵称里带空格也不会影响按空白分词, 用 rendered.mentions[int] 取回成员对象
+        <@all> 换成 @all，找不到对应 mention 的标记仍换成 @openid, 且不占编号。
+        strip_me=True 时去掉 @ 机器人自己的那一段, 编号随之从 0 重新连续。
+        """
+
+        return self._render(code=True, strip_me=strip_me)
+
+    def _render(self, *, code: bool, strip_me: bool) -> RenderedMentions:
+        lookup = self.mentions_by_openid
+        used: list[MentionUser] = []
+
+        def replace(match: re.Match[str]) -> str:
+            key = match.group(1)
+            if key == "all":
+                return "@all" if code else "@全体成员"
+            user = lookup.get(key)
+            if user is None:
+                return f"@{key}"
+            if user.is_you and strip_me:
+                return ""
+            if not code:
+                return f"@{user.username or key}"
+            if user not in used:
+                used.append(user)
+            return f"@{used.index(user)}"
+
+        text = _MENTION_TAG.sub(replace, self.content)
+        # 剥掉 @ 机器人 之后可能留下连续空格, 归成一个
+        return RenderedMentions(text=_TIDY_SPACES.sub(" ", text).strip(), mentions=tuple(used))
+
+
+class GroupAtMessageCreate(_GroupMessageBase):
+    """t = GROUP_AT_MESSAGE_CREATE，群聊里 @ 机器人。
+
+    没有给机器人打开接收全部消息时, 只有@到机器人的消息才会走这个事件。
+    开启全量之后不再下发本事件, 全部改走 GroupMessageCreate。
+    content 里 @机器人 的前缀已被平台去掉, 消息里 @ 其他人时, 官方没有承诺 content 里保留对应标记。
+    """
+
+    @property
+    def mentioned_me(self) -> bool:
+        """未开启全量时只有 @ 到机器人本人才会下发本事件, 恒为 True。"""
+
+        return True
+
+
+class GroupMessageCreate(_GroupMessageBase):
+    """t = GROUP_MESSAGE_CREATE，群聊全量消息。
+
+    给机器人打开接收全部消息后, 群里每条消息都会下发, 不限于@机器人, 字段与 GROUP_AT_MESSAGE_CREATE 一致。
+    开启全量后包括 @ 机器人在内的消息都走本事件, 不会再下发 GROUP_AT_MESSAGE_CREATE, 因此判断机器人自己是否被 @ 要看 mentions 条目的 `is_you`。
+    该事件里 content 会把 @ 成员写成 <@member_openid>、@ 全体写成 <@all>, 被@的成员同时出现在 mentions 里。
+    """
 
 
 class C2CMessageCreate(EventModel):
@@ -395,6 +495,7 @@ EVENT_MODELS: Final[dict[str, type[EventModel]]] = {
     "READY": ReadyEvent,
     "RESUMED": ResumedEvent,
     "GROUP_AT_MESSAGE_CREATE": GroupAtMessageCreate,
+    "GROUP_MESSAGE_CREATE": GroupMessageCreate,
     "C2C_MESSAGE_CREATE": C2CMessageCreate,
     "AT_MESSAGE_CREATE": ChannelMessageCreate,
     "INTERACTION_CREATE": InteractionCreate,

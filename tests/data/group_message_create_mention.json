@@ -1,0 +1,46 @@
+{
+  "op": 0,
+  "s": 4,
+  "t": "GROUP_MESSAGE_CREATE",
+  "id": "GROUP_MESSAGE_CREATE:envelope-1",
+  "d": {
+    "author": {
+      "bot": false,
+      "id": "member-1",
+      "member_openid": "member-1",
+      "member_role": "owner",
+      "union_openid": "",
+      "username": "user-a"
+    },
+    "content": "<@bot-1> <@member-2> ",
+    "group_id": "group-1",
+    "group_openid": "group-1",
+    "id": "ROBOT1.0_group_mention",
+    "mentions": [
+      {
+        "bot": true,
+        "id": "bot-1",
+        "is_you": true,
+        "member_openid": "bot-1",
+        "member_role": "member",
+        "scope": "single",
+        "username": "bot-name"
+      },
+      {
+        "bot": false,
+        "id": "member-2",
+        "is_you": false,
+        "member_openid": "member-2",
+        "member_role": "member",
+        "scope": "single",
+        "username": "user-b"
+      }
+    ],
+    "message_scene": {
+      "ext": ["msg_idx=fake-idx", "auth_token=fake-token"],
+      "source": "default"
+    },
+    "message_type": 0,
+    "timestamp": "2026-10-28T10:32:18+08:00"
+  }
+}

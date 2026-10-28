@@ -19,10 +19,12 @@ from .event import (
     ChannelMessageCreate,
     EventModel,
     GroupAtMessageCreate,
+    GroupMessageCreate,
     InteractionCode,
     InteractionCreate,
     InteractionType,
     ReadyEvent,
+    RenderedMentions,
     ResumedEvent,
     UnknownEvent,
 )
@@ -69,7 +71,7 @@ from .reaction import (
 from .role import Role, RolesResult
 from .scene import ARKData, Attachment, ElementAuthor, MessageElement, MessageScene
 from .token import Token
-from .user import C2CUser, GroupUser, GuildUser, User
+from .user import C2CUser, GroupUser, GuildUser, MentionUser, User
 
 __all__ = [
     "ARKData",
@@ -99,6 +101,7 @@ __all__ = [
     "GroupMember",
     "GroupMemberRole",
     "GroupMembersPage",
+    "GroupMessageCreate",
     "GroupMessageDraft",
     "GroupMessageReceipt",
     "GroupMessageType",
@@ -115,6 +118,7 @@ __all__ = [
     "KeyboardRow",
     "MediaInfo",
     "Member",
+    "MentionUser",
     "Message",
     "MessageElement",
     "MessageExtInfo",
@@ -131,6 +135,7 @@ __all__ = [
     "ReactionUsers",
     "ReadyEvent",
     "RecvMsgSetting",
+    "RenderedMentions",
     "ResumedEvent",
     "Role",
     "RolesResult",

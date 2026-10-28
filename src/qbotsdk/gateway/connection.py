@@ -256,6 +256,7 @@ class GatewayConnection:
         async for message in ws:
             if message.type is not WSMsgType.TEXT:
                 continue
+            logger.trace(f"Websocket <-- {message.data}")
             payload = GatewayPayload.model_validate_json(message.data)
             action = await self._handle(payload)
             if action is not None:

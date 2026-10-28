@@ -282,9 +282,15 @@ class GroupAtMessageCreate(_GroupMessageBase):
 class GroupMessageCreate(_GroupMessageBase):
     """t = GROUP_MESSAGE_CREATE，群聊全量消息。
 
-    给机器人打开接收全部消息后, 群里每条消息都会下发, 不限于@机器人, 字段与 GROUP_AT_MESSAGE_CREATE 一致。
-    开启全量后包括 @ 机器人在内的消息都走本事件, 不会再下发 GROUP_AT_MESSAGE_CREATE, 因此判断机器人自己是否被 @ 要看 mentions 条目的 `is_you`。
-    该事件里 content 会把 @ 成员写成 <@member_openid>、@ 全体写成 <@all>, 被@的成员同时出现在 mentions 里。
+    给机器人打开接收全部消息后, 群里每条消息都会下发,
+    不限于@机器人, 字段与 GROUP_AT_MESSAGE_CREATE 一致。
+
+    开启全量后包括 @ 机器人在内的消息都走本事件,
+    不会再下发 GROUP_AT_MESSAGE_CREATE,
+    因此判断机器人自己是否被 @ 要看 mentions 条目的 `is_you`。
+
+    该事件里 content 会把 @ 成员写成 <@member_openid>、@ 全体写成 <@all>,
+    被@的成员同时出现在 mentions 里。
     """
 
 

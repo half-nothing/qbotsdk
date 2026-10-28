@@ -53,7 +53,6 @@ build-backend = "pdm.backend"
 distribution = true
 
 [tool.pdm.build]
-# 源码包里带上更新日志; source-includes 只影响 sdist, 不会跑进 wheel
 source-includes = ["CHANGELOG.md"]
 
 [tool.mypy]
@@ -81,7 +80,7 @@ select = ["E", "W", "F", "I", "TID", "UP", "B", "SIM", "RUF"]
 ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.lint.flake8-tidy-imports]
-# 只允许同包内的相对导入; 跨子包一律写全路径
+# 只允许同包内的相对导入
 ban-relative-imports = "parents"
 
 [tool.ruff.format]

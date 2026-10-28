@@ -14,6 +14,7 @@
 - **接入方式可插拔**：默认走 WebSocket 长连接，也可以换成 Webhook 回调，或自己实现 `Adapter`。
 - **消息即对象**：收到的事件可以直接 `await event.reply(...)`。
 - **容错内置**：429 按 `Retry-After` 重试，幂等请求遇 5xx 与网络异常退避重试，本地令牌桶限流，错误统一成 `QQBotError` 体系。
+- **原始报文兜底**：每个模型都带 `raw`，官方新增字段时可以直接取用，不必等 SDK 更新。
 - **类型完整**：pydantic v2 模型、全量类型标注、随包分发 `py.typed`。
 
 ## 安装
@@ -52,8 +53,8 @@ async def main() -> None:
     # 将环境变量QQ_BOT_APP_SECRET设为获取到的AppSecret
     # 如果您选择直接替换对应内容，请不要将携带敏感信息的文件提交到仓库
     async with Bot(
-        app_id=os.environ["QQ_BOT_APP_ID"],
-        app_secret=os.environ["QQ_BOT_APP_SECRET"],
+            app_id=os.environ["QQ_BOT_APP_ID"],
+            app_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
         me = await bot.api.user.me()
         print(f"登录成功：{me.username}")
@@ -82,7 +83,6 @@ from qbotsdk.model.event import C2CMessageCreate, GroupAtMessageCreate, Interact
 async def main() -> None:
     # 认证信息的具体获取方式请查看“快速开始”章节
     async with Bot(app_id=..., app_secret=...) as bot:
-
         @bot.on(GroupAtMessageCreate)
         async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
@@ -142,7 +142,6 @@ from qbotsdk.storage import RedisSessionStorage
 storage = RedisSessionStorage(Redis(host="10.0.0.5", port=6379))
 ```
 
-
 ### Webhook 接入
 
 在[QQ机器人管理后台](https://q.qq.com/qqbot/dashboard/manage)填好回调地址并勾选要监听的事件后，
@@ -181,6 +180,34 @@ app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, "机器人
 ```
 
 如果要使用flask等其他http框架，仿照该处理函数写一遍处理函数即可。
+
+## 原始报文
+
+SDK 给每个响应模型和事件模型都挂了一个 `raw`，内容是**解析这条数据时用的那份 dict 本身**
+
+```python
+from qbotsdk.model.event import GroupMessageCreate
+
+
+@bot.on(GroupMessageCreate)
+async def on_group(ctx) -> None:
+    event = ctx.event
+    print(event.content)  # SDK 已建模的字段
+    print(event.raw["content"])  # 同一份数据，原文
+    print(event.raw.get("some_new_field"))  # 官方新加、SDK 还没建模的字段
+```
+
+嵌套模型各自带一份子 dict，`event.author.raw["username"]`等都能直接读。REST 接口同理：
+
+```python
+me = await bot.api.user.me()
+print(me.raw["username"])
+```
+
+注意事项：
+
+1. `raw`字段是dict类型，生成的 `__hash__` 在调用时会抛 `TypeError`，不要把模型放进 `set` 或当作 dict 的键。
+2. 内存上每个模型有一份dict引用，嵌套对象与原报文共享同一个dict对象，不是深拷贝。
 
 ## 示例
 

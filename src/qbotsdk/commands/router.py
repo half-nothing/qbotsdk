@@ -107,7 +107,7 @@ def _wrap(
 class Router:
     """命令与按钮的注册表, 也是执行入口。
 
-    一条路由声明它属于哪些事件类型；`handle()` 按 `type(event)` 取对应分桶, 
+    一条路由声明它属于哪些事件类型；`handle()` 按 `type(event)` 取对应分桶,
     因此同一个路由器可以同时服务群、单聊、频道与互动事件, 而互不干扰。
     """
 
@@ -183,7 +183,7 @@ class Router:
 
     @property
     def commands(self) -> tuple[Route, ...]:
-        """按名字排序的文本命令, 别名不在其中。"""
+        """按名字排序的文本命令。"""
 
         return tuple(
             sorted((route for route in self._routes if route.is_command), key=lambda r: r.name)
@@ -347,7 +347,11 @@ class Router:
         return decorator
 
     def include(self, router: Router, *, prefix: str = "") -> None:
-        """把另一个路由器整体并进来, 前缀叠加、中间件与守卫由外向内套。"""
+        """把另一个路由器整体并进来, 前缀叠加。
+
+        子路由器的中间件与守卫只作用于它自己的路由, 挂到复制出的路由上,
+        不会并进当前路由器; 执行时当前路由器的钩子在外, 子路由器钩子在内。
+        """
 
         if router is self:
             raise ValueError("a router cannot include itself")
@@ -361,21 +365,24 @@ class Router:
             self._checker = router._checker
         if router._strict:
             self._strict = True
-        self._middlewares.extend(router._middlewares)
-        self._guards.extend(router._guards)
         for name, converter in router._converters.items():
             self._converters.setdefault(name, converter)
 
         for route in router._routes:
-            if not isinstance(route.trigger, TextTrigger):
-                self._check_registry(route)
-                self._add_payload_route(route)
-                continue
-            source = " ".join(base + tuple(route.name.split())) if base else route.name
-            renamed = replace(
+            inherited = replace(
                 route,
+                guards=(*router._guards, *route.guards),
+                middlewares=(*router._middlewares, *route.middlewares),
+            )
+            if not isinstance(inherited.trigger, TextTrigger):
+                self._check_registry(inherited)
+                self._add_payload_route(inherited)
+                continue
+            source = " ".join(base + tuple(inherited.name.split())) if base else inherited.name
+            renamed = replace(
+                inherited,
                 trigger=replace(
-                    route.trigger,
+                    inherited.trigger,
                     template=compile_template(source, converters=self._converters),
                 ),
             )
@@ -460,7 +467,7 @@ class Router:
         """处理一条事件并返回执行结果。
 
         调用方在自己的事件回调里手动调用它；
-        未命中任何路由时 `handled` 为 False, 
+        未命中任何路由时 `handled` 为 False,
         路由器不会发送任何东西
         """
 
@@ -486,7 +493,12 @@ class Router:
 
         ctx = self._context(invocation, command=route.name)
         reply, status, error = await self._execute(
-            ctx, permission=route.permission, ack="none", action=action
+            ctx,
+            permission=route.permission,
+            ack="none",
+            action=action,
+            guards=route.guards,
+            middlewares=route.middlewares,
         )
         await self._send(ctx, reply)
         return self._result(ctx, status=status, command=route.name, reply=reply, error=error)
@@ -535,7 +547,12 @@ class Router:
 
         ctx = self._context(invocation, command=route.name)
         reply, status, error = await self._execute(
-            ctx, permission=route.permission, ack=route.ack, action=action
+            ctx,
+            permission=route.permission,
+            ack=route.ack,
+            action=action,
+            guards=route.guards,
+            middlewares=route.middlewares,
         )
         await self._send(ctx, reply)
         return self._result(ctx, status=status, command=route.name, reply=reply, error=error)
@@ -606,11 +623,15 @@ class Router:
         permission: str | None,
         ack: AckPolicy,
         action: Callable[[Context], Awaitable[Reply]],
+        guards: tuple[Guard, ...] = (),
+        middlewares: tuple[Middleware, ...] = (),
     ) -> tuple[Reply, Status, CommandError | None]:
         interaction = ctx.kind == "interaction"
 
         async def core(inner: Context) -> Reply:
             for guard in self._guards:
+                await guard(inner)
+            for guard in guards:
                 await guard(inner)
             if permission is not None:
                 await self._authorize(inner, permission)
@@ -622,7 +643,7 @@ class Router:
             return reply
 
         chain: Callable[[Context], Awaitable[Reply]] = core
-        for middleware in reversed(self._middlewares):
+        for middleware in reversed((*self._middlewares, *middlewares)):
             chain = _wrap(middleware, chain)
         try:
             reply = await chain(ctx)

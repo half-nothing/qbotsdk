@@ -13,7 +13,7 @@ QQ_BOT_APP_SECRET=你的AppSecret
 | `websocket.py`      | 长连接收四类事件（群 @、单聊、频道 @、互动），带会话落盘                         |
 | `webhook.py`        | 用 `WebhookAdapter` 起回调服务，含 TLS 证书与验签                   |
 | `group_bot.py`      | 群机器人：按钮键盘、按钮回调、富媒体上传、撤回                                |
-| `command_bot.py`    | 命令与权限：模板命令、别名、`bind_args`、权限判定、`/permission`、按钮回调       |
+| `command_bot.py`    | 命令与权限：事件监听器接命令树、`<text:rest>`、`--` 选项、自定义转换器、子 Router `include` 与守卫、前缀回调、频道命令、内置 `/permission` |
 | `c2c_bot.py`        | 单聊机器人：正在输入、Markdown 回复、回复次数与错误处理                       |
 | `custom_webhook.py` | 把 Webhook 接进自己已有的 aiohttp 应用，只用 SDK 的纯函数与 `dispatcher` |
 
@@ -25,7 +25,7 @@ QQ_BOT_APP_SECRET=你的AppSecret
 | `websocket.py`      | `QQ_BOT_INTENTS`、`QQ_BOT_SESSION_FILE`    |
 | `webhook.py`        | `QQ_BOT_CERTFILE`、`QQ_BOT_KEYFILE`        |
 | `group_bot.py`      | `QQ_BOT_IMAGE_PATH`、`QQ_BOT_SESSION_FILE` |
-| `command_bot.py`    | `QQ_BOT_PERMISSION_FILE`、`QQ_BOT_OWNER`   |
+| `command_bot.py`    | `QQ_BOT_OWNER`、`QQ_BOT_PERMISSION_FILE`、`QQ_BOT_REDIS_URL`、`QQ_BOT_SESSION_FILE` |
 | `c2c_bot.py`        | 无                                         |
 | `custom_webhook.py` | `QQ_BOT_WEBHOOK_PORT`                     |
 

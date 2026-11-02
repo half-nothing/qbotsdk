@@ -27,6 +27,7 @@
 
 ### 修复
 
+- `Router.include()` 不再把子路由器的中间件与守卫并进父路由器：钩子跟着被包含的路由走，只作用于它自己的命令；执行时父级钩子在外、路由级钩子在内。之前给子路由器挂守卫会让父路由器所有命令一起被拒。
 - @ 标记不再由命令层各自解析：适配器统一调用事件层的 `render_mentions_openid(strip_me=True)`，正文里的 `<@openid>` / `<@!openid>` 变成 `@openid`（保留 `@` 便于识别），`Context.mentions` 是按出现顺序去重的成员元组，`mention` 转换器与 `/permission` 的目标解析都只剥掉 `@`。之前 `/permission grant <@openid> key` 会把标记直接拼进主体键，得到 `group:{gid}:<@openid>`；`@all` 与空目标会明确报错。
 
 ### 破坏性变更

@@ -74,7 +74,7 @@ class Bot:
         """注册事件处理器, 只接受 `async def`。
 
         事件对象在 `ctx.event` 上; 能回复的事件类型直接提供 `reply()` 方法
-        （`GroupAtMessageCreate`/`C2CMessageCreate`/`ChannelMessageCreate`）, 
+        （`GroupAtMessageCreate`/`C2CMessageCreate`/`ChannelMessageCreate`）,
         互动事件用 `respond()`, 没有这些方法的事件就是不支持回复。
         """
 

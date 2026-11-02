@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+
 import pytest
 
-from qbotsdk.commands import Context, Messages, Reply, Router, Status
+from qbotsdk.commands import Context, GuardFailed, Messages, Reply, Router, Status
 from qbotsdk.commands.router import strip_prefix
 from qbotsdk.model.event import C2CMessageCreate, GroupMessageCreate
 from tests.commands.support import FakeApi, c2c_event, group_event
@@ -164,6 +166,74 @@ async def test_include_accepts_a_default_prefix_child() -> None:
     assert [route.name for route in parent.commands] == ["admin ping"]
     event = group_event("/admin ping")
     assert (await parent.handle(event)).replied is True
+
+
+async def test_include_keeps_child_guards_local() -> None:
+    child = Router()
+
+    @child.guard
+    async def child_only(ctx: Context) -> None:
+        raise GuardFailed("child only")
+
+    @child.command("ping", on=ON)
+    async def ping(ctx: Context) -> Reply:
+        return Reply(text="pong")
+
+    parent = Router()
+
+    @parent.command("open", on=ON)
+    async def open_command(ctx: Context) -> Reply:
+        return Reply(text="open")
+
+    parent.include(child, prefix="admin")
+
+    open_event = group_event("/open")
+    assert (await parent.handle(open_event)).status is Status.HANDLED
+    assert isinstance(open_event.api, FakeApi)
+    assert open_event.api.group.calls[0]["content"] == "open"
+
+    child_event = group_event("/admin ping")
+    assert (await parent.handle(child_event)).status is Status.DENIED
+
+
+async def test_include_keeps_child_middleware_inside_the_parent() -> None:
+    order: list[str] = []
+    child = Router()
+
+    @child.use
+    async def child_middleware(
+        ctx: Context, call_next: Callable[[Context], Awaitable[Reply]]
+    ) -> Reply:
+        order.append("child")
+        return await call_next(ctx)
+
+    @child.command("ping", on=ON)
+    async def ping(ctx: Context) -> Reply:
+        order.append("ping")
+        return Reply(text="pong")
+
+    parent = Router()
+
+    @parent.use
+    async def parent_middleware(
+        ctx: Context, call_next: Callable[[Context], Awaitable[Reply]]
+    ) -> Reply:
+        order.append("parent")
+        return await call_next(ctx)
+
+    @parent.command("open", on=ON)
+    async def open_command(ctx: Context) -> Reply:
+        order.append("open")
+        return Reply(text="open")
+
+    parent.include(child, prefix="admin")
+
+    await parent.handle(group_event("/open"))
+    assert order == ["parent", "open"]
+
+    order.clear()
+    await parent.handle(group_event("/admin ping"))
+    assert order == ["parent", "child", "ping"]
 
 
 async def test_include_rejects_a_foreign_prefix() -> None:

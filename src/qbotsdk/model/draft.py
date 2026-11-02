@@ -171,8 +171,8 @@ class GroupMessageDraft(QQModel):
 class UserMessageDraft(QQModel):
     """单聊消息请求体。
 
-    与群聊的差别只有 msg_type 多了 6（输入中状态）以及 is_wakeup, 
-    所以不复用 `GroupMessageDraft`：复用会把两套枚举塞进同一个校验器, 
+    与群聊的差别只有 msg_type 多了 6（输入中状态）以及 is_wakeup,
+    所以不复用 `GroupMessageDraft`：复用会把两套枚举塞进同一个校验器,
     校验器里得按长度判断是哪种消息, 反而更难读。
 
     msg_type 留空时按内容推断：media → 7, markdown → 2, input_notify → 6, 否则 0。

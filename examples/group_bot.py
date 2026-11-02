@@ -8,7 +8,7 @@
     QQ_BOT_SESSION_FILE                可选，会话落盘路径，重启后直接 Resume
 
 在群里 @ 机器人发这些指令：
-    /button   回一条带两个按钮的消息（一个回调、一个打开链接）
+    /button   回一条带两个按钮的消息
     /image    上传 QQ_BOT_IMAGE_PATH 指向的图片，再以富媒体消息发出去
     /recall   撤回机器人上一条 /button 消息
     其它文本  原样回一句

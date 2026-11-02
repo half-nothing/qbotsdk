@@ -2,9 +2,6 @@
 
 """把 Webhook 接进自己已有的 aiohttp 应用
 
-与 `webhook.py` 的区别：那边用 `WebhookAdapter` 让 SDK 自己起服务，这边复用你现有的
-aiohttp 应用与中间件（鉴权、日志、限流都按你自己的来）。
-
 回调处理有两种写法，这里同时挂在两条路径上方便对照，实际项目里挑一种就行：
 
 - `/qbotsdk`：直接用 `build_webhook_handler`，解包、op 13 应答、验签、回 ACK 都在里面。

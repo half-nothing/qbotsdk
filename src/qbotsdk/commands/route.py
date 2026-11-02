@@ -12,7 +12,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from inspect import Parameter, Signature, iscoroutinefunction, signature
-from typing import Any, Literal, get_args, get_origin, get_type_hints
+from typing import TYPE_CHECKING, Any, Literal, get_args, get_origin, get_type_hints
 
 from pydantic import BaseModel
 
@@ -22,6 +22,9 @@ from .context import Context
 from .convert import DEFAULT_CONVERTERS, Converter, accepts_annotation
 from .reply import Reply
 from .template import PathTemplate
+
+if TYPE_CHECKING:
+    from .router import Guard, Middleware
 
 CommandHandler = Callable[..., Awaitable[object]]
 CallbackHandler = Callable[..., Awaitable[object]]
@@ -81,6 +84,8 @@ class Route:
     hidden: bool = False
     ack: AckPolicy = "pre"
     options: Mapping[str, type] = field(default_factory=dict)
+    guards: tuple[Guard, ...] = ()
+    middlewares: tuple[Middleware, ...] = ()
 
     @property
     def name(self) -> str:

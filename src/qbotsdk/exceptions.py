@@ -153,7 +153,7 @@ class APIError(QQBotError):
 class RateLimitExceededError(QQBotError):
     """本地令牌桶判定「这一发会超限」时抛出, 不打到服务端。
 
-    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`, 
+    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`,
     那条路径依旧走 `APIError`。
     """
 

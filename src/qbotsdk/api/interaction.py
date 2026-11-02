@@ -20,7 +20,7 @@ class InteractionResource:
     async def respond(self, interaction_id: str, *, code: int = 0) -> None:
         """回应互动事件, 让客户端停止 loading。
 
-        官方只要求 type=11 与 type=12 回应, 
+        官方只要求 type=11 与 type=12 回应,
         其余类型调用也不会报错, 同一个 interaction_id 只能回应一次。
 
         Args:

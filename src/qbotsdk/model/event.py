@@ -353,7 +353,7 @@ class C2CMessageCreate(EventModel):
 class ChannelMessageCreate(Message, EventModel):
     """t = AT_MESSAGE_CREATE, 频道里 @ 机器人。
 
-    官方 api-v2 没有这一事件的事件体表格（页面回落到「启动接入」）, 
+    官方 api-v2 没有这一事件的事件体表格（页面回落到「启动接入」）,
     这里按「消息对象(Message)」表格建模, 字段与频道发送接口的响应同源。
     """
 
@@ -455,7 +455,7 @@ class InteractionData(EventModel):
 class InteractionCreate(EventModel):
     """t = INTERACTION_CREATE, 用户点击消息按钮、快捷菜单等。
 
-    `type=11`（消息按钮）与 `type=12`（快捷菜单）必须调用 `respond()` 回应, 
+    `type=11`（消息按钮）与 `type=12`（快捷菜单）必须调用 `respond()` 回应,
     否则客户端一直 loading 到超时；其余类型可以不回应。
     """
 

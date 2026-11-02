@@ -41,6 +41,7 @@
 - 模板不再支持默认值（`<name:int=3>` 直接 `ValueError`），rest 段统一写成 `<text:rest>`；可选参数用注册多条路由或 `--` 选项表达。
 - 移除 `Router.command(aliases=...)`：同一个 handler 再注册一条路径即可，两条路径各自编译模板、各自校验形参与选项。
 - 命令匹配不再按「具体度评分」排序，改由前缀树的字面边优先与回溯决定。
+- 顶层 `qbotsdk` 只再导出与它同目录的模块：`Bot`、`ClientOptions`、异常族（`QQBotError`/`TransportError`/`APIError`/`RateLimitExceededError`/`ErrorCode`）与 `__version__`。子包内容改写子包导入，例如 `from qbotsdk.adapter import WebSocketAdapter`、`from qbotsdk.commands import Router, Reply`、`from qbotsdk.permissions import Grant, PermissionChecker`。
 
 ## [0.6.0] - 2026-10-28
 

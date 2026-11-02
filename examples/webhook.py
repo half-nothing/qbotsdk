@@ -14,7 +14,8 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, WebhookAdapter
+from qbotsdk import Bot
+from qbotsdk.adapter import WebhookAdapter
 from qbotsdk.model.event import GroupAtMessageCreate
 
 # 打开 TRACE 级别，输出底层网络日志

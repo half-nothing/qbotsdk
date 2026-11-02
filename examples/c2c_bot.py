@@ -20,7 +20,8 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, WebSocketAdapter
+from qbotsdk import Bot
+from qbotsdk.adapter import WebSocketAdapter
 from qbotsdk.exceptions import APIError
 from qbotsdk.model.draft import MessageMarkdown
 from qbotsdk.model.event import C2CMessageCreate

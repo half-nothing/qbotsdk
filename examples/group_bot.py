@@ -25,7 +25,8 @@ from pathlib import Path
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, FileSessionStorage, WebSocketAdapter
+from qbotsdk import Bot
+from qbotsdk.adapter import WebSocketAdapter
 from qbotsdk.model import MessageMarkdown
 from qbotsdk.model.event import GroupAtMessageCreate, InteractionCreate
 from qbotsdk.model.keyboard import (
@@ -41,6 +42,7 @@ from qbotsdk.model.keyboard import (
     KeyboardRow,
 )
 from qbotsdk.model.media import FileType, MediaInfo
+from qbotsdk.storage import FileSessionStorage
 
 # 打开 TRACE 级别，输出底层网络日志；只看业务输出可以改成 INFO
 logger.remove()

@@ -2,143 +2,21 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-
-from .adapter import Adapter, AdapterContext, WebhookAdapter, WebSocketAdapter
-from .api import ApiClient
 from .bot import Bot
-from .commands import (
-    C2CContext,
-    CallbackHandler,
-    ChannelContext,
-    CommandError,
-    CommandHandler,
-    Context,
-    ExecutionResult,
-    GroupContext,
-    GuardFailed,
-    InteractionContext,
-    Messages,
-    PermissionDenied,
-    Reply,
-    Route,
-    Router,
-    Status,
-    UsageError,
-)
 from .exceptions import APIError, ErrorCode, QQBotError, RateLimitExceededError, TransportError
-from .gateway import WebhookServer, build_webhook_handler
-from .model import (
-    Channel,
-    ChannelMessageCreate,
-    ChannelMessageDraft,
-    Group,
-    GroupBotState,
-    GroupMember,
-    GroupMessageDraft,
-    GroupMessageReceipt,
-    GroupMuteState,
-    GroupUser,
-    Guild,
-    GuildUser,
-    InteractionCreate,
-    Member,
-    MentionUser,
-    Message,
-    RenderedMentions,
-    Role,
-    User,
-)
 from .options import ClientOptions
-from .permissions import (
-    CachedPermissionStorage,
-    FilePermissionStorage,
-    Grant,
-    MemoryPermissionStorage,
-    PendingGrant,
-    Permission,
-    PermissionChecker,
-    PermissionCommands,
-    PermissionGroup,
-    PermissionRegistry,
-    PermissionStorage,
-    install_permission_commands,
-    permission_registry,
-)
-from .storage import FileSessionStorage, MemorySessionStorage, SessionData, SessionStorage
 
-try:
-    __version__ = version("qbotsdk")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.0.0"
+__author__ = "Half_nothing"
+__email__ = "Half_nothing@163.com"
+__version__ = "0.7.0"
 
 __all__ = [
     "APIError",
-    "Adapter",
-    "AdapterContext",
-    "ApiClient",
     "Bot",
-    "C2CContext",
-    "CachedPermissionStorage",
-    "CallbackHandler",
-    "Channel",
-    "ChannelContext",
-    "ChannelMessageCreate",
-    "ChannelMessageDraft",
     "ClientOptions",
-    "CommandError",
-    "CommandHandler",
-    "Context",
     "ErrorCode",
-    "ExecutionResult",
-    "FilePermissionStorage",
-    "FileSessionStorage",
-    "Grant",
-    "Group",
-    "GroupBotState",
-    "GroupContext",
-    "GroupMember",
-    "GroupMessageDraft",
-    "GroupMessageReceipt",
-    "GroupMuteState",
-    "GroupUser",
-    "GuardFailed",
-    "Guild",
-    "GuildUser",
-    "InteractionContext",
-    "InteractionCreate",
-    "Member",
-    "MemoryPermissionStorage",
-    "MemorySessionStorage",
-    "MentionUser",
-    "Message",
-    "Messages",
-    "PendingGrant",
-    "Permission",
-    "PermissionChecker",
-    "PermissionCommands",
-    "PermissionDenied",
-    "PermissionGroup",
-    "PermissionRegistry",
-    "PermissionStorage",
     "QQBotError",
     "RateLimitExceededError",
-    "RenderedMentions",
-    "Reply",
-    "Role",
-    "Route",
-    "Router",
-    "SessionData",
-    "SessionStorage",
-    "Status",
     "TransportError",
-    "UsageError",
-    "User",
-    "WebSocketAdapter",
-    "WebhookAdapter",
-    "WebhookServer",
     "__version__",
-    "build_webhook_handler",
-    "install_permission_commands",
-    "permission_registry",
 ]

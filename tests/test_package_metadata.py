@@ -7,16 +7,26 @@ from __future__ import annotations
 from importlib.metadata import version
 
 import qbotsdk
+from qbotsdk.storage import SessionStorage
 
 
 def test_version_matches_metadata() -> None:
     assert qbotsdk.__version__ == version("qbotsdk")
 
 
-def test_version_is_exported() -> None:
-    assert "__version__" in qbotsdk.__all__
+def test_only_root_modules_are_reexported() -> None:
+    assert set(qbotsdk.__all__) == {
+        "APIError",
+        "Bot",
+        "ClientOptions",
+        "ErrorCode",
+        "QQBotError",
+        "RateLimitExceededError",
+        "TransportError",
+        "__version__",
+    }
 
 
-def test_session_storage_is_top_level() -> None:
+def test_session_storage_lives_in_its_own_package() -> None:
     assert "qbotsdk.storage" in __import__("sys").modules
-    assert qbotsdk.SessionStorage is not None
+    assert SessionStorage is not None

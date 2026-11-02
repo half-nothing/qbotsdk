@@ -17,7 +17,8 @@ import sys
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, FileSessionStorage, WebSocketAdapter
+from qbotsdk import Bot
+from qbotsdk.adapter import WebSocketAdapter
 from qbotsdk.model.event import (
     C2CMessageCreate,
     ChannelMessageCreate,
@@ -25,6 +26,7 @@ from qbotsdk.model.event import (
     InteractionCreate,
     UnknownEvent,
 )
+from qbotsdk.storage import FileSessionStorage
 
 # 打开 TRACE 级别，输出底层网络日志；只看业务事件可以改成 INFO
 logger.remove()

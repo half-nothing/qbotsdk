@@ -27,11 +27,12 @@ from aiohttp import web
 from async_event_bus import EventContext
 from loguru import logger
 
-from qbotsdk import Bot, build_webhook_handler
+from qbotsdk import Bot
 from qbotsdk.gateway import (
     OpCode,
     build_ack_payload,
     build_validation_response,
+    build_webhook_handler,
     parse_webhook_event,
     verify_webhook_signature,
 )

@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""文件存储，会话写进一个 JSON 文件，进程重启后还能接着 Resume。"""
+"""文件存储, 会话写进一个 JSON 文件, 进程重启后还能接着 Resume。"""
 
 from __future__ import annotations
 
@@ -39,9 +39,9 @@ class FileSessionStorage(SessionStorage):
         """记录文件位置与落盘节奏。
 
         Args:
-            path:           会话文件路径，父目录不存在时自动创建。
+            path:           会话文件路径, 父目录不存在时自动创建。
             flush_interval: 两次写盘的最小间隔, 也是待写值最长滞留时间。
-            clock:          单调时钟，测试可以换成假时钟。
+            clock:          单调时钟, 测试可以换成假时钟。
         """
 
         self._path = Path(path).expanduser()
@@ -79,7 +79,7 @@ class FileSessionStorage(SessionStorage):
             self._cancel_flush_task()
             return
         self._pending = data
-        # 换了会话说明 session_id 变了，必须立刻落盘，否则重启接不上
+        # 换了会话说明 session_id 变了, 必须立刻落盘, 否则重启接不上
         if self._written[0] != data.session_id:
             self._write()
             return

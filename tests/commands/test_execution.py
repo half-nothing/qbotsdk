@@ -78,6 +78,37 @@ async def test_conversion_failure_reports_the_placeholder() -> None:
     )
 
 
+async def test_mention_placeholder_strips_the_rendered_marker() -> None:
+    router = Router()
+
+    @router.command("kick <member:mention>", on=ON)
+    async def kick(ctx: Context, member: str) -> Reply:
+        return Reply(text=member)
+
+    event = group_event(
+        "/kick <@member-2>",
+        mentions=[{"id": "m2", "member_openid": "member-2", "username": "bob"}],
+    )
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "member-2"
+
+
+async def test_mention_placeholder_accepts_a_bare_openid() -> None:
+    router = Router()
+
+    @router.command("kick <member:mention>", on=ON)
+    async def kick(ctx: Context, member: str) -> Reply:
+        return Reply(text=member)
+
+    event = group_event("/kick member-3")
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "member-3"
+
+
 async def test_raw_token_mode_passes_argv_untouched() -> None:
     router = Router()
     received: list[list[str]] = []
@@ -129,6 +160,111 @@ async def test_usage_error_without_text_falls_back_to_usage_line() -> None:
     await router.handle(other)
     assert isinstance(other.api, FakeApi)
     assert other.api.group.calls[0]["content"] == "Invalid arguments. Usage: /plain"
+
+
+async def test_stopping_on_a_dead_node_answers_with_usage() -> None:
+    router = Router()
+
+    @router.command("permission show", on=ON)
+    async def show(ctx: Context) -> Reply:
+        return Reply.ok()
+
+    @router.command("permission grant <key>", on=ON)
+    async def grant(ctx: Context, key: str) -> Reply:
+        return Reply.ok()
+
+    event = group_event("/permission")
+    result = await router.handle(event)
+
+    assert result.status is Status.FAILED
+    assert isinstance(result.error, UsageError)
+    assert result.replied is True
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == (
+        "Invalid arguments. Usage: /permission <grant|show>"
+    )
+
+
+async def test_rest_binds_a_string_tuple() -> None:
+    router = Router()
+
+    @router.command("echo <text:rest>", on=ON)
+    async def echo(ctx: Context, text: tuple[str, ...]) -> Reply:
+        return Reply(text="|".join(text))
+
+    event = group_event("/echo a b c")
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "a|b|c"
+
+
+async def test_declared_options_are_converted_and_bound() -> None:
+    router = Router()
+
+    @router.command("roll <sides:int>", on=ON, options={"loud": bool, "times": int})
+    async def roll(ctx: Context, sides: int, *, loud: bool = False, times: int = 1) -> Reply:
+        return Reply(text=f"{sides} {loud} {times}")
+
+    event = group_event("/roll 20 --loud --times=3")
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "20 True 3"
+
+
+async def test_undeclared_option_is_rejected() -> None:
+    router = Router()
+
+    @router.command("roll <sides:int>", on=ON, options={"loud": bool})
+    async def roll(ctx: Context, sides: int, *, loud: bool = False) -> Reply:
+        return Reply.ok()
+
+    event = group_event("/roll 20 --quiet")
+    result = await router.handle(event)
+
+    assert result.status is Status.FAILED
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "Unknown option --quiet."
+
+
+async def test_options_require_the_right_shape() -> None:
+    router = Router()
+
+    @router.command("roll <sides:int>", on=ON, options={"loud": bool, "times": int})
+    async def roll(ctx: Context, sides: int, *, loud: bool = False, times: int = 1) -> Reply:
+        return Reply.ok()
+
+    missing = group_event("/roll 20 --times")
+    await router.handle(missing)
+    assert isinstance(missing.api, FakeApi)
+    assert missing.api.group.calls[0]["content"] == "Option --times requires a value."
+
+    extra = group_event("/roll 20 --loud=1")
+    await router.handle(extra)
+    assert isinstance(extra.api, FakeApi)
+    assert extra.api.group.calls[0]["content"] == "Option --loud does not take a value."
+
+    bad = group_event("/roll 20 --times=many")
+    await router.handle(bad)
+    assert isinstance(bad.api, FakeApi)
+    assert bad.api.group.calls[0]["content"] == (
+        "Invalid value for --times: expected int, got 'many'."
+    )
+
+
+async def test_double_dash_stops_option_parsing() -> None:
+    router = Router()
+
+    @router.command("kick <member>", on=ON, options={"force": bool})
+    async def kick(ctx: Context, member: str, *, force: bool = False) -> Reply:
+        return Reply(text=f"{member} {force}")
+
+    event = group_event("/kick -- --force")
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.group.calls[0]["content"] == "--force False"
 
 
 async def test_usage_error_can_carry_its_own_text() -> None:

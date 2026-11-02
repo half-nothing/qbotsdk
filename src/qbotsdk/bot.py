@@ -20,7 +20,7 @@ from .options import ClientOptions
 
 
 class Bot:
-    """默认用 WebSocket 长连接收事件，换接入方式就传 `adapter=`。
+    """默认用 WebSocket 长连接收事件, 换接入方式就传 `adapter=`。
 
     ```python
     bot = Bot(app_id, app_secret)  # 等价于 adapter=WebSocketAdapter()
@@ -74,8 +74,8 @@ class Bot:
         """注册事件处理器, 只接受 `async def`。
 
         事件对象在 `ctx.event` 上; 能回复的事件类型直接提供 `reply()` 方法
-        （`GroupAtMessageCreate`/`C2CMessageCreate`/`ChannelMessageCreate`），
-        互动事件用 `respond()`，没有这些方法的事件就是不支持回复。
+        （`GroupAtMessageCreate`/`C2CMessageCreate`/`ChannelMessageCreate`）, 
+        互动事件用 `respond()`, 没有这些方法的事件就是不支持回复。
         """
 
         return self._dispatcher.on(event_type)
@@ -116,7 +116,7 @@ class Bot:
         await self._dispatcher.close()
 
     async def get_me(self) -> GuildUser:
-        """已弃用：请改用 `bot.api.user.me()`，v0.3 移除。"""
+        """已弃用：请改用 `bot.api.user.me()`, v0.3 移除。"""
 
         return await self._api.user.me()
 

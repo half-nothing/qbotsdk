@@ -47,17 +47,17 @@ class WebhookServer:
         keyfile: str | None = None,
         ssl_context: SSLContext | None = None,
     ) -> None:
-        """创建服务器，但先不监听。
+        """创建服务器, 但先不监听。
 
         Args:
             dispatcher: 事件最终交给它分发。
-            app_secret: 机器人密钥，用于验签与 op 13 应答。
+            app_secret: 机器人密钥, 用于验签与 op 13 应答。
             host:       监听地址。
-            port:       监听端口，0 表示让操作系统挑一个空闲端口。
+            port:       监听端口, 0 表示让操作系统挑一个空闲端口。
             path:       回调路径。
-            certfile:   证书链路径，必须与 keyfile 成对出现。
+            certfile:   证书链路径, 必须与 keyfile 成对出现。
             keyfile:    私钥路径。
-            ssl_context: 现成的 SSLContext，与 certfile/keyfile 互斥。
+            ssl_context: 现成的 SSLContext, 与 certfile/keyfile 互斥。
         """
 
         if (certfile is None) != (keyfile is None):
@@ -77,19 +77,19 @@ class WebhookServer:
 
     @property
     def port(self) -> int:
-        """实际监听的端口，port=0 时在 start() 之后才有意义。"""
+        """实际监听的端口, port=0 时在 start() 之后才有意义。"""
 
         return self._port
 
     @property
     def url(self) -> str:
-        """本机访问地址，只用于日志与测试。"""
+        """本机访问地址, 只用于日志与测试。"""
 
         scheme = "https" if self._ssl_context is not None else "http"
         return f"{scheme}://{self._host}:{self._port}{self._path}"
 
     async def start(self) -> None:
-        """开始监听，立即返回。"""
+        """开始监听, 立即返回。"""
 
         if self._runner is not None:
             raise RuntimeError("webhook server is already started")

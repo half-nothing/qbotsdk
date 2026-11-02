@@ -30,6 +30,7 @@ class ClientOptions:
     rate_limits: Mapping[str, float] | None = None
 
     def __post_init__(self) -> None:
+        """验证配置参数是否合法。"""
         if self.max_attempts < 1:
             raise ValueError("max_attempts must be at least 1")
         if self.timeout_total <= 0 or self.timeout_connect <= 0:

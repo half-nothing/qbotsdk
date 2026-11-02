@@ -21,7 +21,7 @@ ERROR_CODE_RANGES: dict[tuple[int, int], str] = {
 class ErrorCode(IntEnum):
     """本阶段收录的官方错误码。
 
-    这是便利集合而不是白名单，未知错误码保留原值，不因不在表里就丢弃。
+    这是便利集合而不是白名单, 未知错误码保留原值, 不因不在表里就丢弃。
     """
 
     UNKNOWN_ACCOUNT = 10001
@@ -46,7 +46,13 @@ class ErrorCode(IntEnum):
 
 
 def describe_code(code: int) -> str:
-    """给错误码一个可读标签, 未知码返回空串。"""
+    """
+    给错误码一个可读标签。
+
+    :param code: API或者事件中拿到的错误码
+    :return: 错误码的人类友好表示方式, 如果没有匹配到有效结果, 返回空串
+    :rtype: str
+    """
 
     try:
         return ErrorCode(code).name
@@ -63,7 +69,9 @@ class QQBotError(Exception):
 
 
 class TransportError(QQBotError):
-    """没有拿到 HTTP 响应，连接失败、DNS 失败、读写超时"""
+    """
+    没有拿到 HTTP 响应, 连接失败、DNS 失败、读写超时。
+    """
 
     def __init__(
         self,
@@ -73,6 +81,12 @@ class TransportError(QQBotError):
         path: str = "",
         cause: BaseException | None = None,
     ) -> None:
+        """
+        :param message: API返回的消息字段
+        :param method: 请求方法
+        :param path: 请求路径
+        :param cause: 异常原因
+        """
         super().__init__(message)
         self.method = method
         self.path = path
@@ -137,9 +151,9 @@ class APIError(QQBotError):
 
 
 class RateLimitExceededError(QQBotError):
-    """本地令牌桶判定「这一发会超限」时抛出，不打到服务端。
+    """本地令牌桶判定「这一发会超限」时抛出, 不打到服务端。
 
-    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`，
+    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`, 
     那条路径依旧走 `APIError`。
     """
 
@@ -185,7 +199,7 @@ def _preview(data: object) -> object:
 
 
 def error_code_of(payload: object) -> int:
-    """取响应体里的业务错误码，取不到时返回 0。
+    """取响应体里的业务错误码, 取不到时返回 0。
 
     凭证接口与 REST 接口都用它判定「HTTP 200 但业务失败」的情形。
     """

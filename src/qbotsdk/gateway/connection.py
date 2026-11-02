@@ -1,10 +1,10 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""网关连接流程，Hello → Identify / Resume → 心跳 → 断线重连。
+"""网关连接流程, Hello → Identify / Resume → 心跳 → 断线重连。
 
 这一层只负责连接活着并且事件能被读出来
 读完的事件按原样放进 events 队列
-带 t 的 ready / resumed 会顺带更新 session 状态，让下一次重连能走 Resume。
+带 t 的 ready / resumed 会顺带更新 session 状态, 让下一次重连能走 Resume。
 """
 
 from __future__ import annotations
@@ -46,7 +46,7 @@ from .payload import (
 )
 from .session import GatewayInfo, SessionState
 
-# 官方只给了 [0, 1] 一种分片写法，本期不做自动分片
+# 官方只给了 [0, 1] 一种分片写法, 本期不做自动分片
 _DEFAULT_SHARD = (0, 1)
 _IDENTIFY_PROPERTIES = {
     "$os": platform,
@@ -55,14 +55,14 @@ _IDENTIFY_PROPERTIES = {
 }
 # 连续两个心跳周期没收到 op 11 就认为连接已死
 _PENDING_ACK_LIMIT = 2
-# 1000 正常关闭、1001 对端离开、1006 连接异常断开，按网络问题重连
+# 1000 正常关闭、1001 对端离开、1006 连接异常断开, 按网络问题重连
 _NORMAL_CLOSE_CODES = frozenset({1000, 1001, 1006})
 
 
 class GatewayConnection:
     """一条到网关的长连接。
 
-    run() 是常驻协程，连上、握手、读事件
+    run() 是常驻协程, 连上、握手、读事件
     断了按关闭码决定 Resume 还是重新 Identify
     直到底层 close() 被调用或收到不可恢复的关闭码
     """
@@ -82,7 +82,7 @@ class GatewayConnection:
         self._shard = shard
         self._storage = session_storage if session_storage is not None else MemorySessionStorage()
         self.session = SessionState()
-        # 读出来的事件先放这里，分发层从这里取
+        # 读出来的事件先放这里, 分发层从这里取
         self.events: Queue[GatewayPayload] = Queue()
         self._ws: ClientWebSocketResponse | None = None
         self._heartbeat_task: Task[None] | None = None
@@ -105,7 +105,11 @@ class GatewayConnection:
             self._established = False
             try:
                 action = await self._connection_once()
-            except (TimeoutError, ClientError, TransportError, OSError) as exc:
+            except GatewayClosedError:
+                # 网关明确要求别再连了, 交回给调用方处理
+                raise
+            except (TimeoutError, ClientError, TransportError, OSError, GatewayError) as exc:
+                # 握手段错误 (非 HELLO 首帧、HTTP 101 失败等) 只算一次连接失败, 不该终止常驻循环
                 logger.warning("Gateway connection failed: {!r}", exc)
                 action = CloseAction.RESUME if self.session.can_resume else CloseAction.IDENTIFY
             if self._closed:
@@ -136,7 +140,7 @@ class GatewayConnection:
                 url,
                 autoclose=True,
                 autoping=True,
-                # 长连接不用总超时，连接是否活着由心跳判断
+                # 长连接不用总超时, 连接是否活着由心跳判断
                 timeout=ClientWSTimeout(),
             )
         except WSServerHandshakeError as exc:
@@ -175,7 +179,7 @@ class GatewayConnection:
         return action
 
     async def _restore_session(self) -> None:
-        """从存储恢复上次的会话，恢复不了就当作新会话。"""
+        """从存储恢复上次的会话, 恢复不了就当作新会话。"""
 
         if self._restored:
             return
@@ -213,7 +217,7 @@ class GatewayConnection:
 
     @staticmethod
     async def _hello(ws: ClientWebSocketResponse) -> float:
-        """等 op 10 Hello，返回心跳间隔（秒）。"""
+        """等 op 10 Hello, 返回心跳间隔（秒）。"""
 
         while True:
             message = await ws.receive()
@@ -265,9 +269,11 @@ class GatewayConnection:
 
     async def _handle(self, payload: GatewayPayload) -> CloseAction | None:
         if payload.op is OpCode.DISPATCH:
-            self.session.update(seq=payload.s)
+            # Resume 会补发旧帧, 序号只能前进, 否则下次重连的补发窗口会越来越大
+            if payload.s is not None and (self.session.seq is None or payload.s > self.session.seq):
+                self.session.update(seq=payload.s)
             if payload.t == "READY":
-                ready = ReadyEvent.model_validate(payload.d)
+                ready = ReadyEvent.model_validate(payload.d if isinstance(payload.d, dict) else {})
                 self.session.update(session_id=ready.session_id)
                 await self._save_session()
                 logger.info("Gateway session ready: {}", ready.session_id)

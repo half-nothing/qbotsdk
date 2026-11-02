@@ -65,7 +65,7 @@ class Dispatcher:
     ]:
         """注册某个事件类型的处理器。
 
-        同一类型可以注册多个，只接受协程函数。
+        同一类型可以注册多个, 只接受协程函数。
         """
 
         def register(
@@ -92,7 +92,7 @@ class Dispatcher:
         return self.on(UnknownEvent)
 
     def handle(self, payload: GatewayPayload) -> None:
-        """把一帧交给总线，非 dispatch 帧与重复消息直接丢弃。"""
+        """把一帧交给总线, 非 dispatch 帧与重复消息直接丢弃。"""
 
         if payload.op is not OpCode.DISPATCH or not payload.t:
             return
@@ -106,10 +106,17 @@ class Dispatcher:
         task.add_done_callback(self._tasks.discard)
 
     async def run(self, events: Queue[GatewayPayload]) -> None:
-        """消费网关连接的事件队列, 直到被取消。"""
+        """消费网关连接的事件队列, 直到被取消。
+
+        单帧解析失败只丢这一帧, 不能让消费循环退出, 否则之后所有事件都无人取出。
+        """
 
         while True:
-            self.handle(await events.get())
+            payload = await events.get()
+            try:
+                self.handle(payload)
+            except Exception:
+                logger.exception("Dropping malformed gateway frame: t={}", payload.t)
 
     async def join(self) -> None:
         """等已经排队的处理器跑完。"""

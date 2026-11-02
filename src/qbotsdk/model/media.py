@@ -15,7 +15,7 @@ from .base import QQModel
 
 
 class FileType(IntEnum):
-    """富媒体文件类型，对应官方 file_type 字段。"""
+    """富媒体文件类型, 对应官方 file_type 字段。"""
 
     IMAGE = 1  # 图片, png / jpg
     VIDEO = 2  # 视频, mp4

@@ -101,8 +101,8 @@ class RedisSessionStorage(SessionStorage):
 
         Args:
             client: Redis 实例。
-            key:    存会话的 key，同一个 key 的机器人共享会话。
-            ttl:    key 的过期秒数，不传则不过期。
+            key:    存会话的 key, 同一个 key 的机器人共享会话。
+            ttl:    key 的过期秒数, 不传则不过期。
         """
 
         self._client = client
@@ -131,20 +131,20 @@ class RedisSessionStorage(SessionStorage):
         key: str = "qbotsdk:session",
         ttl: int | None = None,
     ) -> RedisSessionStorage:
-        """建一个Redis存储，给现成的 URL, 或者给主机、端口、密码、socket 路径这些零件。
+        """建一个Redis存储, 给现成的 URL, 或者给主机、端口、密码、socket 路径这些零件。
 
         Args:
-            url:         完整地址，给了就以它为准，下面的零件参数全部忽略。
-            host:        主机名或 IP，`url` 与 `unix_socket` 都没给时生效。
-            port:        端口，默认 6379。
-            db:          数据库编号，默认 0。
-            username:    ACL 用户名，不传用默认用户。
-            password:    密码，会做 URL 转义，含 `@`、`/`、`:` 也不用自己处理。
+            url:         完整地址, 给了就以它为准, 下面的零件参数全部忽略。
+            host:        主机名或 IP, `url` 与 `unix_socket` 都没给时生效。
+            port:        端口, 默认 6379。
+            db:          数据库编号, 默认 0。
+            username:    ACL 用户名, 不传用默认用户。
+            password:    密码, 会做 URL 转义, 含 `@`、`/`、`:` 也不用自己处理。
             ssl:         用 `rediss://` 而不是 `redis://`。
-            unix_socket: Unix domain socket 路径，给了就忽略 `host`/`port`/`ssl`。
-            protocol:    RESP 协议版本，只收 2 或 3，不传用 redis-py 的默认值。
+            unix_socket: Unix domain socket 路径, 给了就忽略 `host`/`port`/`ssl`。
+            protocol:    RESP 协议版本, 只收 2 或 3, 不传用 redis-py 的默认值。
             key:         存会话的 key。
-            ttl:         key 的过期秒数，不传则不过期。
+            ttl:         key 的过期秒数, 不传则不过期。
 
         Raises:
             ValueError:

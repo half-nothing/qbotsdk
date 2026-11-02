@@ -136,32 +136,32 @@ def test_render_mentions_falls_back_to_openid_and_handles_all() -> None:
     assert event.render_mentions() == "@member-2 你好 @全体成员"
 
 
-def test_render_mentions_indexed_numbers_mentions_in_order() -> None:
+def test_render_mentions_openid_keeps_the_at_marker() -> None:
     payload = load_object("group_message_create_mention.json")
     event = parse_event("GROUP_MESSAGE_CREATE", payload["d"])
 
     assert isinstance(event, GroupMessageCreate)
-    rendered = event.render_mentions_indexed()
-    assert rendered.text == "@0 @1"
+    rendered = event.render_mentions_openid()
+    assert rendered.text == "@bot-1 @member-2"
     assert [user.member_openid for user in rendered.mentions] == ["bot-1", "member-2"]
     assert event.content == "<@bot-1> <@member-2> "
 
 
-def test_render_mentions_indexed_renumbers_after_strip_me() -> None:
+def test_render_mentions_openid_strips_me() -> None:
     payload = load_object("group_message_create_mention.json")
     event = parse_event("GROUP_MESSAGE_CREATE", payload["d"])
 
     assert isinstance(event, GroupMessageCreate)
-    rendered = event.render_mentions_indexed(strip_me=True)
-    assert rendered.text == "@0"
+    rendered = event.render_mentions_openid(strip_me=True)
+    assert rendered.text == "@member-2"
     assert [user.member_openid for user in rendered.mentions] == ["member-2"]
 
 
-def test_render_mentions_indexed_keeps_unknown_tag_and_all() -> None:
+def test_render_mentions_openid_keeps_unknown_tag_and_all() -> None:
     payload = load_object("gateway_group_message_create.json")
     event = parse_event("GROUP_MESSAGE_CREATE", payload["d"])
 
     assert isinstance(event, GroupMessageCreate)
-    rendered = event.render_mentions_indexed()
-    assert rendered.text == "@0 你好 @all"
+    rendered = event.render_mentions_openid()
+    assert rendered.text == "@member-2 你好 @all"
     assert [user.member_openid for user in rendered.mentions] == ["member-2"]

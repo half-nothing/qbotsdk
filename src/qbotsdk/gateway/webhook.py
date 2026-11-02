@@ -19,7 +19,7 @@ _ACK_OP = 12
 
 
 def _seed_bytes(app_secret: str) -> bytes:
-    """把 botSecret 循环重复到 32 字节，作为 Ed25519 的私钥种子。"""
+    """把 botSecret 循环重复到 32 字节, 作为 Ed25519 的私钥种子。"""
 
     raw = app_secret.encode("utf-8")
     if not raw:
@@ -32,7 +32,7 @@ def _private_key(app_secret: str) -> Ed25519PrivateKey:
 
 
 def build_validation_response(app_secret: str, plain_token: str, event_ts: str) -> dict[str, str]:
-    """op 13 地址验证的应答体，签名体是 event_ts + plain_token。"""
+    """op 13 地址验证的应答体, 签名体是 event_ts + plain_token。"""
 
     signature = _private_key(app_secret).sign(f"{event_ts}{plain_token}".encode())
     return {"plain_token": plain_token, "signature": signature.hex()}

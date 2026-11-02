@@ -69,10 +69,10 @@ async def test_grant_keeps_explicit_prefix_and_global_flag() -> None:
     assert await store.grants("user:u9") == frozenset({Grant("demo.stop")})
 
 
-async def test_grant_resolves_mention_by_index() -> None:
+async def test_grant_resolves_a_rendered_mention() -> None:
     router, store = await build()
     event = group_event(
-        "/permission grant @1 demo.stop",
+        "/permission grant <@member-2> demo.stop",
         mentions=[{"id": "m2", "member_openid": "member-2", "username": "bob"}],
     )
 
@@ -82,13 +82,59 @@ async def test_grant_resolves_mention_by_index() -> None:
     assert await store.grants("group:group-1:member-2") == frozenset({Grant("demo.stop")})
 
 
-async def test_mention_without_full_mode_is_rejected() -> None:
+async def test_grant_rejects_the_at_all_tag() -> None:
     router, _ = await build()
-    event = group_event("/permission grant @1 demo.stop")
+    event = group_event("/permission grant <@all> demo.stop")
 
     await router.handle(event)
 
-    assert "GROUP_MESSAGE_CREATE" in await reply_of(event)
+    assert await reply_of(event) == "@all is not a single member"
+
+
+async def test_grant_resolves_a_raw_mention_token() -> None:
+    router, store = await build()
+    event = group_event("/permission grant <@6FB39F2CDD76ED6E5533B269C71FAC7F> demo.stop")
+
+    await router.handle(event)
+
+    assert await reply_of(event) == (
+        "Granted demo.stop to group:group-1:6FB39F2CDD76ED6E5533B269C71FAC7F."
+    )
+    assert Grant("demo.stop") in await store.grants(
+        "group:group-1:6FB39F2CDD76ED6E5533B269C71FAC7F"
+    )
+
+
+async def test_grant_mention_token_honours_the_global_flag() -> None:
+    router, store = await build()
+    event = group_event("/permission grant <@!member-2> demo.stop --global")
+
+    await router.handle(event)
+
+    assert await reply_of(event) == "Granted demo.stop to user:member-2."
+    assert await store.grants("user:member-2") == frozenset({Grant("demo.stop")})
+
+
+async def test_grant_mention_token_in_direct_message() -> None:
+    router, store = await build()
+    await store.grant("c2c:user-1", Grant("permission.grant"))
+    event = c2c_event("/permission grant @member-2 demo.stop", openid="user-1")
+
+    await router.handle(event)
+
+    assert isinstance(event.api, FakeApi)
+    assert event.api.user_message.calls[0]["content"] == ("Granted demo.stop to c2c:member-2.")
+    assert Grant("demo.stop") in await store.grants("c2c:member-2")
+
+
+async def test_show_resolves_a_raw_mention_token() -> None:
+    router, store = await build()
+    await store.grant("group:group-1:member-2", Grant("demo.stop"))
+    event = group_event("/permission show <@member-2>")
+
+    await router.handle(event)
+
+    assert await reply_of(event) == "group:group-1:member-2:\ndemo.stop"
 
 
 async def test_authorization_code_flow() -> None:

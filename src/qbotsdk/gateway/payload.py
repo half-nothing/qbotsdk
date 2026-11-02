@@ -28,7 +28,7 @@ class OpCode(IntEnum):
 
 
 class Intents:
-    """intents 位。官方分成基础事件与需申请两档，默认只开基础事件那一档。"""
+    """intents 位。官方分成基础事件与需申请两档, 默认只开基础事件那一档。"""
 
     GUILDS: ClassVar[int] = 1 << 0
     GUILD_MEMBERS: ClassVar[int] = 1 << 1
@@ -48,7 +48,7 @@ class Intents:
 
 
 class GatewayPayload(QQModel):
-    """网关下发的任意一帧。d 的结构由 op 与 t 决定，这里不做细化。"""
+    """网关下发的任意一帧。d 的结构由 op 与 t 决定, 这里不做细化。"""
 
     id: str | None = Field(alias="id", default=None)
     op: OpCode = Field(alias="op")
@@ -113,7 +113,7 @@ class ResumeFrame(Frame):
 
 
 class HeartbeatFrame(Frame):
-    """心跳帧；d 是最近收到的 s，一次都还没收到就是 null。"""
+    """心跳帧；d 是最近收到的 s, 一次都还没收到就是 null。"""
 
     op: OpCode = OpCode.HEARTBEAT
     d: int | None = None
@@ -172,7 +172,7 @@ _INTERNAL_ERROR_RANGE: Final[range] = range(4900, 4914)
 
 
 def close_action(code: int) -> CloseAction:
-    """按关闭码决定重连方式；未知码按不可恢复处理，避免死循环重连。"""
+    """按关闭码决定重连方式；未知码按不可恢复处理, 避免死循环重连。"""
 
     if code in _CLOSE_ACTIONS:
         return _CLOSE_ACTIONS[code]
@@ -186,7 +186,7 @@ class GatewayError(Exception):
 
 
 class GatewayClosedError(GatewayError):
-    """对端用关闭码终止了连接，且该码不允许简单重试。"""
+    """对端用关闭码终止了连接, 且该码不允许简单重试。"""
 
     def __init__(self, code: int, action: CloseAction, reason: str = "") -> None:
         self.code = code

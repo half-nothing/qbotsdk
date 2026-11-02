@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""资源层，每个资源只负责拼路径、调 HTTPClient、把返回值转模型。"""
+"""资源层, 每个资源只负责拼路径、调 HTTPClient、把返回值转模型。"""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ __all__ = [
 
 
 class ApiClient:
-    """八个资源域的聚合入口，由 `Bot` 持有并暴露为 `bot.api`。"""
+    """八个资源域的聚合入口, 由 `Bot` 持有并暴露为 `bot.api`。"""
 
     def __init__(self, http: HTTPClient) -> None:
         options = http.options

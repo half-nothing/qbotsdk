@@ -34,7 +34,7 @@ class UserResource:
         after: str | None = None,
         limit: int = 100,
     ) -> list[Guild]:
-        """机器人加入的频道列表，limit 上限 100；before 与 after 同给时 after 失效。"""
+        """机器人加入的频道列表, limit 上限 100；before 与 after 同给时 after 失效。"""
 
         params: dict[str, str | int] = {"limit": limit}
         if before is not None:
@@ -45,7 +45,7 @@ class UserResource:
         return [Guild.model_validate(item) for item in payload]
 
     async def iter_guilds(self, *, limit: int = 100) -> AsyncIterator[Guild]:
-        """自动翻页遍历全部频道，某页不足 limit 即结束。"""
+        """自动翻页遍历全部频道, 某页不足 limit 即结束。"""
 
         async def fetch_page(cursor: str | None) -> list[Guild]:
             return await self.guilds(after=cursor, limit=limit)

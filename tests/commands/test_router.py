@@ -116,19 +116,6 @@ async def test_command_only_answers_its_own_event_types() -> None:
     assert direct.api.user_message.calls[0]["content"] == "pong"
 
 
-async def test_alias_replaces_the_whole_path() -> None:
-    router = Router()
-
-    @router.command("server stop", on=ON, aliases=["halt"])
-    async def stop(ctx: Context) -> Reply:
-        return Reply(text="stopped")
-
-    result = await router.handle(group_event("/halt"))
-
-    assert result.replied is True
-    assert [route.name for route in router.commands] == ["server stop"]
-
-
 async def test_more_specific_template_wins() -> None:
     seen: list[str] = []
     router = Router()
@@ -237,11 +224,15 @@ async def test_a_handler_must_be_annotated_to_return_reply() -> None:
         router.command("ping", on=ON)(ping)
 
 
-async def test_aliases_require_literals_before_placeholders() -> None:
+async def test_one_handler_may_be_registered_at_several_paths() -> None:
     router = Router()
 
-    async def handler(ctx: Context, name: str) -> Reply:
-        return Reply(text=name)
+    async def stop(ctx: Context) -> Reply:
+        return Reply(text="stopped")
 
-    with pytest.raises(ValueError, match="require all literals to come before placeholders"):
-        router.command("server <name> stop", on=ON, aliases=["s"])(handler)
+    router.command("server stop", on=ON)(stop)
+    router.command("halt", on=ON)(stop)
+
+    assert (await router.handle(group_event("/halt"))).status is Status.HANDLED
+    assert (await router.handle(group_event("/server stop"))).status is Status.HANDLED
+    assert [route.name for route in router.commands] == ["halt", "server stop"]

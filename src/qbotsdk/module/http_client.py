@@ -47,7 +47,7 @@ def _make_form(form: FormSource) -> tuple[FormData, bool]:
 
 
 async def _sleep(seconds: float) -> None:
-    """可替换的等待函数：测试里 monkeypatch 掉它，避免真实等待。"""
+    """可替换的等待函数：测试里 monkeypatch 掉它, 避免真实等待。"""
     await sleep(seconds)
 
 
@@ -130,7 +130,7 @@ async def _on_request_exception(
 
 
 class HTTPClient:
-    """传输层，超时、重试、限流与错误映射。"""
+    """传输层, 超时、重试、限流与错误映射。"""
 
     def __init__(
         self,
@@ -178,7 +178,7 @@ class HTTPClient:
         return await self._get_session()
 
     async def access_token(self) -> str:
-        """取当前可用的 access_token，供网关 Identify / Resume 使用。"""
+        """取当前可用的 access_token, 供网关 Identify / Resume 使用。"""
 
         session = await self._get_session()
         return await self._token_manager.get_token(session)
@@ -220,7 +220,7 @@ class HTTPClient:
                     cause=exc,
                 ) from exc
 
-            # 401 说明缓存的 token 失效，丢弃后重试一次，仍失败才抛出
+            # 401 说明缓存的 token 失效, 丢弃后重试一次, 仍失败才抛出
             if raw.status == 401 and not auth_retried and replayable:
                 auth_retried = True
                 logger.trace("Received 401, dropping cached token and retrying once")
@@ -254,7 +254,7 @@ class HTTPClient:
             if raw.status >= 400:
                 raise self._error(method, path, raw)
 
-            # 201/202 表示异步成功，但仍可能带 error body，err_code 非 0 即失败
+            # 201/202 表示异步成功, 但仍可能带 error body, err_code 非 0 即失败
             if error_code_of(raw.payload) != 0:
                 raise self._error(method, path, raw)
 
@@ -356,7 +356,7 @@ class HTTPClient:
         return error
 
     def _backoff(self, attempt: int) -> float:
-        """指数退避 + 0~25% 抖动，避免多实例同时重试。"""
+        """指数退避 + 0~25% 抖动, 避免多实例同时重试。"""
 
         base_delay = float(
             min(

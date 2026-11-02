@@ -41,9 +41,9 @@ class GuildResource:
         limit: int = 100,
     ) -> list[Member]:
         """
-        成员列表，游标翻页
-        after 传上一页最后一个成员的 user.id，limit 上限 400。
-        平台可能重复返回已给过的成员，翻页时需按 `user.id` 去重。
+        成员列表, 游标翻页
+        after 传上一页最后一个成员的 user.id, limit 上限 400。
+        平台可能重复返回已给过的成员, 翻页时需按 `user.id` 去重。
         """
 
         path = f"/guilds/{guild_id}/members"
@@ -52,7 +52,7 @@ class GuildResource:
         return [Member.model_validate(item) for item in payload]
 
     async def iter_members(self, guild_id: str, *, limit: int = 100) -> AsyncIterator[Member]:
-        """自动翻页遍历频道成员，按 `user.id` 去重，空页结束。"""
+        """自动翻页遍历频道成员, 按 `user.id` 去重, 空页结束。"""
 
         async def fetch_page(cursor: str | None) -> list[Member]:
             return await self.members(guild_id, after=cursor or "0", limit=limit)

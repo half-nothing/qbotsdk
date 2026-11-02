@@ -130,7 +130,7 @@ class EventModel(QQModel, AbstractEvent):
 
 
 class ReadyEvent(EventModel):
-    """t = READY，鉴权成功后下发。"""
+    """t = READY, 鉴权成功后下发。"""
 
     version: int = Field(alias="version", default=0)
     session_id: str = Field(alias="session_id", default="")
@@ -139,14 +139,14 @@ class ReadyEvent(EventModel):
 
 
 class ResumedEvent(EventModel):
-    """t = RESUMED，Resume 补发完成后下发。官方 `d` 是空对象。"""
+    """t = RESUMED, Resume 补发完成后下发。官方 `d` 是空对象。"""
 
 
 @dataclass(frozen=True, slots=True)
 class RenderedMentions:
-    """`render_mentions_indexed` 的结果。
+    """把 content 里的 @ 标记渲染后的结果。
 
-    `text` 里的 `@0`、`@1` 按出现顺序对应 `mentions` 的下标, 用 `mentions[0]` 取回成员对象。
+    `text` 是渲染过的正文, `mentions` 是按出现顺序去重的成员, 用来查昵称等字段。
     """
 
     text: str
@@ -224,35 +224,39 @@ class _GroupMessageBase(EventModel):
         """把 content 里的 @ 标记换成人类可读的 @昵称, 原始 content 保持不变。
 
         <@member_openid> 换成 @昵称, 昵称缺失时退回 openid
-        <@all> 换成 @全体成员，找不到对应 mention 的标记原样换成 @openid
+        <@all> 换成 @全体成员, 找不到对应 mention 的标记原样换成 @openid
         strip_me=True 时去掉@机器人自己的那一段
         """
 
         return self._render(code=False, strip_me=strip_me).text
 
-    def render_mentions_indexed(self, *, strip_me: bool = False) -> RenderedMentions:
-        """把 content 里的 @ 标记换成按出现顺序编号的 @0、@1, 给代码定位成员用。
+    def render_mentions_openid(self, *, strip_me: bool = False) -> RenderedMentions:
+        """把 content 里的 @ 标记换成 `@openid`, 直接给命令层用。
 
-        昵称里带空格也不会影响按空白分词, 用 rendered.mentions[int] 取回成员对象
-        <@all> 换成 @all，找不到对应 mention 的标记仍换成 @openid, 且不占编号。
-        strip_me=True 时去掉 @ 机器人自己的那一段, 编号随之从 0 重新连续。
+        保留 `@` 前缀, 命令层仍能一眼看出这是个提及; `mention` 转换器负责剥掉 `@`
+        并返回裸 openid。要查昵称等字段用 rendered.mentions 或 `mentions_by_openid`。
+        `<@all>` 换成 `@all`, 不并入 mentions。strip_me=True 时去掉 @ 机器人自己的那一段。
         """
 
-        return self._render(code=True, strip_me=strip_me)
+        return self._render(code=False, openid=True, strip_me=strip_me)
 
-    def _render(self, *, code: bool, strip_me: bool) -> RenderedMentions:
+    def _render(self, *, code: bool, strip_me: bool, openid: bool = False) -> RenderedMentions:
         lookup = self.mentions_by_openid
         used: list[MentionUser] = []
 
         def replace(match: re.Match[str]) -> str:
             key = match.group(1)
             if key == "all":
-                return "@all" if code else "@全体成员"
+                return "@all" if code or openid else "@全体成员"
             user = lookup.get(key)
             if user is None:
                 return f"@{key}"
             if user.is_you and strip_me:
                 return ""
+            if openid:
+                if user not in used:
+                    used.append(user)
+                return f"@{key}"
             if not code:
                 return f"@{user.username or key}"
             if user not in used:
@@ -265,7 +269,7 @@ class _GroupMessageBase(EventModel):
 
 
 class GroupAtMessageCreate(_GroupMessageBase):
-    """t = GROUP_AT_MESSAGE_CREATE，群聊里 @ 机器人。
+    """t = GROUP_AT_MESSAGE_CREATE, 群聊里 @ 机器人。
 
     没有给机器人打开接收全部消息时, 只有@到机器人的消息才会走这个事件。
     开启全量之后不再下发本事件, 全部改走 GroupMessageCreate。
@@ -280,7 +284,7 @@ class GroupAtMessageCreate(_GroupMessageBase):
 
 
 class GroupMessageCreate(_GroupMessageBase):
-    """t = GROUP_MESSAGE_CREATE，群聊全量消息。
+    """t = GROUP_MESSAGE_CREATE, 群聊全量消息。
 
     给机器人打开接收全部消息后, 群里每条消息都会下发,
     不限于@机器人, 字段与 GROUP_AT_MESSAGE_CREATE 一致。
@@ -295,7 +299,7 @@ class GroupMessageCreate(_GroupMessageBase):
 
 
 class C2CMessageCreate(EventModel):
-    """t = C2C_MESSAGE_CREATE，用户单聊机器人。"""
+    """t = C2C_MESSAGE_CREATE, 用户单聊机器人。"""
 
     id: str = Field(alias="id")
     author: C2CUser = Field(alias="author")
@@ -347,9 +351,9 @@ class C2CMessageCreate(EventModel):
 
 
 class ChannelMessageCreate(Message, EventModel):
-    """t = AT_MESSAGE_CREATE，频道里 @ 机器人。
+    """t = AT_MESSAGE_CREATE, 频道里 @ 机器人。
 
-    官方 api-v2 没有这一事件的事件体表格（页面回落到「启动接入」），
+    官方 api-v2 没有这一事件的事件体表格（页面回落到「启动接入」）, 
     这里按「消息对象(Message)」表格建模, 字段与频道发送接口的响应同源。
     """
 
@@ -441,7 +445,7 @@ class InteractionResolved(EventModel):
 class InteractionData(EventModel):
     """互动事件的数据体。
 
-    官方示例 3（授权事件）只带 `resolved`，没有外层 `type`，所以这里可缺省。
+    官方示例 3（授权事件）只带 `resolved`, 没有外层 `type`, 所以这里可缺省。
     """
 
     type: InteractionType | None = Field(alias="type", default=None)
@@ -449,9 +453,9 @@ class InteractionData(EventModel):
 
 
 class InteractionCreate(EventModel):
-    """t = INTERACTION_CREATE，用户点击消息按钮、快捷菜单等。
+    """t = INTERACTION_CREATE, 用户点击消息按钮、快捷菜单等。
 
-    `type=11`（消息按钮）与 `type=12`（快捷菜单）必须调用 `respond()` 回应，
+    `type=11`（消息按钮）与 `type=12`（快捷菜单）必须调用 `respond()` 回应, 
     否则客户端一直 loading 到超时；其余类型可以不回应。
     """
 
@@ -476,7 +480,7 @@ class InteractionCreate(EventModel):
         return self.type in (InteractionType.INLINE_KEYBOARD, InteractionType.CALLBACK_COMMAND)
 
     async def respond(self, code: InteractionCode = InteractionCode.OK) -> None:
-        """回应这次互动，让客户端停止 loading。
+        """回应这次互动, 让客户端停止 loading。
 
         同一个 interaction_id 只能回应一次；只有消息按钮与快捷菜单需要回应。
         """
@@ -490,13 +494,13 @@ class InteractionCreate(EventModel):
 
 
 class UnknownEvent(EventModel):
-    """未建模的事件，保留 t 与原始 d。"""
+    """未建模的事件, 保留 t 与原始 d。"""
 
     t: str = Field(alias="t")
     data: Any = Field(alias="data", default=None)
 
 
-# t 到事件模型的映射。没登记的事件一律降级成 UnknownEvent，不抛错
+# t 到事件模型的映射。没登记的事件一律降级成 UnknownEvent, 不抛错
 EVENT_MODELS: Final[dict[str, type[EventModel]]] = {
     "READY": ReadyEvent,
     "RESUMED": ResumedEvent,
@@ -514,4 +518,5 @@ def parse_event(t: str, data: object) -> EventModel:
     model = EVENT_MODELS.get(t)
     if model is None:
         return UnknownEvent(t=t, data=data)
-    return model.model_validate(data)
+    # 官方在 Resume 结束时会下发 {"t": "RESUMED", "d": ""}, 空串不能直接喂给模型
+    return model.model_validate(data if isinstance(data, dict) else {})

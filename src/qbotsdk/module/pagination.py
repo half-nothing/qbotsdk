@@ -5,7 +5,7 @@
 两类列表的游标语义不同
 频道列表是 after=<最后一个 guild id>
 成员列表是 after=<最后一个 member 的 user.id> 且可能重复返回已给过的成员
-差异由调用方用回调表达，公共部分只有「取页 -> 产出 -> 推进游标 -> 判终止」
+差异由调用方用回调表达, 公共部分只有「取页 -> 产出 -> 推进游标 -> 判终止」
 """
 
 from __future__ import annotations
@@ -27,14 +27,14 @@ async def paginate[T](
     """按游标翻页。
 
     Args:
-        fetch_page: 传入游标，返回该页原始模型列表；首次调用游标为 None。
-        cursor_of:  从一页数据里取下一页游标，返回 None 表示没有下一页。
-        key_of:     提供时按该键去重，用于成员列表。
-        page_size:  提供时，某页不足该数量即视为最后一页；
-                    成员列表传 None，因为官方只承诺空数组表示结束。
+        fetch_page: 传入游标, 返回该页原始模型列表；首次调用游标为 None。
+        cursor_of:  从一页数据里取下一页游标, 返回 None 表示没有下一页。
+        key_of:     提供时按该键去重, 用于成员列表。
+        page_size:  提供时, 某页不足该数量即视为最后一页；
+                    成员列表传 None, 因为官方只承诺空数组表示结束。
 
     Yields:
-        逐条产出模型，同一键只产出一次。
+        逐条产出模型, 同一键只产出一次。
     """
 
     cursor: str | None = None
@@ -62,7 +62,7 @@ async def paginate[T](
             return
 
         next_cursor = cursor_of(page)
-        # None 是「没有下一页」的正常结束，不告警；只有游标原地打转才是异常
+        # None 是「没有下一页」的正常结束, 不告警；只有游标原地打转才是异常
         if next_cursor is None:
             return
         if next_cursor == cursor:

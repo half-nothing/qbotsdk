@@ -13,7 +13,7 @@ from qbotsdk.constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
 from qbotsdk.exceptions import APIError, TransportError, error_code_of
 from qbotsdk.model.token import Token
 
-# 提前60s刷新，平台只在旧token到期前60s内才签发新token, 且旧token在这60s内仍有效
+# 提前60s刷新, 平台只在旧token到期前60s内才签发新token, 且旧token在这60s内仍有效
 _REFRESH_BUFFER_SECONDS = 60
 
 # 凭证接口只认这一个 path, 出错时用来定位
@@ -25,10 +25,10 @@ class TokenManager:
 
     两个时间点分开记：
 
-    - ``refresh_at``：到点后就主动换新。平台只在旧 token 到期前 60 秒内才签发新 token，
+    - ``refresh_at``：到点后就主动换新。平台只在旧 token 到期前 60 秒内才签发新 token, 
       所以正常路径下这里是「到期 - 60 秒」。
-    - ``hard_expire_at``：到点后旧 token 确定不可用了。刷新失败时只要还没到这里，
-      就继续用旧 token，让调用方不至于因为一次凭证抖动而失败。
+    - ``hard_expire_at``：到点后旧 token 确定不可用了。刷新失败时只要还没到这里, 
+      就继续用旧 token, 让调用方不至于因为一次凭证抖动而失败。
 
     并发的第一波调用由 ``Lock`` 收敛成一次凭证请求（双检锁）。
     """
@@ -53,7 +53,7 @@ class TokenManager:
         if cached is not None:
             return cached
 
-        # 双检锁，进入锁后再查一次, 避免并发协程重复请求凭证接口
+        # 双检锁, 进入锁后再查一次, 避免并发协程重复请求凭证接口
         async with self._lock:
             cached = self._usable_token()
             if cached is not None:
@@ -61,7 +61,7 @@ class TokenManager:
             return await self._refresh(session)
 
     def invalidate(self) -> None:
-        """丢弃缓存凭证，强制下一次调用重新取 token"""
+        """丢弃缓存凭证, 强制下一次调用重新取 token"""
 
         self._access_token = None
         self._refresh_at = 0.0
@@ -71,7 +71,7 @@ class TokenManager:
         try:
             token = await self._fetch(session)
         except Exception as exc:
-            # 旧 token 还在硬有效期内就先用着，凭证抖动不该让整次调用失败
+            # 旧 token 还在硬有效期内就先用着, 凭证抖动不该让整次调用失败
             stale = self._stale_token()
             if stale is not None:
                 logger.warning("Token refresh failed, falling back to the cached token: {!r}", exc)
@@ -96,7 +96,7 @@ class TokenManager:
         return self._access_token
 
     def _stale_token(self) -> str | None:
-        """已过刷新点、但还在硬有效期内的 token，只用于刷新失败时兜底。"""
+        """已过刷新点、但还在硬有效期内的 token, 只用于刷新失败时兜底。"""
 
         if self._access_token is None or monotonic() >= self._hard_expire_at:
             return None
@@ -114,7 +114,7 @@ class TokenManager:
                 resp.raise_for_status()
                 data = await resp.json()
         except ClientResponseError as exc:
-            # 凭证接口的错误体只有 message，没有 err_code，转成统一的 APIError
+            # 凭证接口的错误体只有 message, 没有 err_code, 转成统一的 APIError
             raise APIError(exc.status, exc.message, method="POST", path=_TOKEN_PATH) from exc
         except (ClientError, TimeoutError) as exc:
             raise TransportError(
@@ -124,7 +124,7 @@ class TokenManager:
                 cause=exc,
             ) from exc
 
-        # 凭证接口也会用 HTTP 200 返回 err_code，不能直接交给模型校验
+        # 凭证接口也会用 HTTP 200 返回 err_code, 不能直接交给模型校验
         if error_code_of(data) != 0:
             raise APIError.from_response(
                 status,
@@ -137,7 +137,7 @@ class TokenManager:
         try:
             token = Token.model_validate(data)
         except ValidationError as exc:
-            # 200 但包体不是凭证结构，同样是上游错误，不该把 pydantic 的报错漏给调用方
+            # 200 但包体不是凭证结构, 同样是上游错误, 不该把 pydantic 的报错漏给调用方
             raise APIError.from_response(
                 status,
                 data,

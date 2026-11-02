@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群组（QQ 群）域接口，读写。"""
+"""群组（QQ 群）域接口, 读写。"""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ from qbotsdk.module.rate_limit import RateLimiter
 
 from ._parse import expect_object
 
-# 二进制直传上限，官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
-# 但 multipart 直传字段本身限制 5MB，超过要走 url 或分片上传。
+# 二进制直传上限, 官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
+# 但 multipart 直传字段本身限制 5MB, 超过要走 url 或分片上传。
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
@@ -30,7 +30,7 @@ class GroupResource:
         self._limiter = limiter
 
     async def get(self, group_openid: str) -> Group:
-        """群基本信息，频率限制 30 QPM。"""
+        """群基本信息, 频率限制 30 QPM。"""
 
         path = f"/v2/groups/{group_openid}/info"
         return Group.model_validate(expect_object(await self._http.get(path), path))
@@ -43,10 +43,10 @@ class GroupResource:
 
     async def members(self, group_openid: str, *, cursor: str = "") -> GroupMembersPage:
         """
-        群成员分页，每次最多 30 条。
+        群成员分页, 每次最多 30 条。
 
-        `cursor` 首次不传，后续传上一页的 `next_cursor`；
-        返回整页而不是列表，因为末页标志 `next_cursor` 与成员在同一层。
+        `cursor` 首次不传, 后续传上一页的 `next_cursor`；
+        返回整页而不是列表, 因为末页标志 `next_cursor` 与成员在同一层。
         """
 
         path = f"/v2/groups/{group_openid}/members"
@@ -61,13 +61,13 @@ class GroupResource:
         return GroupMember.model_validate(expect_object(await self._http.get(path), path))
 
     async def mute_setting(self, group_openid: str) -> GroupMuteState:
-        """群禁言状态，机器人为群管理员时才有权限（错误码 11253）。"""
+        """群禁言状态, 机器人为群管理员时才有权限（错误码 11253）。"""
 
         path = f"/v2/groups/{group_openid}/restrict_chat_setting"
         return GroupMuteState.model_validate(expect_object(await self._http.get(path), path))
 
     async def iter_members(self, group_openid: str) -> AsyncIterator[GroupMember]:
-        """按 `next_cursor` 翻页遍历群成员，末页或空页结束。"""
+        """按 `next_cursor` 翻页遍历群成员, 末页或空页结束。"""
 
         state = {"next": ""}
 
@@ -143,9 +143,9 @@ class GroupResource:
     ) -> UploadedFile:
         """上传群富媒体（图片 / 视频 / 语音 / 文件）。
 
-        url 与 file_data 二选一，前者交给服务端下载，后者按 multipart 直传，上限 5MB。
+        url 与 file_data 二选一, 前者交给服务端下载, 后者按 multipart 直传, 上限 5MB。
         返回的 file_info 直接填进 send_message 的 media。
-        srv_send_msg=True 时服务端上传后立即发送，会占用主动消息频次。
+        srv_send_msg=True 时服务端上传后立即发送, 会占用主动消息频次。
         """
 
         if (url is None) == (file_data is None):

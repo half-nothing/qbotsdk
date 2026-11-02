@@ -24,7 +24,7 @@ class ChannelType(IntEnum):
     APP = 10006  # 应用
     FORUM = 10007  # 论坛
     # 也许是日程？
-    # 文档里面完全没有这个类型，但实际API返回里面有这个类型
+    # 文档里面完全没有这个类型, 但实际API返回里面有这个类型
     # TX我丢雷老母
     SCHEDULE = 10011
 

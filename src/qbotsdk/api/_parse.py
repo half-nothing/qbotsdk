@@ -1,7 +1,7 @@
 # Copyright (c) 2026-present Half_nothing.
 
 """响应形状校验。
-资源层只认对象与数组，形状不符说明接口契约变了，直接抛TransportError并带上 path。
+资源层只认对象与数组, 形状不符说明接口契约变了, 直接抛TransportError并带上 path。
 """
 
 from __future__ import annotations

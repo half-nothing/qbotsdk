@@ -63,7 +63,7 @@ class ARKData(QQModel):
     prompt: str = Field(alias="prompt", default="")
     ark_type: str = Field(alias="ark_type", default="")
     ark_name: str = Field(alias="ark_name", default="")
-    # 键名不固定，按原样透传
+    # 键名不固定, 按原样透传
     fields: dict[str, Any] = Field(alias="fields", default_factory=dict)
 
 
@@ -73,7 +73,7 @@ class ElementAuthor(QQModel):
     官方在元素层不保证 id
     群聊元素给 member_openid
     单聊元素只给 user_openid
-    因此这里全部可缺省，用 openid 取场景对应的那个。
+    因此这里全部可缺省, 用 openid 取场景对应的那个。
     """
 
     id: str | None = Field(alias="id", default=None)
@@ -87,7 +87,7 @@ class ElementAuthor(QQModel):
 
 
 class MessageElement(QQModel):
-    """msg_elements 的单个元素，官方是递归结构。"""
+    """msg_elements 的单个元素, 官方是递归结构。"""
 
     msg_idx: str = Field(alias="msg_idx", default="")
     author: ElementAuthor | None = Field(alias="author", default=None)

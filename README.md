@@ -53,8 +53,8 @@ async def main() -> None:
     # 将环境变量QQ_BOT_APP_SECRET设为获取到的AppSecret
     # 如果您选择直接替换对应内容，请不要将携带敏感信息的文件提交到仓库
     async with Bot(
-            app_id=os.environ["QQ_BOT_APP_ID"],
-            app_secret=os.environ["QQ_BOT_APP_SECRET"],
+        app_id=os.environ["QQ_BOT_APP_ID"],
+        app_secret=os.environ["QQ_BOT_APP_SECRET"],
     ) as bot:
         me = await bot.api.user.me()
         print(f"登录成功：{me.username}")
@@ -83,6 +83,7 @@ from qbotsdk.model.event import C2CMessageCreate, GroupAtMessageCreate, Interact
 async def main() -> None:
     # 认证信息的具体获取方式请查看“快速开始”章节
     async with Bot(app_id=..., app_secret=...) as bot:
+
         @bot.on(GroupAtMessageCreate)
         async def on_group_at(ctx: EventContext[GroupAtMessageCreate]) -> None:
             await ctx.event.reply("收到: " + ctx.event.content)
@@ -180,6 +181,130 @@ app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, "机器人
 ```
 
 如果要使用flask等其他http框架，仿照该处理函数写一遍处理函数即可。
+
+## 命令与权限
+
+命令层是叠在事件之上的可选模块：它不订阅任何事件，也不挂在 `Bot` 上。注册时声明每条命令响应哪些事件，
+再由你在自己的监听器里决定是否交给它——同一个事件还能先做记录、过滤或别的处理。
+
+```python
+from async_event_bus import EventContext
+
+from qbotsdk import (
+    Bot,
+    GroupContext,
+    GroupMessageCreate,
+    MemoryPermissionStorage,
+    Permission,
+    PermissionChecker,
+    PermissionGroup,
+    Reply,
+    Router,
+    Status,
+    install_permission_commands,
+)
+
+
+class Server(PermissionGroup, namespace="server"):
+    START = Permission("start", "启动服务器")
+    STOP = Permission("stop", "停止服务器")
+
+
+store = MemoryPermissionStorage()
+router = Router(checker=PermissionChecker(store))
+
+# /permission show [target] | grant | revoke | claim | whoami | role
+install_permission_commands(router, store)
+
+
+@router.command("server start", on=GroupMessageCreate, permission=Server.START)
+async def start(ctx: GroupContext) -> Reply:
+    return Reply(text="started")
+
+
+@router.command("kick <member:mention>", on=GroupMessageCreate)
+async def kick(ctx: GroupContext, member: str) -> Reply:
+    return Reply(text=f"kicked {member}")
+
+
+bot = Bot(app_id=..., app_secret=...)
+
+
+@bot.on(GroupMessageCreate)
+async def on_group(ctx: EventContext[GroupMessageCreate]) -> None:
+    result = await router.handle(ctx.event)
+    if result.status is Status.HANDLED:
+        print(result.command, result.replied)
+```
+
+处理器返回值必须是 `Reply`：`Reply(text="...")` 当正文发出去，`Reply.ok()` 表示静默成功，`Reply(..., markdown=True)` / `Reply(..., keyboard=...)` 带额外能力；返回 `str` 或 `None` 会抛 `TypeError`，参数错误请显式 `raise UsageError(...)`。
+参数有问题就 `raise UsageError("...")`，其它异常统一回内部错误文案；`ExecutionResult.status` 会区分
+`HANDLED` / `DENIED` / `FAILED` / `NOT_FOUND`，方便在监听器里做记录或埋点。handler 里已经 `await ctx.reply(...)` 过的话，
+路由器不会把返回值再发一遍。
+
+一条命令可以同时挂在多个事件上：`@router.command("ping", on=(GroupMessageCreate, C2CMessageCreate))`。
+
+`ctx` 的类型决定你能传什么：标成 `GroupContext` 时 `ctx.reply(` 只会提示群消息支持的 `markdown` / `media` / `keyboard` / `msg_seq`，
+单聊用 `C2CContext`（参数与群相同，回执换成单聊消息），频道用 `ChannelContext`（只有 `markdown` / `image`），
+按钮等互动事件用 `InteractionContext`（`reply()` 只表示已收到）。一条命令挂在多个事件上时把这些 handler 的形参标回 `Context`，
+或者用 `include` 拆成按事件分开的子 Router，运行期不会有类型不匹配的惊喜。
+
+模板里的占位符默认按注解转换：`str`、`int`、`float`、`mention`（转成 openid）；末尾写 `<text:rest>` 表示吃掉剩余全部 token，
+绑成 `tuple[str, ...]`。模板不支持默认值，可选参数用注册两条命令表达：
+
+```python
+@router.command("roll", on=GroupMessageCreate)
+async def roll(ctx: GroupContext) -> Reply:
+    return Reply(text=f"掷出了 {random.randint(1, 6)}")
+
+
+@router.command("roll <sides:int>", on=GroupMessageCreate)
+async def roll_sides(ctx: GroupContext, sides: int) -> Reply:
+    return Reply(text=f"掷出了 {random.randint(1, sides)}")
+```
+
+想让处理器自己拿原始参数，注册时写 `bind_args=False`，此时处理器只收 `ctx` 和 `argv: list[str]`：
+
+```python
+@router.command("echo <text:rest>", on=GroupMessageCreate, bind_args=False)
+async def echo(ctx: GroupContext, argv: list[str]) -> Reply:
+    return Reply(text=" ".join(argv))
+```
+
+命令匹配是一棵按事件类型分开的前缀树：字面量边优先，整棵子树走不通才回退到 `<name>` 这类可变参边，最后才是 `<text:rest>`；
+token 用完却停在没有处理器的节点上时，框架会按该节点的子项回 usage，例如 `/permission role` →
+`Invalid arguments. Usage: /permission role <add|*name>`。
+
+`--` 开头的 token 在匹配阶段被收进选项表，`--` 单独出现表示后面不再当选项。注册时声明类型即可自动转换并绑定：
+
+```python
+@router.command("roll <sides:int>", on=GroupMessageCreate, options={"loud": bool, "times": int})
+async def roll(ctx: GroupContext, sides: int, *, loud: bool = False, times: int = 1) -> Reply: ...
+```
+
+`/roll 20 --loud --times=3` 会得到 `sides=20`、`loud=True`、`times=3`；未声明的选项报 `Unknown option --x.`。
+`<text:rest>` 之后的 token 原样打包，不再解析选项，交给 handler 自己处理。
+
+带前缀但没命中任何命令时默认静默（同一条消息可能被多个 Router 处理，默认回话会重复）；
+需要提示就 `Router(reply_unknown=True)`，回复文案是 `Messages.unknown_command`，可整体或按键替换。不带前缀的普通聊天不会触发任何回复。
+
+权限主体分两级：场景键（`group:{群}:{成员}`、`c2c:{用户}`、`guild:{频道}:{用户}`）与账号键 `user:{openid}`，
+先判场景再判账号；候选链从具体往笼统走（`server.stop` → `server.*` → `*`），同一级拒绝优先，默认拒绝。
+`install_permission_commands()` 的 `grant` 支持直接 @ 人（事件层把标记渲染成 `@openid`，命令层剥掉 `@` 即得 openid）、
+裸 openid 与一次性授权码（`--code`），
+`--global` 表示授到账号级。
+
+内置命令自己的能力键是分开的：看别人的权限要 `permission.show`，授予与签发授权码要 `permission.grant`，
+撤销要 `permission.revoke`，角色定义与分配要 `permission.role`；看自己的 `show`、`claim`、`whoami` 不需要权限。
+要一次放行全部管理操作就授 `permission.*`。
+
+存储按需选择：`MemoryPermissionStorage`（默认）、`FilePermissionStorage`、`RedisPermissionStorage`（`qbotsdk[redis]`）、
+关系库按方言分三个类、直接给连接参数——`SqlitePermissionStorage("permissions.db")`、`MysqlPermissionStorage(database="qbot", user="qbot")`、
+`PostgresPermissionStorage(database="qbot", user="qbot")`，类名就是方言，不需要再选一次；
+外层套 `CachedPermissionStorage` 可以少打几次存储。
+
+按钮与快捷菜单回调用 `router.button(载荷模型)` 注册（`on` 默认就是 `InteractionCreate`），handler 里写 `return Reply(text="已处理")`
+或 `await ctx.reply("已处理")` 都可以，框架按 `ack` 策略把它变成客户端回应，不需要判断当前是消息还是互动事件。
 
 ## 原始报文
 

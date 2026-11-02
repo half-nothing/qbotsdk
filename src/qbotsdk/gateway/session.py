@@ -30,7 +30,7 @@ class SessionState:
     """一次连接会话的状态。
 
     只有 session_id 非空才允许 Resume
-    seq 是最后收到的事件序号，跳与 Resume 都要带它
+    seq 是最后收到的事件序号, 跳与 Resume 都要带它
     """
 
     __slots__ = ("seq", "session_id")

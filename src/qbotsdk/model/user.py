@@ -22,7 +22,7 @@ class User(QQModel):
 
 
 class GuildUser(User):
-    """频道场景的用户，消息作者、成员列表里的 user、READY 里的机器人自己。"""
+    """频道场景的用户, 消息作者、成员列表里的 user、READY 里的机器人自己。"""
 
     username: str = Field(alias="username")
     # READY 的示例里没有 avatar, 频道成员与消息作者里都有, 因此允许缺省
@@ -37,7 +37,7 @@ class GuildUser(User):
 
 
 class GroupUser(User):
-    """群聊事件里的作者，以member_openid标识群成员。"""
+    """群聊事件里的作者, 以member_openid标识群成员。"""
 
     member_openid: str = Field(alias="member_openid")
     username: str = Field(alias="username", default="")
@@ -63,7 +63,7 @@ class MentionUser(GroupUser):
 
 
 class C2CUser(User):
-    """单聊事件里的作者，以 user_openid 标识用户。"""
+    """单聊事件里的作者, 以 user_openid 标识用户。"""
 
     user_openid: str = Field(alias="user_openid")
     username: str = Field(alias="username", default="")

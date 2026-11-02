@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""内存存储，进程内保留会话，重启就丢，适合单进程无所谓断线的场景。"""
+"""内存存储, 进程内保留会话, 重启就丢, 适合单进程无所谓断线的场景。"""
 
 from __future__ import annotations
 

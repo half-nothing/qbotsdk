@@ -1,5 +1,11 @@
 # 更新日志
 
+## [0.7.2] - 2026-11-04
+
+### 修复
+
+- 群富媒体上传的二进制分支改为 JSON 携带 base64 字符串，不再发 `multipart/form-data`，与官方接口当前行为一致
+
 ## [0.7.1] - 2026-11-04
 
 ### 新增
@@ -89,6 +95,7 @@
 - `Bot` 默认使用 `WebSocketAdapter()`；`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[0.7.2]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.2
 [0.7.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.1
 [0.7.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.0
 [0.6.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.6.0

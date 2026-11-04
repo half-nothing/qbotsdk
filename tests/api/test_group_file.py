@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 from typing import Any
@@ -61,7 +62,7 @@ async def test_upload_by_url_sends_json(server: MockServer, bot: Bot) -> None:
     }
 
 
-async def test_upload_binary_is_multipart(server: MockServer, bot: Bot) -> None:
+async def test_upload_binary_is_json_base64(server: MockServer, bot: Bot) -> None:
     json_route(server, "POST", FILES, {"file_uuid": "u", "file_info": "i", "ttl": 3600})
 
     uploaded = await bot.api.group.upload_file(
@@ -70,11 +71,13 @@ async def test_upload_binary_is_multipart(server: MockServer, bot: Bot) -> None:
 
     assert uploaded.file_info == "i"
     call = call_to(server, FILES)
-    assert "multipart/form-data" in call.headers["Content-Type"]
-    text = call.body.decode("utf-8", errors="replace")
-    assert 'name="file_type"' in text
-    assert 'name="file_data"; filename="a.silk"' in text
-    assert 'name="file_name"' in text
+    assert call.headers["Content-Type"].startswith("application/json")
+    assert payload(call) == {
+        "file_type": 3,
+        "file_data": base64.b64encode(b"RIFF....").decode("ascii"),
+        "file_name": "a.silk",
+        "srv_send_msg": False,
+    }
 
 
 async def test_upload_binary_with_srv_send_msg(server: MockServer, bot: Bot) -> None:
@@ -85,8 +88,9 @@ async def test_upload_binary_with_srv_send_msg(server: MockServer, bot: Bot) -> 
     )
 
     assert uploaded.id == "m1"
-    text = call_to(server, FILES).body.decode("utf-8", errors="replace")
-    assert "true" in text
+    body = payload(call_to(server, FILES))
+    assert body["srv_send_msg"] is True
+    assert body["file_data"] == base64.b64encode(b"png").decode("ascii")
 
 
 async def test_upload_rejects_oversize(server: MockServer, bot: Bot) -> None:

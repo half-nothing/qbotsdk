@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import IntEnum
 from typing import TYPE_CHECKING, Any, Final, Protocol
 
@@ -14,6 +14,8 @@ from async_event_bus import AbstractEvent
 from pydantic import ConfigDict, Field, PrivateAttr, field_validator
 
 from .base import QQModel
+from .channel import ChannelSubType, ChannelType
+from .join_request import AutoApproved, JoinRequest
 from .message import Message
 from .scene import ARKData, Attachment, MessageElement, MessageScene, split_ext
 from .user import C2CUser, GroupUser, GuildUser, MentionUser
@@ -30,6 +32,17 @@ C2C_REPLY_LIMIT = 4
 
 # 群聊 content 里的 @ 标记: `<@member_openid>` 或 `<@all>`, 频道消息里还会出现 `<@!openid>`
 _MENTION_TAG = re.compile(r"<@!?([^>]+)>")
+
+
+# 群相关的小事件把时间戳给成 Unix 秒, 其余事件是 RFC3339 字符串
+def _parse_epoch(value: object) -> object:
+    """把 Unix 秒转成 UTC 时间, 其它形态原样交给 pydantic。"""
+
+    if isinstance(value, int | float):
+        return datetime.fromtimestamp(value, tz=UTC)
+    return value
+
+
 # 剥掉 @ 机器人 之后可能留下连续空格, 归成一个
 _TIDY_SPACES = re.compile(r"[ \t]{2,}")
 
@@ -298,6 +311,133 @@ class GroupMessageCreate(_GroupMessageBase):
     """
 
 
+class _GroupRobotEvent(EventModel):
+    """群机器人的增删与消息开关事件共用的时间戳与操作人。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="事件时间, Unix 秒")
+    group_openid: str = Field(alias="group_openid", description="群 OpenID")
+    op_member_openid: str = Field(alias="op_member_openid", description="操作成员的 OpenID")
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        """官方在这几个事件里给的是 Unix 秒, 其余事件是 RFC3339 字符串。"""
+
+        return _parse_epoch(value)
+
+
+class GroupAddRobot(_GroupRobotEvent):
+    """t = GROUP_ADD_ROBOT, 机器人被拉进群。"""
+
+
+class GroupDelRobot(_GroupRobotEvent):
+    """t = GROUP_DEL_ROBOT, 机器人被移出群。"""
+
+
+class GroupMsgReceive(_GroupRobotEvent):
+    """t = GROUP_MSG_RECEIVE, 群开启了机器人的消息接收。"""
+
+
+class GroupMsgReject(_GroupRobotEvent):
+    """t = GROUP_MSG_REJECT, 群关闭了机器人的消息接收。"""
+
+
+class GroupMemberAdd(EventModel):
+    """t = GROUP_MEMBER_ADD, 群成员加入。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="入群时间, Unix 秒")
+    group_openid: str = Field(alias="group_openid")
+    member_openid: str = Field(alias="member_openid")
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        return _parse_epoch(value)
+
+
+class GroupMemberRemove(EventModel):
+    """t = GROUP_MEMBER_REMOVE, 群成员退出。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="退出时间, Unix 秒")
+    group_openid: str = Field(alias="group_openid")
+    member_openid: str = Field(alias="member_openid")
+    # 官方说这个字段可能为空
+    user_openid: str | None = Field(alias="user_openid", default=None)
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        return _parse_epoch(value)
+
+
+class _C2CEvent(EventModel):
+    """单聊侧的消息开关事件共用体。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="事件时间, Unix 秒")
+    openid: str = Field(alias="openid", description="用户 OpenID")
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        return _parse_epoch(value)
+
+
+class C2CMsgReceive(_C2CEvent):
+    """t = C2C_MSG_RECEIVE, 用户开启了机器人的单聊消息接收。"""
+
+
+class C2CMsgReject(_C2CEvent):
+    """t = C2C_MSG_REJECT, 用户关闭了机器人的单聊消息接收。"""
+
+
+class FriendAuthor(QQModel):
+    """好友事件里的用户信息。"""
+
+    union_openid: str = Field(alias="union_openid", description="跨应用统一 OpenID")
+
+
+class FriendAdd(EventModel):
+    """t = FRIEND_ADD, 用户添加机器人为好友。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="添加时间, Unix 秒")
+    openid: str = Field(alias="openid", description="用户 OpenID")
+    scene: int | None = Field(alias="scene", default=None, description="加好友场景值")
+    scene_param: str | None = Field(alias="scene_param", default=None, description="自定义回调数据")
+    author: FriendAuthor | None = Field(alias="author", default=None)
+    short_code: str | None = Field(
+        alias="short_code", default=None, description="分享链接短链 code"
+    )
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        return _parse_epoch(value)
+
+
+class FriendDel(EventModel):
+    """t = FRIEND_DEL, 用户删除机器人好友。"""
+
+    timestamp: datetime = Field(alias="timestamp", description="删除时间, Unix 秒")
+    openid: str = Field(alias="openid", description="用户 OpenID")
+    author: FriendAuthor | None = Field(alias="author", default=None)
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _parse_timestamp(cls, value: object) -> object:
+        return _parse_epoch(value)
+
+
+class GroupJoinRequest(JoinRequest, EventModel):
+    """t = GROUP_JOIN_REQUEST, 用户申请加群。
+
+    只有机器人是群管理员时才会下发;
+    `join_request_id` 审批时要原样回传, `apply_source=invited` 时 `invited_by` 才有值。
+    """
+
+    group_openid: str = Field(alias="group_openid")
+    auto_approved: AutoApproved | None = Field(alias="auto_approved", default=None)
+
+
 class C2CMessageCreate(EventModel):
     """t = C2C_MESSAGE_CREATE, 用户单聊机器人。"""
 
@@ -382,6 +522,98 @@ class ChannelMessageCreate(Message, EventModel):
             reply_to=self.id,
             event_id=self.id,
         )
+
+
+class GuildEvent(EventModel):
+    """GUILD_CREATE / GUILD_UPDATE / GUILD_DELETE 共用的事件体。
+
+    三张文档页的字段表一致: 频道对象加 `op_user_id`。
+    删除事件可能只带 `id` 与 `op_user_id`, 因此除 `id` 外都给了默认值。
+    """
+
+    id: str = Field(alias="id", description="频道 ID")
+    name: str = Field(alias="name", default="")
+    icon: str = Field(alias="icon", default="")
+    owner_id: str = Field(alias="owner_id", default="")
+    member_count: int = Field(alias="member_count", default=0)
+    max_members: int = Field(alias="max_members", default=0)
+    description: str = Field(alias="description", default="")
+    joined_at: datetime | None = Field(alias="joined_at", default=None)
+    op_user_id: str = Field(alias="op_user_id", default="", description="操作人 ID")
+
+
+class GuildCreate(GuildEvent):
+    """t = GUILD_CREATE, 机器人加入频道。"""
+
+
+class GuildUpdate(GuildEvent):
+    """t = GUILD_UPDATE, 频道信息变更。"""
+
+
+class GuildDelete(GuildEvent):
+    """t = GUILD_DELETE, 机器人被移出频道。"""
+
+
+class ChannelEvent(EventModel):
+    """CHANNEL_CREATE / CHANNEL_UPDATE / CHANNEL_DELETE 共用的事件体。
+
+    文档字段表只列了 id/guild_id/name/type/sub_type/owner_id/op_user_id,
+    示例里还带着 `position`, 这里按可选字段收下; 删除事件可能只带 id 与 op_user_id。
+    """
+
+    id: str = Field(alias="id", description="子频道 ID")
+    guild_id: str = Field(alias="guild_id", default="")
+    name: str = Field(alias="name", default="")
+    type: ChannelType | None = Field(alias="type", default=None)
+    sub_type: ChannelSubType | None = Field(alias="sub_type", default=None)
+    owner_id: str = Field(alias="owner_id", default="")
+    op_user_id: str = Field(alias="op_user_id", default="", description="操作人 ID")
+    position: int | None = Field(alias="position", default=None)
+
+
+class ChannelCreate(ChannelEvent):
+    """t = CHANNEL_CREATE, 子频道创建。"""
+
+
+class ChannelUpdate(ChannelEvent):
+    """t = CHANNEL_UPDATE, 子频道信息变更。"""
+
+
+class ChannelDelete(ChannelEvent):
+    """t = CHANNEL_DELETE, 子频道删除。"""
+
+
+class GuildMessageCreate(ChannelMessageCreate):
+    """t = MESSAGE_CREATE, 频道里的全量消息。
+
+    字段与 `AT_MESSAGE_CREATE` 同源, 沿用频道消息的 `reply()`。
+    """
+
+
+class DirectMessageCreate(ChannelMessageCreate):
+    """t = DIRECT_MESSAGE_CREATE, 频道的私信消息。
+
+    字段与 `AT_MESSAGE_CREATE` 同源, 沿用频道消息的 `reply()`。
+    """
+
+
+class MessageAudit(EventModel):
+    """MESSAGE_AUDIT_PASS / MESSAGE_AUDIT_REJECT 共用的事件体。"""
+
+    audit_id: str = Field(alias="audit_id", description="审核 ID")
+    audit_time: datetime = Field(alias="audit_time", description="审核时间")
+    channel_id: str = Field(alias="channel_id")
+    create_time: datetime = Field(alias="create_time", description="消息发送时间")
+    guild_id: str = Field(alias="guild_id")
+    message_id: str = Field(alias="message_id")
+
+
+class MessageAuditPass(MessageAudit):
+    """t = MESSAGE_AUDIT_PASS, 消息审核通过。"""
+
+
+class MessageAuditReject(MessageAudit):
+    """t = MESSAGE_AUDIT_REJECT, 消息审核驳回。"""
 
 
 class InteractionType(IntEnum):
@@ -504,10 +736,31 @@ class UnknownEvent(EventModel):
 EVENT_MODELS: Final[dict[str, type[EventModel]]] = {
     "READY": ReadyEvent,
     "RESUMED": ResumedEvent,
+    "GUILD_CREATE": GuildCreate,
+    "GUILD_UPDATE": GuildUpdate,
+    "GUILD_DELETE": GuildDelete,
+    "CHANNEL_CREATE": ChannelCreate,
+    "CHANNEL_UPDATE": ChannelUpdate,
+    "CHANNEL_DELETE": ChannelDelete,
+    "GROUP_ADD_ROBOT": GroupAddRobot,
+    "GROUP_DEL_ROBOT": GroupDelRobot,
+    "GROUP_MSG_RECEIVE": GroupMsgReceive,
+    "GROUP_MSG_REJECT": GroupMsgReject,
+    "GROUP_MEMBER_ADD": GroupMemberAdd,
+    "GROUP_MEMBER_REMOVE": GroupMemberRemove,
+    "GROUP_JOIN_REQUEST": GroupJoinRequest,
+    "FRIEND_ADD": FriendAdd,
+    "FRIEND_DEL": FriendDel,
+    "C2C_MSG_RECEIVE": C2CMsgReceive,
+    "C2C_MSG_REJECT": C2CMsgReject,
     "GROUP_AT_MESSAGE_CREATE": GroupAtMessageCreate,
     "GROUP_MESSAGE_CREATE": GroupMessageCreate,
     "C2C_MESSAGE_CREATE": C2CMessageCreate,
     "AT_MESSAGE_CREATE": ChannelMessageCreate,
+    "MESSAGE_CREATE": GuildMessageCreate,
+    "DIRECT_MESSAGE_CREATE": DirectMessageCreate,
+    "MESSAGE_AUDIT_PASS": MessageAuditPass,
+    "MESSAGE_AUDIT_REJECT": MessageAuditReject,
     "INTERACTION_CREATE": InteractionCreate,
 }
 

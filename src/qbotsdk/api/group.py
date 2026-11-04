@@ -10,6 +10,7 @@ from aiohttp import FormData
 
 from qbotsdk.model.draft import GroupMessageDraft, MessageMarkdown
 from qbotsdk.model.group import Group, GroupBotState, GroupMember, GroupMembersPage, GroupMuteState
+from qbotsdk.model.join_request import JoinRequestAction, JoinRequestPage
 from qbotsdk.model.keyboard import Keyboard
 from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
 from qbotsdk.model.message import GroupMessageReceipt
@@ -59,6 +60,78 @@ class GroupResource:
 
         path = f"/v2/groups/{group_openid}/members/{member_openid}"
         return GroupMember.model_validate(expect_object(await self._http.get(path), path))
+
+    async def join_requests(
+        self, group_openid: str, *, cursor: str = "", limit: int = 20
+    ) -> JoinRequestPage:
+        """入群申请列表, 分页; 机器人需为群管理员, 频率限制 30 QPM。"""
+
+        path = f"/v2/groups/{group_openid}/join_request_list"
+        params: dict[str, str | int] = {"limit": limit}
+        if cursor:
+            params["cursor"] = cursor
+        payload = await self._http.get(path, params=params)
+        return JoinRequestPage.model_validate(expect_object(payload, path))
+
+    async def review_join_request(
+        self,
+        group_openid: str,
+        member_openid: str,
+        join_request_id: str,
+        *,
+        action: JoinRequestAction,
+        reject_reason: str | None = None,
+        add_to_member_blacklist: bool = False,
+    ) -> None:
+        """审批入群申请, 频率限制 60 QPM。
+
+        `action` 只有 `approve` 与 `decline` 两种;
+        `reject_reason` 与 `add_to_member_blacklist` 仅在拒绝时有效。
+        """
+
+        path = f"/v2/groups/{group_openid}/approval_join_request/{member_openid}"
+        op = JoinRequestAction(action)
+        body: dict[str, object] = {"op": op.value}
+        if join_request_id is not None:
+            body["join_request_id"] = join_request_id
+        if op is JoinRequestAction.DECLINE:
+            if reject_reason is not None:
+                body["reject_reason"] = reject_reason
+            if add_to_member_blacklist:
+                body["add_to_member_blacklist"] = True
+        await self._http.post(path, json=body)
+
+    async def approve_join_request(
+        self, group_openid: str, member_openid: str, join_request_id: str
+    ) -> None:
+        """通过入群申请。"""
+
+        await self.review_join_request(
+            group_openid,
+            member_openid,
+            join_request_id,
+            action=JoinRequestAction.APPROVE,
+        )
+
+    async def decline_join_request(
+        self,
+        group_openid: str,
+        member_openid: str,
+        join_request_id: str,
+        *,
+        reject_reason: str | None = None,
+        add_to_member_blacklist: bool = False,
+    ) -> None:
+        """拒绝入群申请, 可选同时拉黑。"""
+
+        await self.review_join_request(
+            group_openid,
+            member_openid,
+            join_request_id,
+            action=JoinRequestAction.DECLINE,
+            reject_reason=reject_reason,
+            add_to_member_blacklist=add_to_member_blacklist,
+        )
 
     async def mute_setting(self, group_openid: str) -> GroupMuteState:
         """群禁言状态, 机器人为群管理员时才有权限（错误码 11253）。"""

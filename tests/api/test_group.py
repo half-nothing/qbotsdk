@@ -11,7 +11,8 @@ from typing import Any
 import aiohttp.web
 
 from qbotsdk.bot import Bot
-from qbotsdk.model.group import GroupMemberRole, MuteMode, RecvMsgSetting
+from qbotsdk.model import JoinRequestAction
+from qbotsdk.model.group import GroupMemberRole, JoinRequestAction, MuteMode, RecvMsgSetting
 from tests.support import MockServer
 
 DATA = Path(__file__).parents[1] / "data"
@@ -112,3 +113,100 @@ async def test_group_mute_setting(bot: Bot, server: MockServer) -> None:
     # HH:mm 不做时间解析，保持官方给的原样
     assert state.global_rule.recurring_rules[0].start_time == "13:05"
     assert state.members[0].mute_expire_at.year == 2026
+
+
+JOIN_REQUEST_PATH = f"/v2/groups/{GROUP_OPENID}/join_request_list"
+JOIN_REQUEST_PAYLOAD = {
+    "list": [
+        {
+            "join_request_id": "req-1",
+            "risk_tips": "",
+            "union_openid": "U1",
+            "member_openid": "M1",
+            "username": "申请人",
+            "apply_at": "2026-08-05T14:19:09+08:00",
+            "apply_source": "self_apply",
+            "invited_by": "",
+            "bot": False,
+            "verify_info": {
+                "method": "verify_message",
+                "verify_message": "让我进群",
+                "review_qa_list": [],
+            },
+        }
+    ],
+    "next_cursor": "cursor-2",
+}
+
+
+async def test_join_request_list(bot: Bot, server: MockServer) -> None:
+    json_route(server, "GET", JOIN_REQUEST_PATH, JOIN_REQUEST_PAYLOAD)
+
+    page = await bot.api.group.join_requests(GROUP_OPENID, limit=50)
+
+    request = page.join_request_list[0]
+    assert page.next_cursor == "cursor-2"
+    assert request.join_request_id == "req-1"
+    assert request.username == "申请人"
+    assert request.apply_at.year == 2026
+    assert request.verify_info is not None
+    assert request.verify_info.verify_message == "让我进群"
+    # 首次不带游标, 只带 limit
+    assert calls_to(server, JOIN_REQUEST_PATH)[0].query == {"limit": "50"}
+
+
+async def test_join_request_list_passes_cursor(bot: Bot, server: MockServer) -> None:
+    json_route(server, "GET", JOIN_REQUEST_PATH, {"list": [], "next_cursor": ""})
+
+    page = await bot.api.group.join_requests(GROUP_OPENID, cursor="cursor-1")
+
+    assert page.join_request_list == []
+    assert calls_to(server, JOIN_REQUEST_PATH)[0].query == {"limit": "20", "cursor": "cursor-1"}
+
+
+async def test_approve_join_request(bot: Bot, server: MockServer) -> None:
+    path = f"/v2/groups/{GROUP_OPENID}/approval_join_request/M1"
+    json_route(server, "POST", path, {})
+
+    await bot.api.group.approve_join_request(GROUP_OPENID, "M1", join_request_id="req-1")
+
+    assert calls_to(server, path)[0].json == {"op": "approve", "join_request_id": "req-1"}
+
+
+async def test_decline_join_request_with_reason_and_blacklist(bot: Bot, server: MockServer) -> None:
+    path = f"/v2/groups/{GROUP_OPENID}/approval_join_request/M2"
+    json_route(server, "POST", path, {})
+
+    await bot.api.group.decline_join_request(
+        GROUP_OPENID,
+        "M2",
+        join_request_id="req-2",
+        reject_reason="不欢迎广告",
+        add_to_member_blacklist=True,
+    )
+
+    assert calls_to(server, path)[0].json == {
+        "op": "decline",
+        "join_request_id": "req-2",
+        "reject_reason": "不欢迎广告",
+        "add_to_member_blacklist": True,
+    }
+
+
+async def test_review_join_request_omits_decline_only_fields_when_approving(
+    bot: Bot, server: MockServer
+) -> None:
+    path = f"/v2/groups/{GROUP_OPENID}/approval_join_request/M3"
+    json_route(server, "POST", path, {})
+
+    await bot.api.group.review_join_request(
+        GROUP_OPENID,
+        "M3",
+        "111",
+        action=JoinRequestAction.APPROVE,
+        reject_reason="should be ignored",
+        add_to_member_blacklist=True,
+    )
+
+    # 通过申请时拒绝原因与拉黑都不该出现在请求体里
+    assert calls_to(server, path)[0].json == {"op": "approve"}

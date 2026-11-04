@@ -107,6 +107,7 @@ asyncio.run(main())
 ```
 
 bot的`adapter`参数默认为`WebSocketAdapter`，可以显式指定为`WebhookAdapter`  
+
 也可以自行实现`Adapter`从而扩展更多接入方式，自行实现的`Adapter`需要继承`qbotsdk.adapter.Adapter`并实现两个抽象方法
 
 `WebSocketAdapter`的会话状态默认存在内存里  

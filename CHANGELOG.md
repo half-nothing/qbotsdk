@@ -1,5 +1,23 @@
 # 更新日志
 
+## [0.7.1] - 2026-11-04
+
+### 新增
+
+- 群成员事件：`GroupMemberAdd`（`GROUP_MEMBER_ADD`）与 `GroupJoinRequest`（`GROUP_JOIN_REQUEST`），后者带申请原因、邀请人、校验信息与自动审批策略；两者走 `Intents.GROUP_MEMBER`
+- 入群申请接口：`api.group.join_requests()` 拉取申请列表，`review_join_request()` 同意或拒绝，另附 `approve_join_request()`/`decline_join_request()` 两个便捷方法
+- 频道事件：`GuildCreate`/`GuildUpdate`/`GuildDelete` 与 `ChannelCreate`/`ChannelUpdate`/`ChannelDelete`，字段按官方事件表建模，删除事件允许只带 `id` 与 `op_user_id`
+- 群与单聊开关事件：`GroupAddRobot`/`GroupDelRobot`/`GroupMsgReceive`/`GroupMsgReject`/`GroupMemberRemove`/`FriendAdd`/`FriendDel`/`C2CMsgReceive`/`C2CMsgReject`，时间戳统一解析成带时区的 `datetime`
+- 频道消息与审核事件：`GuildMessageCreate`（`MESSAGE_CREATE`）、`DirectMessageCreate`（`DIRECT_MESSAGE_CREATE`）沿用频道消息的 `reply()`，另有 `MessageAuditPass`/`MessageAuditReject`
+
+### 变更
+
+- 群成员事件（入群、退群、加群申请）要在开放平台勾选后才会下发；`Intents.GROUP_MEMBER`（`1 << 24`）没有并进 `Intents.DEFAULT`，需要显式加进 intents，避免没开权限的机器人 Identify 被断开。
+
+### 破坏性变更
+
+- 顶层 `qbotsdk` 只再导出与它同目录的模块：`Bot`、`ClientOptions`、异常族（`QQBotError`/`TransportError`/`APIError`/`RateLimitExceededError`/`ErrorCode`）与 `__version__`。子包内容改写子包导入，例如 `from qbotsdk.adapter import WebSocketAdapter`、`from qbotsdk.commands import Router, Reply`、`from qbotsdk.permissions import Grant, PermissionChecker`。
+
 ## [0.7.0] - 2026-10-29
 
 ### 新增
@@ -41,7 +59,6 @@
 - 模板不再支持默认值（`<name:int=3>` 直接 `ValueError`），rest 段统一写成 `<text:rest>`；可选参数用注册多条路由或 `--` 选项表达。
 - 移除 `Router.command(aliases=...)`：同一个 handler 再注册一条路径即可，两条路径各自编译模板、各自校验形参与选项。
 - 命令匹配不再按「具体度评分」排序，改由前缀树的字面边优先与回溯决定。
-- 顶层 `qbotsdk` 只再导出与它同目录的模块：`Bot`、`ClientOptions`、异常族（`QQBotError`/`TransportError`/`APIError`/`RateLimitExceededError`/`ErrorCode`）与 `__version__`。子包内容改写子包导入，例如 `from qbotsdk.adapter import WebSocketAdapter`、`from qbotsdk.commands import Router, Reply`、`from qbotsdk.permissions import Grant, PermissionChecker`。
 
 ## [0.6.0] - 2026-10-28
 
@@ -67,5 +84,6 @@
 - `Bot` 默认使用 `WebSocketAdapter()`；`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[0.7.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.1
 [0.7.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.0
 [0.6.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.6.0

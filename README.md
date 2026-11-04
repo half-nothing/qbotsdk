@@ -368,8 +368,8 @@ install_permission_commands(router, store)
 | 命令                                          | 作用        | 需要                  |
 |---------------------------------------------|-----------|---------------------|
 | `/permission whoami`                        | 打印自己的主体键  | 无                   |
-| `/permission show`                          | 看自己的规则    | 无                   |
-| `/permission show @某人`                      | 看别人的规则    | `permission.show`   |
+| `/permission show`                          | 看自己的作用域、授予与角色 | 无                   |
+| `/permission show @某人`                      | 看别人的同一组信息 | `permission.show`   |
 | `/permission grant @某人 demo.admin`          | 授权（默认场景级） | `permission.grant`  |
 | `/permission grant @某人 demo.admin --global` | 授到账号级     | `permission.grant`  |
 | `/permission grant demo.admin --code`       | 生成一次性授权码  | `permission.grant`  |
@@ -382,6 +382,26 @@ install_permission_commands(router, store)
 `@某人` 依赖事件里的成员标记，
 `GroupMessageCreate` 下事件层把 `<@openid>` 渲染成 `@openid`，`mention` 参数直接得到裸 openid；
 机器人只订阅 `GROUP_AT_MESSAGE_CREATE` 时拿不到 @ 信息，这时用 `--code` 或直接写 openid。
+
+`/permission show` 的输出按主体分段，每段带上作用域、直接授予与角色：
+
+```text
+Your permissions:
+group:group-1:member-1
+  scope: group group-1
+  direct: demo.admin
+  roles:
+    vip
+      grants: demo.*, -demo.admin
+      inherits: base
+user:member-1
+  scope: user, applies in every scene
+  direct: none
+  roles: none
+```
+
+`scope` 是主体所在的作用域，`direct` 是直接授予，`roles` 下每个角色列自己的 `grants` 与父角色 `inherits`；
+角色被分配但定义已删除时写 `definition is missing`。
 
 #### 判定规则
 

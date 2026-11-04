@@ -9,6 +9,7 @@ from qbotsdk.permissions import (
     Grant,
     MemoryPermissionStorage,
     PermissionChecker,
+    Role,
     install_permission_commands,
 )
 from tests.commands.support import FakeApi, c2c_event, group_event
@@ -46,7 +47,57 @@ async def test_show_lists_granted_keys() -> None:
 
     await router.handle(event)
 
-    assert await reply_of(event) == "permission.*"
+    assert await reply_of(event) == (
+        "Your permissions:\n"
+        "group:group-1:member-1\n"
+        "  scope: group group-1\n"
+        "  direct: permission.*\n"
+        "  roles: none\n"
+        "user:member-1\n"
+        "  scope: user, applies in every scene\n"
+        "  direct: none\n"
+        "  roles: none"
+    )
+
+
+async def test_show_describes_roles_and_their_grants() -> None:
+    router, store = await build()
+    await store.save_role(
+        Role(
+            "admin",
+            grants=(Grant("demo.*"), Grant("demo.admin", allow=False)),
+            parents=("base",),
+        )
+    )
+    await store.save_role(Role("base", grants=(Grant("demo.ping"),)))
+    await store.assign("group:group-1:member-2", "admin")
+    event = group_event("/permission show <@member-2>")
+
+    await router.handle(event)
+
+    assert await reply_of(event) == (
+        "group:group-1:member-2\n"
+        "  scope: group group-1\n"
+        "  direct: none\n"
+        "  roles:\n"
+        "    admin\n"
+        "      grants: demo.*, -demo.admin\n"
+        "      inherits: base\n"
+        "user:member-2\n"
+        "  scope: user, applies in every scene\n"
+        "  direct: none\n"
+        "  roles: none"
+    )
+
+
+async def test_show_marks_a_missing_role_definition() -> None:
+    router, store = await build()
+    await store.assign("group:group-1:member-2", "ghost")
+    event = group_event("/permission show <@member-2>")
+
+    await router.handle(event)
+
+    assert "    ghost\n      definition is missing" in await reply_of(event)
 
 
 async def test_grant_to_scene_member() -> None:
@@ -134,7 +185,16 @@ async def test_show_resolves_a_raw_mention_token() -> None:
 
     await router.handle(event)
 
-    assert await reply_of(event) == "group:group-1:member-2:\ndemo.stop"
+    assert await reply_of(event) == (
+        "group:group-1:member-2\n"
+        "  scope: group group-1\n"
+        "  direct: demo.stop\n"
+        "  roles: none\n"
+        "user:member-2\n"
+        "  scope: user, applies in every scene\n"
+        "  direct: none\n"
+        "  roles: none"
+    )
 
 
 async def test_authorization_code_flow() -> None:
@@ -276,4 +336,13 @@ async def test_show_of_another_principal_lists_their_keys() -> None:
 
     await router.handle(event)
 
-    assert await reply_of(event) == "group:group-1:member-2:\ndemo.stop"
+    assert await reply_of(event) == (
+        "group:group-1:member-2\n"
+        "  scope: group group-1\n"
+        "  direct: demo.stop\n"
+        "  roles: none\n"
+        "user:member-2\n"
+        "  scope: user, applies in every scene\n"
+        "  direct: none\n"
+        "  roles: none"
+    )

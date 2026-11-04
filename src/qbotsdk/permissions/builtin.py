@@ -104,6 +104,21 @@ def _pending_target(ctx: Context, pending: PendingGrant) -> str:
     return f"user:{openid}" if pending.scope == "global" else f"group:{_group_openid(ctx)}:{openid}"
 
 
+def _scope_of(principal: str) -> str:
+    """把主体键翻译成人类可读的作用域。"""
+
+    kind, _, rest = principal.partition(":")
+    if kind == "group":
+        return f"group {rest.partition(':')[0]}"
+    if kind == "c2c":
+        return "direct message"
+    if kind == "user":
+        return "user, applies in every scene"
+    if kind == "guild":
+        return f"guild {rest.partition(':')[0]}"
+    return "custom"
+
+
 def install_permission_commands(
     router: Router,
     store: PermissionStorage,
@@ -112,18 +127,50 @@ def install_permission_commands(
 ) -> None:
     """把权限管理命令装进路由。"""
 
-    async def _rules_of(principal: str, account: str | None) -> list[str]:
-        rules = set(await store.rules(principal))
+    async def _describe(principal: str) -> tuple[list[str], bool]:
+        """一个主体的作用域、直接授予、被分配的角色与角色权限。"""
+
+        lines = [principal, f"  scope: {_scope_of(principal)}"]
+        direct = sorted(await store.grants(principal), key=lambda item: item.permission)
+        lines.append("  direct: " + (", ".join(item.encoded for item in direct) or "none"))
+        names = sorted(await store.roles(principal))
+        if not names:
+            lines.append("  roles: none")
+            return lines, bool(direct)
+        lines.append("  roles:")
+        for name in names:
+            role_ = await store.role(name)
+            lines.append(f"    {name}")
+            if role_ is None:
+                lines.append("      definition is missing")
+                continue
+            grants = sorted(role_.grants, key=lambda item: item.permission)
+            lines.append("      grants: " + (", ".join(item.encoded for item in grants) or "none"))
+            if role_.parents:
+                lines.append("      inherits: " + ", ".join(sorted(role_.parents)))
+        return lines, True
+
+    async def _sections(principal: str) -> tuple[list[str], bool]:
+        """场景主体与账号主体的两段输出; 第二段不存在时只有一段。"""
+
+        principals = [principal]
+        account = account_of(principal)
         if account is not None and account != principal:
-            rules.update(await store.rules(account))
-        return sorted(grant.encoded for grant in rules)
+            principals.append(account)
+        lines: list[str] = []
+        found = False
+        for item in principals:
+            block, granted = await _describe(item)
+            lines.extend(block)
+            found = found or granted
+        return lines, found
 
     @router.command("permission show", on=_TEXT_EVENTS)
     async def show(ctx: Context) -> Reply:
-        lines = await _rules_of(ctx.principal, ctx.account)
-        if not lines:
+        lines, found = await _sections(ctx.principal)
+        if not found:
             return Reply(text="No permissions are granted.")
-        return Reply(text="\n".join(lines))
+        return Reply(text="Your permissions:\n" + "\n".join(lines))
 
     @router.command(
         "permission show <target:rest>",
@@ -133,10 +180,10 @@ def install_permission_commands(
     )
     async def show_target(ctx: Context, argv: list[str]) -> Reply:
         target = _resolve(ctx, argv[0], global_=False)
-        lines = await _rules_of(target, account_of(target))
-        if not lines:
+        lines, found = await _sections(target)
+        if not found:
             return Reply(text=f"No permissions are granted to {target}.")
-        return Reply(text="\n".join([f"{target}:", *lines]))
+        return Reply(text="\n".join(lines))
 
     @router.command(
         "permission grant <target:rest>",

@@ -9,7 +9,7 @@ from qbotsdk.model.event import C2CMessageCreate, ChannelMessageCreate, GroupMes
 from tests.commands.support import FakeApi, c2c_event, channel_event, group_event
 
 ON = GroupMessageCreate
-TAG = '<qqbot-at-user id="member-1" /> '
+TAG = '<qqbot-at-user id="member-1" />'
 
 
 async def test_group_reply_mentions_the_sender_by_default() -> None:
@@ -25,7 +25,7 @@ async def test_group_reply_mentions_the_sender_by_default() -> None:
     assert isinstance(event.api, FakeApi)
     call = event.api.group.calls[0]
     assert call["content"] is None
-    assert call["markdown"].content == f"{TAG}pong"
+    assert call["markdown"].content == f"{TAG}\npong"
 
 
 async def test_markdown_reply_uses_the_markup_tag() -> None:
@@ -41,7 +41,7 @@ async def test_markdown_reply_uses_the_markup_tag() -> None:
     assert isinstance(event.api, FakeApi)
     call = event.api.group.calls[0]
     assert call["content"] is None
-    assert call["markdown"].content == f"{TAG}**hi**"
+    assert call["markdown"].content == f"{TAG}\n**hi**"
 
 
 async def test_router_can_turn_the_mention_off() -> None:
@@ -115,7 +115,7 @@ async def test_channel_markdown_mentions_the_author() -> None:
 
     assert isinstance(event.api, FakeApi)
     call = event.api.channel.calls[0]
-    assert call["markdown"].content == '<qqbot-at-user id="user-9" /> hi'
+    assert call["markdown"].content == '<qqbot-at-user id="user-9" />\nhi'
 
 
 async def test_channel_text_reply_is_promoted_to_markdown() -> None:
@@ -130,7 +130,7 @@ async def test_channel_text_reply_is_promoted_to_markdown() -> None:
 
     assert isinstance(event.api, FakeApi)
     call = event.api.channel.calls[0]
-    assert call["markdown"].content == '<qqbot-at-user id="user-9" /> hi'
+    assert call["markdown"].content == '<qqbot-at-user id="user-9" />\nhi'
 
 
 async def test_the_legacy_mention_form_is_not_used() -> None:

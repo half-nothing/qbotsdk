@@ -117,7 +117,8 @@ async def main() -> None:
         print(f"已挂在自有应用上，端口 {port}，回调地址填 https://你的域名/qbotsdk")
 
         try:
-            await asyncio.Event().wait()
+            # 服务器由自己管理，只需要一个「等到退出信号」的阻塞点
+            await bot.wait_for_exit()
         finally:
             await runner.cleanup()
 

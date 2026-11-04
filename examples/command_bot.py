@@ -37,10 +37,8 @@
 """
 
 import asyncio
-import contextlib
 import os
 import random
-import signal
 import sys
 import time
 from collections.abc import Awaitable, Callable
@@ -423,15 +421,7 @@ async def main() -> None:
         print("已连接，群里试 /ping、/roll 20、/greet 小明 --loud、/echo 你好、/help")
         print("  /button 之后用 /secret 看动态授权；/math add 1 2 看 include")
         print("  /permission grant @某人 demo.admin   # 需要机器人开启接收全部群消息")
-
-        stopped = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            # Windows 的 ProactorEventLoop 不支持信号处理，靠 Ctrl+C 抛 KeyboardInterrupt
-            with contextlib.suppress(NotImplementedError):
-                loop.add_signal_handler(sig, stopped.set)
-        with contextlib.suppress(KeyboardInterrupt, asyncio.CancelledError):
-            await stopped.wait()
+        await bot.wait_for_exit()
 
 
 if __name__ == "__main__":

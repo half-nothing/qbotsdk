@@ -9,9 +9,7 @@
 """
 
 import asyncio
-import contextlib
 import os
-import signal
 import sys
 
 from async_event_bus import EventContext
@@ -81,17 +79,9 @@ async def main() -> None:
         async def on_unknown(ctx: EventContext[UnknownEvent]) -> None:
             print(f"[未建模] {ctx.event.t}")
 
-        stopped = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            # Windows 的 ProactorEventLoop 不支持信号处理，靠 Ctrl+C 抛 KeyboardInterrupt
-            with contextlib.suppress(NotImplementedError):
-                loop.add_signal_handler(sig, stopped.set)
-
         await bot.start()
         print("WebSocket 已连接，按 Ctrl+C 退出")
-        with contextlib.suppress(KeyboardInterrupt, asyncio.CancelledError):
-            await stopped.wait()
+        await bot.wait_for_exit()
 
 
 asyncio.run(main())

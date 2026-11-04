@@ -9,6 +9,7 @@
 - 频道事件：`GuildCreate`/`GuildUpdate`/`GuildDelete` 与 `ChannelCreate`/`ChannelUpdate`/`ChannelDelete`，字段按官方事件表建模，删除事件允许只带 `id` 与 `op_user_id`
 - 群与单聊开关事件：`GroupAddRobot`/`GroupDelRobot`/`GroupMsgReceive`/`GroupMsgReject`/`GroupMemberRemove`/`FriendAdd`/`FriendDel`/`C2CMsgReceive`/`C2CMsgReject`，时间戳统一解析成带时区的 `datetime`
 - 频道消息与审核事件：`GuildMessageCreate`（`MESSAGE_CREATE`）、`DirectMessageCreate`（`DIRECT_MESSAGE_CREATE`）沿用频道消息的 `reply()`，另有 `MessageAuditPass`/`MessageAuditReject`
+- 退出信号：`Bot.run()` 一次做完 start、等 `SIGINT`/`SIGTERM`、stop；`Bot.wait_for_exit()` 只等信号，适合自己管理适配器或 HTTP 服务器的场景。Windows 的 ProactorEventLoop 不支持 `add_signal_handler`，内部回退到 `signal.signal`。
 
 ### 变更
 

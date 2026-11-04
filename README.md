@@ -99,13 +99,12 @@ async def main() -> None:
             if ctx.event.needs_response:
                 await ctx.event.respond()  # 不回应客户端会一直 loading
 
-        await bot.start()
-        await asyncio.sleep(3600)
+        await bot.run()  # 启动并阻塞到 Ctrl+C 或 SIGTERM
 
 
 asyncio.run(main())
 ```
-
+c
 bot的`adapter`参数默认为`WebSocketAdapter`，可以显式指定为`WebhookAdapter`  
 
 也可以自行实现`Adapter`从而扩展更多接入方式，自行实现的`Adapter`需要继承`qbotsdk.adapter.Adapter`并实现两个抽象方法

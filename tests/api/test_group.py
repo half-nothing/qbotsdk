@@ -12,7 +12,7 @@ import aiohttp.web
 
 from qbotsdk.bot import Bot
 from qbotsdk.model import JoinRequestAction
-from qbotsdk.model.group import GroupMemberRole, JoinRequestAction, MuteMode, RecvMsgSetting
+from qbotsdk.model.group import GroupMemberRole, MuteMode, RecvMsgSetting
 from tests.support import MockServer
 
 DATA = Path(__file__).parents[1] / "data"
@@ -208,5 +208,5 @@ async def test_review_join_request_omits_decline_only_fields_when_approving(
         add_to_member_blacklist=True,
     )
 
-    # 通过申请时拒绝原因与拉黑都不该出现在请求体里
-    assert calls_to(server, path)[0].json == {"op": "approve"}
+    # 通过申请时只回 op 与申请 ID, 拒绝原因与拉黑都不该出现在请求体里
+    assert calls_to(server, path)[0].json == {"op": "approve", "join_request_id": "111"}

@@ -48,7 +48,7 @@ async def main() -> None:
 
         await bot.start()
         print(f"Webhook 已启动，端口 {bot.adapter.port}")
-        await asyncio.Event().wait()
+        await bot.wait_for_exit()
 
 
 asyncio.run(main())

@@ -4,8 +4,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from types import TracebackType
+from asyncio import CancelledError, Event, get_running_loop
+from collections.abc import Awaitable, Callable, Iterable
+from contextlib import suppress
+from signal import SIGINT, SIGTERM, signal
+from types import FrameType, TracebackType
+from typing import Any
 
 from async_event_bus import EventContext
 
@@ -114,6 +118,59 @@ class Bot:
             await self._adapter.stop()
         self._started = False
         await self._dispatcher.close()
+
+    async def run(
+        self,
+        *,
+        signals: Iterable[int] = (SIGINT, SIGTERM),
+    ) -> None:
+        """启动并阻塞到收到退出信号, 之后停掉适配器。"""
+
+        await self.start()
+        try:
+            await self.wait_for_exit(signals=signals)
+        finally:
+            await self.stop()
+
+    @staticmethod
+    async def wait_for_exit(
+        *,
+        signals: Iterable[int] = (SIGINT, SIGTERM),
+    ) -> None:
+        """阻塞到收到任一退出信号。"""
+
+        loop = get_running_loop()
+        stopped = Event()
+        handled: list[int] = []
+        restores: list[tuple[int, Any]] = []
+
+        def on_signal(_signum: int, _frame: FrameType | None) -> None:
+            loop.call_soon_threadsafe(stopped.set)
+
+        for sig in signals:
+            try:
+                loop.add_signal_handler(sig, stopped.set)
+            except (NotImplementedError, RuntimeError, ValueError):
+                try:
+                    restores.append((sig, signal(sig, on_signal)))
+                except (OSError, ValueError):
+                    continue
+            else:
+                handled.append(sig)
+
+        if not handled and not restores:
+            raise RuntimeError(
+                "wait_for_exit() must run in the main thread to receive exit signals"
+            )
+
+        try:
+            with suppress(KeyboardInterrupt, CancelledError):
+                await stopped.wait()
+        finally:
+            for sig in handled:
+                loop.remove_signal_handler(sig)
+            for sig, previous in restores:
+                signal(sig, previous)
 
     async def get_me(self) -> GuildUser:
         """已弃用：请改用 `bot.api.user.me()`, v0.3 移除。"""

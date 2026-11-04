@@ -16,9 +16,7 @@
 """
 
 import asyncio
-import contextlib
 import os
-import signal
 import sys
 from pathlib import Path
 
@@ -164,15 +162,7 @@ async def main() -> None:
 
         await bot.start()
         print("WebSocket 已连接，在群里 @ 机器人试试 /button、/image、/recall")
-
-        stopped = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            # Windows 的 ProactorEventLoop 不支持信号处理，靠 Ctrl+C 抛 KeyboardInterrupt
-            with contextlib.suppress(NotImplementedError):
-                loop.add_signal_handler(sig, stopped.set)
-        with contextlib.suppress(KeyboardInterrupt, asyncio.CancelledError):
-            await stopped.wait()
+        await bot.wait_for_exit()
 
 
 if __name__ == "__main__":

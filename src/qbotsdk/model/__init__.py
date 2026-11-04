@@ -84,6 +84,17 @@ from .keyboard import (
     KeyboardContent,
     KeyboardRow,
 )
+from .markup import (
+    AtEveryone,
+    AtUser,
+    ChannelLink,
+    CommandEnter,
+    CommandInput,
+    EmojiMarkup,
+    PlainText,
+    TextChain,
+    TextNode,
+)
 from .media import FileType, MediaInfo, UploadedFile
 from .member import Member
 from .message import (
@@ -108,6 +119,8 @@ from .user import C2CUser, GroupUser, GuildUser, MentionUser, User
 
 __all__ = [
     "ARKData",
+    "AtEveryone",
+    "AtUser",
     "Attachment",
     "AutoApproved",
     "Button",
@@ -125,14 +138,18 @@ __all__ = [
     "ChannelCreate",
     "ChannelDelete",
     "ChannelEvent",
+    "ChannelLink",
     "ChannelMessageCreate",
     "ChannelMessageDraft",
     "ChannelSubType",
     "ChannelType",
     "ChannelUpdate",
+    "CommandEnter",
+    "CommandInput",
     "DirectMessageCreate",
     "ElementAuthor",
     "Emoji",
+    "EmojiMarkup",
     "EmojiType",
     "EventModel",
     "FileType",
@@ -190,6 +207,7 @@ __all__ = [
     "MessageReference",
     "MessageScene",
     "MuteMode",
+    "PlainText",
     "PrivateType",
     "QQModel",
     "ReactionTarget",
@@ -203,6 +221,8 @@ __all__ = [
     "Role",
     "RolesResult",
     "SpeakPermission",
+    "TextChain",
+    "TextNode",
     "Token",
     "UnknownEvent",
     "UploadedFile",

@@ -19,6 +19,8 @@ class Reply:
     silent: bool = False
     keyboard: Keyboard | None = None
     markdown: bool = False
+    mention: bool | None = None
+    """正文前是否带 @发送者；`None` 表示跟随命令与路由器的默认设置。"""
 
     @classmethod
     def ok(cls) -> Reply:

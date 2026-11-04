@@ -19,7 +19,7 @@ OWNER = "group:group-1:member-1"
 
 async def build() -> tuple[Router, MemoryPermissionStorage]:
     store = MemoryPermissionStorage()
-    router = Router(checker=PermissionChecker(store))
+    router = Router(checker=PermissionChecker(store), reply_mention=False)
     install_permission_commands(router, store)
     await store.grant(OWNER, Grant("permission.*"))
     return router, store
@@ -27,12 +27,16 @@ async def build() -> tuple[Router, MemoryPermissionStorage]:
 
 async def reply_of(event: object) -> str:
     assert isinstance(event.api, FakeApi)  # type: ignore[attr-defined]
-    return str(event.api.group.calls[0]["content"])  # type: ignore[attr-defined]
+    call = event.api.group.calls[0]  # type: ignore[attr-defined]
+    markdown = call["markdown"]
+    if markdown is not None:
+        return str(markdown.content)
+    return str(call["content"])
 
 
 async def test_show_is_open_to_the_caller() -> None:
     store = MemoryPermissionStorage()
-    router = Router(checker=PermissionChecker(store))
+    router = Router(checker=PermissionChecker(store), reply_mention=False)
     install_permission_commands(router, store)
     event = group_event("/permission show")
 
@@ -308,7 +312,7 @@ async def test_unknown_role_and_missing_arguments() -> None:
 
 async def test_each_management_command_needs_its_own_key() -> None:
     store = MemoryPermissionStorage()
-    router = Router(checker=PermissionChecker(store))
+    router = Router(checker=PermissionChecker(store), reply_mention=False)
     install_permission_commands(router, store)
     await store.grant(OWNER, Grant("permission.grant"))
 

@@ -83,6 +83,7 @@ class Route:
     usage: str | None = None
     hidden: bool = False
     ack: AckPolicy = "pre"
+    mention: bool | None = None
     options: Mapping[str, type] = field(default_factory=dict)
     guards: tuple[Guard, ...] = ()
     middlewares: tuple[Middleware, ...] = ()

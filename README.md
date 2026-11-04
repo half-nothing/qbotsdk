@@ -186,6 +186,49 @@ app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, "机器人
 
 如果要使用flask等其他http框架，仿照该处理函数写一遍处理函数即可。
 
+## 文本交互
+
+官方把 @ 某人、@ 全部成员、可点击指令、跳转子频道、系统表情都做成嵌在正文里的标记，渲染成字符串后放进 `content` 或 `MessageMarkdown.content`。`qbotsdk.model.markup` 把这些标记做成了节点，拼好之后一次渲染，不用手动拼尖括号：
+
+```python
+from qbotsdk.model.markup import (
+    AtEveryone,
+    AtUser,
+    CommandEnter,
+    CommandInput,
+    PlainText,
+    TextChain,
+)
+
+chain = TextChain.of(
+    AtUser("member-openid"),
+    PlainText(" 签到去 "),
+    CommandInput("我要签到", show="签到"),
+    PlainText(" 或者直接 "),
+    CommandEnter("/sign"),
+)
+await event.reply(markdown=MessageMarkdown(content=chain.render()))
+```
+
+渲染结果是 `<qqbot-at-user id="member-openid" /> 签到去 <qqbot-cmd-input text="...%20..." show="..."/> 或者直接 <qqbot-cmd-enter text="%2Fsign" />`，指令文本会自动 urlencode。
+
+反方向也能拆回来，认不出的片段原样保留在 `PlainText` 里：
+
+```python
+chain = TextChain.parse(markdown_text)
+for node in chain:
+    print(type(node).__name__, node.render())
+```
+
+几点边界：
+
+- `AtUser` 的 `id` 在群聊里填 `member_openid`、在文字子频道里填 `user_openid`，两者 id 空间不同，本模型不做转换。
+- 群聊的 `AtUser` 只支持 markdown 消息；文字子频道支持文本、图文与 markdown 三种。
+- `AtEveryone` 在群聊里要求机器人是群管理员，且每个群每个自然日只能发一次。
+- `CommandEnter` 仅 markdown 可用；它与 `CommandInput` 的文本都限 100 字符。
+- `ChannelLink` 与 `EmojiMarkup` 仅频道可用，表情只支持 `type = 1` 的系统表情。
+- 旧的 `<@userid>` 与 `@everyone` 即将弃用，这里既不生成也不解析。
+
 ## 命令与权限
 
 命令层是叠在事件之上的可选模块，它不订阅任何事件，也不挂在 `Bot` 上。
@@ -278,6 +321,13 @@ async def on_group(ctx: EventContext[GroupMessageCreate]) -> None:
 handler 里已经 `await ctx.reply(...)` 过的话，路由器不会把返回值再发一遍。
 
 一条命令可以同时挂在多个事件上。
+
+#### 回复前的 @
+
+群聊里默认会在正文前带上对发送者的 @。QQ 的 @ 标记只在 markdown 消息里生效，所以带 @ 的回复会自动
+按 markdown 发送，正文形如 `<qqbot-at-user id="..." /> pong`。不想带就逐层关掉，优先级从高到低是
+`Reply(mention=...)`、`router.command(..., mention=...)`、`Router(reply_mention=False)`。单聊不带，
+频道会把正文换成 markdown 消息再带 @。
 
 ### 参数与模板
 

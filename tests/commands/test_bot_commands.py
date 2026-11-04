@@ -32,7 +32,7 @@ def gateway_frame(content: str) -> GatewayPayload:
 
 async def test_a_user_listener_dispatches_to_the_router() -> None:
     bot = Bot("app", "secret")
-    router = Router()
+    router = Router(reply_mention=False)
     seen: list[str] = []
     results: list[ExecutionResult] = []
 
@@ -55,7 +55,7 @@ async def test_a_user_listener_dispatches_to_the_router() -> None:
 
 async def test_the_user_listener_keeps_running_for_other_traffic() -> None:
     bot = Bot("app", "secret")
-    router = Router()
+    router = Router(reply_mention=False)
     recorded: list[str] = []
     results: list[ExecutionResult] = []
 
@@ -78,7 +78,7 @@ async def test_the_user_listener_keeps_running_for_other_traffic() -> None:
 
 async def test_the_bot_never_subscribes_the_router_by_itself() -> None:
     bot = Bot("app", "secret")
-    router = Router()
+    router = Router(reply_mention=False)
     seen: list[str] = []
 
     @router.command("ping", on=GroupMessageCreate)

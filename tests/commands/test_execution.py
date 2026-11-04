@@ -25,7 +25,7 @@ ON = GroupMessageCreate
 
 
 async def test_command_replies_and_reports_the_execution() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("ping", on=ON)
     async def ping(ctx: Context) -> Reply:
@@ -47,7 +47,7 @@ async def test_command_replies_and_reports_the_execution() -> None:
 
 
 async def test_handler_receives_converted_arguments() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("repeat <count:int> <word>", on=ON)
     async def repeat(ctx: Context, count: int, word: str) -> Reply:
@@ -61,7 +61,7 @@ async def test_handler_receives_converted_arguments() -> None:
 
 
 async def test_conversion_failure_reports_the_placeholder() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("repeat <count:int>", on=ON)
     async def repeat(ctx: Context, count: int) -> Reply:
@@ -79,7 +79,7 @@ async def test_conversion_failure_reports_the_placeholder() -> None:
 
 
 async def test_mention_placeholder_strips_the_rendered_marker() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("kick <member:mention>", on=ON)
     async def kick(ctx: Context, member: str) -> Reply:
@@ -96,7 +96,7 @@ async def test_mention_placeholder_strips_the_rendered_marker() -> None:
 
 
 async def test_mention_placeholder_accepts_a_bare_openid() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("kick <member:mention>", on=ON)
     async def kick(ctx: Context, member: str) -> Reply:
@@ -110,7 +110,7 @@ async def test_mention_placeholder_accepts_a_bare_openid() -> None:
 
 
 async def test_raw_token_mode_passes_argv_untouched() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     received: list[list[str]] = []
 
     @router.command("grant <word> <rest:rest>", on=ON, bind_args=False)
@@ -124,7 +124,7 @@ async def test_raw_token_mode_passes_argv_untouched() -> None:
 
 
 async def test_returning_a_plain_string_is_a_failure() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("plain", on=ON)
     async def plain(ctx: Context) -> Reply:
@@ -141,7 +141,7 @@ async def test_returning_a_plain_string_is_a_failure() -> None:
 
 
 async def test_usage_error_without_text_falls_back_to_usage_line() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("kick <target>", on=ON, usage="/kick <target>")
     async def kick(ctx: Context, target: str) -> Reply:
@@ -163,7 +163,7 @@ async def test_usage_error_without_text_falls_back_to_usage_line() -> None:
 
 
 async def test_stopping_on_a_dead_node_answers_with_usage() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("permission show", on=ON)
     async def show(ctx: Context) -> Reply:
@@ -186,7 +186,7 @@ async def test_stopping_on_a_dead_node_answers_with_usage() -> None:
 
 
 async def test_rest_binds_a_string_tuple() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("echo <text:rest>", on=ON)
     async def echo(ctx: Context, text: tuple[str, ...]) -> Reply:
@@ -200,7 +200,7 @@ async def test_rest_binds_a_string_tuple() -> None:
 
 
 async def test_declared_options_are_converted_and_bound() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("roll <sides:int>", on=ON, options={"loud": bool, "times": int})
     async def roll(ctx: Context, sides: int, *, loud: bool = False, times: int = 1) -> Reply:
@@ -214,7 +214,7 @@ async def test_declared_options_are_converted_and_bound() -> None:
 
 
 async def test_undeclared_option_is_rejected() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("roll <sides:int>", on=ON, options={"loud": bool})
     async def roll(ctx: Context, sides: int, *, loud: bool = False) -> Reply:
@@ -229,7 +229,7 @@ async def test_undeclared_option_is_rejected() -> None:
 
 
 async def test_options_require_the_right_shape() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("roll <sides:int>", on=ON, options={"loud": bool, "times": int})
     async def roll(ctx: Context, sides: int, *, loud: bool = False, times: int = 1) -> Reply:
@@ -254,7 +254,7 @@ async def test_options_require_the_right_shape() -> None:
 
 
 async def test_double_dash_stops_option_parsing() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("kick <member>", on=ON, options={"force": bool})
     async def kick(ctx: Context, member: str, *, force: bool = False) -> Reply:
@@ -268,7 +268,7 @@ async def test_double_dash_stops_option_parsing() -> None:
 
 
 async def test_usage_error_can_carry_its_own_text() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("boom", on=ON)
     async def boom(ctx: Context) -> Reply:
@@ -282,7 +282,7 @@ async def test_usage_error_can_carry_its_own_text() -> None:
 
 
 async def test_unexpected_exception_maps_to_internal_error() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("boom", on=ON)
     async def boom(ctx: Context) -> Reply:
@@ -298,7 +298,7 @@ async def test_unexpected_exception_maps_to_internal_error() -> None:
 
 
 async def test_permission_without_checker_fails_closed() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("danger", on=ON, permission="server.stop")
     async def danger(ctx: Context) -> Reply:
@@ -315,7 +315,7 @@ async def test_permission_without_checker_fails_closed() -> None:
 async def test_checker_allows_and_denies() -> None:
     store = MemoryPermissionStorage()
     checker = PermissionChecker(store)
-    router = Router(checker=checker)
+    router = Router(checker=checker, reply_mention=False)
 
     @router.command("danger", on=ON, permission="server.stop")
     async def danger(ctx: Context) -> Reply:
@@ -333,7 +333,7 @@ async def test_checker_allows_and_denies() -> None:
 
 async def test_middlewares_wrap_in_registration_order() -> None:
     order: list[str] = []
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def outer(ctx: Context, nxt: Callable[[Context], Awaitable[Reply]]) -> Reply:
         order.append("outer-in")
@@ -362,7 +362,7 @@ async def test_middlewares_wrap_in_registration_order() -> None:
 
 async def test_a_middleware_may_short_circuit_the_handler() -> None:
     seen: list[str] = []
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def stop(ctx: Context, nxt: Callable[[Context], Awaitable[Reply]]) -> Reply:
         return Reply(text="blocked")
@@ -384,7 +384,7 @@ async def test_a_middleware_may_short_circuit_the_handler() -> None:
 
 
 async def test_guard_failure_is_mapped_to_its_message() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def block(ctx: Context) -> None:
         raise GuardFailed("nope, not now")
@@ -404,7 +404,7 @@ async def test_guard_failure_is_mapped_to_its_message() -> None:
 
 
 async def test_handler_can_stay_silent_with_reply_ok() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("quiet", on=ON)
     async def quiet(ctx: Context) -> Reply:
@@ -420,7 +420,7 @@ async def test_handler_can_stay_silent_with_reply_ok() -> None:
 
 
 async def test_markdown_reply_is_sent_as_markdown() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("rich", on=ON)
     async def rich(ctx: Context) -> Reply:
@@ -436,7 +436,7 @@ async def test_markdown_reply_is_sent_as_markdown() -> None:
 
 
 async def test_a_handler_that_replied_itself_is_not_answered_twice() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("hello", on=ON)
     async def hello(ctx: GroupContext) -> Reply:

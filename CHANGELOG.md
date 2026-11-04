@@ -10,6 +10,8 @@
 - 群与单聊开关事件：`GroupAddRobot`/`GroupDelRobot`/`GroupMsgReceive`/`GroupMsgReject`/`GroupMemberRemove`/`FriendAdd`/`FriendDel`/`C2CMsgReceive`/`C2CMsgReject`，时间戳统一解析成带时区的 `datetime`
 - 频道消息与审核事件：`GuildMessageCreate`（`MESSAGE_CREATE`）、`DirectMessageCreate`（`DIRECT_MESSAGE_CREATE`）沿用频道消息的 `reply()`，另有 `MessageAuditPass`/`MessageAuditReject`
 - 退出信号：`Bot.run()` 一次做完 start、等 `SIGINT`/`SIGTERM`、stop；`Bot.wait_for_exit()` 只等信号，适合自己管理适配器或 HTTP 服务器的场景。Windows 的 ProactorEventLoop 不支持 `add_signal_handler`，内部回退到 `signal.signal`。
+- 文本交互标记：`qbotsdk.model.markup` 提供 `AtUser`、`AtEveryone`、`CommandEnter`、`CommandInput`、`ChannelLink`、`EmojiMarkup` 与 `PlainText` 六种节点，`TextChain.of()` 拼装、`TextChain.parse()` 反向解析，渲染出来的就是官方要求的 `<qqbot-at-user id="" />` 一类字符串
+- 命令回复默认在正文前 @ 发送者：@ 标记只在 markdown 消息里生效，所以带 @ 的回复会自动按 markdown 发送，正文形如 `<qqbot-at-user id="" /> pong`；可以按 `Reply(mention=...)`、`router.command(..., mention=...)`、`Router(reply_mention=False)` 三层逐级关掉，单聊不带，频道会把正文换成 markdown 消息再带 @
 
 ### 变更
 

@@ -18,7 +18,7 @@ class ButtonPayload(BaseModel):
 
 
 async def test_button_routes_json_payload_and_acks_once() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     seen: list[str] = []
 
     @router.button(ButtonPayload)
@@ -38,7 +38,7 @@ async def test_button_routes_json_payload_and_acks_once() -> None:
 
 
 async def test_unknown_button_payload_is_ignored() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.button(ButtonPayload)
     async def on_button(ctx: Context, payload: ButtonPayload) -> Reply:
@@ -51,7 +51,7 @@ async def test_unknown_button_payload_is_ignored() -> None:
 
 
 async def test_literal_button_respects_ack_policy() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.button("demo.literal", ack="none")
     async def on_literal(ctx: Context, payload: str) -> Reply:
@@ -64,7 +64,7 @@ async def test_literal_button_respects_ack_policy() -> None:
 
 
 async def test_ack_none_still_acknowledges_when_content_is_returned() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.button("demo.literal", ack="none")
     async def on_literal(ctx: Context, payload: str) -> Reply:
@@ -79,7 +79,7 @@ async def test_ack_none_still_acknowledges_when_content_is_returned() -> None:
 
 
 async def test_button_text_is_never_sent_as_a_message() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.button("demo.literal")
     async def on_literal(ctx: Context, payload: str) -> Reply:

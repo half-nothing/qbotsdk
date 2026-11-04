@@ -95,6 +95,22 @@ def _permission_key(permission: Permission | str | None) -> str | None:
     return key
 
 
+def _mention_openid(ctx: Context) -> str | None:
+    """能 @ 到发送者时返回它的 id; 单聊没有可 @ 的对象。"""
+
+    if ctx.kind == "group":
+        account = ctx.account
+        if account is not None and account.startswith("user:"):
+            return account[len("user:") :] or None
+        return None
+    if ctx.kind == "channel":
+        author = getattr(ctx.event, "author", None)
+        user_id = getattr(author, "id", None)
+        if isinstance(user_id, str) and user_id:
+            return user_id
+    return None
+
+
 def _wrap(
     middleware: Middleware, nxt: Callable[[Context], Awaitable[Reply]]
 ) -> Callable[[Context], Awaitable[Reply]]:
@@ -122,6 +138,7 @@ class Router:
         converters: Mapping[str, Converter] | None = None,
         strict: bool = False,
         reply_unknown: bool = False,
+        reply_mention: bool = True,
     ) -> None:
         """创建路由器。
 
@@ -135,6 +152,7 @@ class Router:
             strict:     True 时注册期校验权限键是否已登记。
             reply_unknown: 前缀命中但没有对应命令时是否回 `messages.unknown_command`。
                         命令层是可选模块, 默认不回, 避免抢先用户的其它回调。
+            reply_mention: 回复正文前是否带 @发送者, 默认带；单聊不带, 频道只在 markdown 里带。
         """
 
         self._prefix = prefix
@@ -147,6 +165,7 @@ class Router:
             self._converters.update(converters)
         self._strict = strict
         self._reply_unknown = reply_unknown
+        self._reply_mention = reply_mention
         self._text: _TextTree = {}
         self._models: dict[type[EventModel], dict[str, Route]] = {}
         self._literals: dict[type[EventModel], dict[str, Route]] = {}
@@ -180,6 +199,12 @@ class Router:
         """全部路由, 按注册顺序。"""
 
         return tuple(self._routes)
+
+    @property
+    def reply_mention(self) -> bool:
+        """回复正文前是否默认带 @发送者。"""
+
+        return self._reply_mention
 
     @property
     def commands(self) -> tuple[Route, ...]:
@@ -228,6 +253,7 @@ class Router:
         hidden: bool = False,
         bind_args: bool = True,
         options: Mapping[str, type] | None = None,
+        mention: bool | None = None,
     ) -> Callable[[CommandHandler], CommandHandler]:
         """登记一条文本命令, 被装饰的函数就是 handler。
 
@@ -267,6 +293,7 @@ class Router:
                 description=description,
                 usage=usage,
                 hidden=hidden,
+                mention=mention,
                 options=declared,
             )
             self._check_registry(route)
@@ -500,7 +527,7 @@ class Router:
             guards=route.guards,
             middlewares=route.middlewares,
         )
-        await self._send(ctx, reply)
+        await self._send(ctx, reply, mention=route.mention)
         return self._result(ctx, status=status, command=route.name, reply=reply, error=error)
 
     async def _handle_partial(self, invocation: Invocation, partial: Partial) -> ExecutionResult:
@@ -532,7 +559,7 @@ class Router:
         if not text:
             return ExecutionResult()
         ctx = self._context(invocation, command=None)
-        await self._send(ctx, Reply(text=text))
+        await self._send(ctx, Reply(text=text), mention=False)
         return self._result(ctx, status=Status.NOT_FOUND, command=None, reply=None, error=None)
 
     async def _handle_interaction(self, invocation: Invocation) -> ExecutionResult:
@@ -715,7 +742,7 @@ class Router:
             return Reply(text=usage if usage else self._messages.missing_arguments)
         return Reply(text=exc.user_message or self._messages.internal_error)
 
-    async def _send(self, ctx: Context, reply: Reply) -> None:
+    async def _send(self, ctx: Context, reply: Reply, *, mention: bool | None = None) -> None:
         if not reply.should_send or ctx.state.get("replied"):
             return
         if isinstance(ctx, InteractionContext):
@@ -725,13 +752,32 @@ class Router:
             return
         from qbotsdk.model.draft import MessageMarkdown
 
-        markdown = MessageMarkdown(content=reply.text) if reply.markdown else None
+        marked = self._with_mention(ctx, reply, mention)
+        markdown_text = marked if marked is not None else (reply.text if reply.markdown else None)
+        markdown = MessageMarkdown(content=markdown_text) if markdown_text is not None else None
         if isinstance(ctx, ChannelContext):
             await ctx.reply(reply.text, markdown=markdown)
         elif isinstance(ctx, (GroupContext, C2CContext)):
-            await ctx.reply(reply.text, markdown=markdown, keyboard=reply.keyboard)
+            await ctx.reply(marked or reply.text, markdown=markdown, keyboard=reply.keyboard)
         else:
             await ctx.reply(reply.text)
+
+    def _with_mention(self, ctx: Context, reply: Reply, mention: bool | None) -> str | None:
+        """按「回复自己的设置 → 命令的设置 → 路由器的默认」决定是否在正文前 @。
+
+        返回带 @ 标记的正文；不需要 @ 时返回 `None`。@ 只在 markdown 消息里生效，
+        所以返回了正文时调用方要按 markdown 发送。
+        """
+
+        enabled = reply.mention if reply.mention is not None else mention
+        if enabled is None:
+            enabled = self._reply_mention
+        if not enabled or reply.text is None:
+            return None
+        openid = _mention_openid(ctx)
+        if openid is None:
+            return None
+        return f'<qqbot-at-user id="{openid}" />\n{reply.text}'
 
     def _usage(self, command: str | None) -> str | None:
         if command is None:

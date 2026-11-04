@@ -52,7 +52,7 @@ def build_keyboard() -> Keyboard:
 
 
 async def test_channel_command_replies_through_channel_sender() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("ping", on=ChannelMessageCreate)
     async def ping(ctx: Context) -> Reply:
@@ -89,7 +89,7 @@ async def test_group_image_is_rejected() -> None:
 
 
 async def test_interaction_reply_acknowledges_the_client() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.button("demo.literal", ack="none")
     async def on_literal(ctx: InteractionContext, payload: str) -> Reply:
@@ -104,7 +104,7 @@ async def test_interaction_reply_acknowledges_the_client() -> None:
 
 
 async def test_group_context_returns_a_group_receipt() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     contexts: list[Context] = []
 
     @router.command("hello", on=ON)
@@ -123,7 +123,7 @@ async def test_group_context_returns_a_group_receipt() -> None:
 
 
 async def test_c2c_context_is_bound_to_direct_messages() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     contexts: list[Context] = []
 
     @router.command("hi", on=C2CMessageCreate)
@@ -141,7 +141,7 @@ async def test_c2c_context_is_bound_to_direct_messages() -> None:
 
 
 async def test_channel_context_does_not_accept_keyboard() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     rejected: list[str] = []
 
     @router.command("fanout", on=ChannelMessageCreate)
@@ -161,7 +161,7 @@ async def test_channel_context_does_not_accept_keyboard() -> None:
 
 
 async def test_interaction_context_acknowledges_without_a_body() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
     results: list[object] = []
 
     @router.button("demo.literal")

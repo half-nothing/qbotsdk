@@ -23,7 +23,7 @@ async def test_strip_prefix_handles_whitespace() -> None:
 
 
 async def test_non_command_is_ignored_silently() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("ping", on=ON)
     async def ping(ctx: Context) -> Reply:
@@ -40,7 +40,7 @@ async def test_non_command_is_ignored_silently() -> None:
 
 
 async def test_a_command_needs_an_explicit_event_type() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     with pytest.raises(TypeError, match="must name at least one event type"):
         router.command("ping", on=())
@@ -50,7 +50,7 @@ async def test_a_command_needs_an_explicit_event_type() -> None:
 
 
 async def test_unknown_command_is_quiet_by_default() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("ping", on=ON)
     async def ping(ctx: Context) -> Reply:
@@ -103,7 +103,7 @@ async def test_bare_prefix_is_ignored_silently() -> None:
 
 
 async def test_command_only_answers_its_own_event_types() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("ping", on=C2CMessageCreate)
     async def ping(ctx: Context) -> Reply:
@@ -120,7 +120,7 @@ async def test_command_only_answers_its_own_event_types() -> None:
 
 async def test_more_specific_template_wins() -> None:
     seen: list[str] = []
-    router = Router()
+    router = Router(reply_mention=False)
 
     @router.command("server <name>", on=ON)
     async def generic(ctx: Context, name: str) -> Reply:
@@ -138,13 +138,13 @@ async def test_more_specific_template_wins() -> None:
 
 
 async def test_include_prefixes_commands() -> None:
-    child = Router(prefix="")
+    child = Router(prefix="", reply_mention=False)
 
     @child.command("ping", on=ON)
     async def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
 
-    parent = Router()
+    parent = Router(reply_mention=False)
     parent.include(child, prefix="admin")
 
     event = group_event("/admin ping")
@@ -160,7 +160,7 @@ async def test_include_accepts_a_default_prefix_child() -> None:
     async def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
 
-    parent = Router()
+    parent = Router(reply_mention=False)
     parent.include(child, prefix="admin")
 
     assert [route.name for route in parent.commands] == ["admin ping"]
@@ -169,7 +169,7 @@ async def test_include_accepts_a_default_prefix_child() -> None:
 
 
 async def test_include_keeps_child_guards_local() -> None:
-    child = Router()
+    child = Router(reply_mention=False)
 
     @child.guard
     async def child_only(ctx: Context) -> None:
@@ -179,7 +179,7 @@ async def test_include_keeps_child_guards_local() -> None:
     async def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
 
-    parent = Router()
+    parent = Router(reply_mention=False)
 
     @parent.command("open", on=ON)
     async def open_command(ctx: Context) -> Reply:
@@ -244,14 +244,14 @@ async def test_include_rejects_a_foreign_prefix() -> None:
 
 
 async def test_self_include_is_rejected() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     with pytest.raises(ValueError, match="cannot include itself"):
         router.include(router)
 
 
 async def test_duplicate_paths_are_rejected() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
@@ -263,7 +263,7 @@ async def test_duplicate_paths_are_rejected() -> None:
 
 
 async def test_the_same_path_may_serve_two_event_types() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
@@ -275,7 +275,7 @@ async def test_the_same_path_may_serve_two_event_types() -> None:
 
 
 async def test_non_async_handler_is_rejected() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     def ping(ctx: Context) -> Reply:
         return Reply(text="pong")
@@ -285,7 +285,7 @@ async def test_non_async_handler_is_rejected() -> None:
 
 
 async def test_a_handler_must_be_annotated_to_return_reply() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def ping(ctx: Context) -> str:
         return "pong"
@@ -295,7 +295,7 @@ async def test_a_handler_must_be_annotated_to_return_reply() -> None:
 
 
 async def test_one_handler_may_be_registered_at_several_paths() -> None:
-    router = Router()
+    router = Router(reply_mention=False)
 
     async def stop(ctx: Context) -> Reply:
         return Reply(text="stopped")

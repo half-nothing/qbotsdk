@@ -113,6 +113,8 @@ bot的`adapter`参数默认为`WebSocketAdapter`，可以显式指定为`Webhook
 如果想关闭后自动续连，可以在构造`WebSocketAdapter`的时候传递参数`session_storage=`  
 可选值为`MemorySessionStorage`, `FileSessionStorage`, `RedisSessionStorage`, 默认为`MemorySessionStorage`
 
+会话存档会连同 `intents` 一起记录。重启时如果存档的 `intents` 与当前配置不同，SDK 会丢弃这份存档并重新 Identify，避免 Resume 进一个订阅位不同的旧会话；旧版本写下的存档没有该字段，解析为 0，与当前配置不同时同样会被丢弃。
+
 ```python
 from qbotsdk.adapter import WebSocketAdapter
 from qbotsdk.storage import FileSessionStorage
@@ -484,6 +486,38 @@ user:member-1
 
 按钮与快捷菜单回调用 `router.button(载荷模型)` 注册，handler 里写 `return Reply(text="已处理")`
 或 `await ctx.reply("已处理")` 都可以，框架按 `ack` 策略把它变成客户端回应。
+
+## 主动消息限额
+
+群聊与单聊的主动消息（不带 `reply_to` 或 `event_id`）受上游配额限制，用尽后接口返回 `40034100`。
+`ClientOptions(send_guard=...)` 可以挂一个切面：发送前 `before_send` 决定放不放行，发送后 `after_send`
+拿到结果（成功为 `None`，失败为异常对象），用来记录配额、切换通道或提前拦截。
+
+```python
+from qbotsdk import APIError, Bot, ClientOptions, QQBotError
+from qbotsdk.module.send_guard import SendContext, SendGuard, SendVerdict
+
+
+class QuotaGuard(SendGuard):
+    async def before_send(self, context: SendContext) -> SendVerdict | None:
+        if context.active and await quota_exhausted(context.target):
+            return SendVerdict.deny(retry_after=60.0, reason="proactive quota exhausted")
+        return None
+
+    async def after_send(self, context: SendContext, error: QQBotError | None) -> None:
+        if isinstance(error, APIError) and error.code == 40034100:
+            await record_quota_hit(context.target)
+
+
+options = ClientOptions(send_guard=QuotaGuard())
+```
+
+`before_send` 返回 `None` 或 `SendVerdict.allow()` 表示放行，返回 `SendVerdict.deny(...)` 时不发请求并抛
+`RateLimitExceededError`，`retry_after`、`limit`、`reason` 会带在异常上。切面在发送链路上同步等待，别在里面做长耗时操作；
+`after_send` 抛出的异常只记一条日志，不会覆盖发送本身的结果。
+
+不传 `send_guard` 时默认使用本地令牌桶（`respect_rate_limits=False` 可关闭，此时切面为 `None`）；
+显式注入的切面不受该开关影响，关掉本地限流后依然生效。
 
 ## 原始报文
 

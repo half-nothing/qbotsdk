@@ -164,15 +164,17 @@ class RateLimitExceededError(QQBotError):
         retry_after: float,
         *,
         limit: float,
+        reason: str | None = None,
     ) -> None:
         self.scope = scope
         self.key = key
         self.retry_after = retry_after
         self.limit = limit
-        super().__init__(
+        self.reason = reason or (
             f"local rate limit reached for {scope}:{key} "
             f"({limit:g} per minute), retry in {retry_after:.2f}s"
         )
+        super().__init__(self.reason)
 
 
 def _as_int(value: object) -> int:

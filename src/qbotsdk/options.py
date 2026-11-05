@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from qbotsdk.module.send_guard import SendGuard
+
 
 @dataclass(frozen=True, slots=True)
 class ClientOptions:
@@ -28,6 +30,8 @@ class ClientOptions:
     respect_rate_limits: bool = True
     # 覆盖默认限流(条/分钟), 键为 "group" 与 "c2c", 0 表示不限
     rate_limits: Mapping[str, float] | None = None
+    # 发送切面; 不传时按 respect_rate_limits 决定是否用本地令牌桶
+    send_guard: SendGuard | None = None
 
     def __post_init__(self) -> None:
         """验证配置参数是否合法。"""

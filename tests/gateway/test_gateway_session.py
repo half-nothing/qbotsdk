@@ -17,6 +17,7 @@ import qbotsdk.module.token_manager
 from qbotsdk.adapter import WebSocketAdapter
 from qbotsdk.bot import Bot
 from qbotsdk.gateway.connection import GatewayConnection
+from qbotsdk.gateway.payload import Intents
 from qbotsdk.model.event import ReadyEvent
 from qbotsdk.options import ClientOptions
 from qbotsdk.storage import (
@@ -95,12 +96,13 @@ async def test_memory_storage_roundtrip() -> None:
     storage = MemorySessionStorage()
     assert await storage.load() is None
 
-    await storage.save(SessionData(session_id="session-1", seq=3))
+    await storage.save(SessionData(session_id="session-1", seq=3, intents=Intents.DEFAULT))
     data = await storage.load()
 
     assert data is not None
     assert data.session_id == "session-1"
     assert data.seq == 3
+    assert data.intents == Intents.DEFAULT
 
     await storage.clear()
     assert await storage.load() is None
@@ -108,13 +110,16 @@ async def test_memory_storage_roundtrip() -> None:
 
 async def test_file_storage_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "session.json"
-    await FileSessionStorage(path).save(SessionData(session_id="session-1", seq=42))
+    await FileSessionStorage(path).save(
+        SessionData(session_id="session-1", seq=42, intents=Intents.DEFAULT)
+    )
 
     data = await FileSessionStorage(path).load()
 
     assert data is not None
     assert data.session_id == "session-1"
     assert data.seq == 42
+    assert data.intents == Intents.DEFAULT
     assert not (tmp_path / "session.json.tmp").exists()
 
 
@@ -180,7 +185,9 @@ async def test_file_storage_write_failure_is_not_fatal(tmp_path: Path) -> None:
 
 async def test_connection_restores_session(tmp_path: Path) -> None:
     path = tmp_path / "session.json"
-    await FileSessionStorage(path).save(SessionData(session_id="session-1", seq=9))
+    await FileSessionStorage(path).save(
+        SessionData(session_id="session-1", seq=9, intents=Intents.DEFAULT)
+    )
 
     connection = GatewayConnection(
         _fake_http(),
@@ -192,6 +199,41 @@ async def test_connection_restores_session(tmp_path: Path) -> None:
     assert connection.session.can_resume
     assert connection.session.session_id == "session-1"
     assert connection.session.seq == 9
+    assert connection.session.intents == Intents.DEFAULT
+
+
+async def test_connection_drops_session_when_intents_changed(tmp_path: Path) -> None:
+    path = tmp_path / "session.json"
+    await FileSessionStorage(path).save(
+        SessionData(session_id="session-1", seq=9, intents=Intents.GUILDS)
+    )
+
+    connection = GatewayConnection(
+        _fake_http(),
+        options=OPTIONS,
+        session_storage=FileSessionStorage(path),
+    )
+    await connection._restore_session()
+
+    assert not connection.session.can_resume
+    assert connection.session.intents == 0
+    assert not path.exists()
+
+
+async def test_connection_drops_legacy_session_without_intents(tmp_path: Path) -> None:
+    path = tmp_path / "session.json"
+    path.write_text(json.dumps({"session_id": "session-1", "seq": 9}), encoding="utf-8")
+
+    connection = GatewayConnection(
+        _fake_http(),
+        options=OPTIONS,
+        session_storage=FileSessionStorage(path),
+    )
+    await connection._restore_session()
+
+    assert not connection.session.can_resume
+    assert connection.session.intents == 0
+    assert not path.exists()
 
 
 async def test_connection_drops_invalid_session(tmp_path: Path) -> None:
@@ -242,6 +284,7 @@ async def test_ready_is_persisted(fake_gateway: FakeGateway, tmp_path: Path) -> 
 
     payload = json.loads(path.read_text(encoding="utf-8"))
     assert payload["session_id"] == "xxxxxx"
+    assert payload["intents"] == Intents.DEFAULT
 
 
 async def test_saved_session_is_resumed(fake_gateway: FakeGateway, tmp_path: Path) -> None:
@@ -249,7 +292,7 @@ async def test_saved_session_is_resumed(fake_gateway: FakeGateway, tmp_path: Pat
 
     path = tmp_path / "session.json"
     path.write_text(
-        json.dumps({"session_id": "previous-session", "seq": 11}),
+        json.dumps({"session_id": "previous-session", "seq": 11, "intents": Intents.DEFAULT}),
         encoding="utf-8",
     )
     http = _fake_http()
@@ -273,6 +316,35 @@ async def test_saved_session_is_resumed(fake_gateway: FakeGateway, tmp_path: Pat
     assert not any(frame["op"] == 2 for frame in fake_gateway.frames)
 
 
+async def test_changed_intents_identifies_again(fake_gateway: FakeGateway, tmp_path: Path) -> None:
+    import asyncio
+
+    path = tmp_path / "session.json"
+    path.write_text(
+        json.dumps({"session_id": "previous-session", "seq": 11, "intents": Intents.GUILDS}),
+        encoding="utf-8",
+    )
+    http = _fake_http()
+    connection = GatewayConnection(
+        http,
+        options=OPTIONS,
+        intents=Intents.DEFAULT,
+        session_storage=FileSessionStorage(path),
+    )
+    task = asyncio.create_task(connection.run())
+    try:
+        await wait_until(lambda: any(frame["op"] == 2 for frame in fake_gateway.frames))
+    finally:
+        await connection.close()
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        await http.close()
+
+    assert not any(frame["op"] == 6 for frame in fake_gateway.frames)
+    identify = next(frame for frame in fake_gateway.frames if frame["op"] == 2)
+    assert identify["d"]["intents"] == Intents.DEFAULT
+
+
 async def test_adapter_stores_session_in_memory(fake_gateway: FakeGateway) -> None:
     storage = MemorySessionStorage()
     seen: list[str] = []
@@ -293,5 +365,6 @@ async def test_adapter_stores_session_in_memory(fake_gateway: FakeGateway) -> No
         data = await storage.load()
         assert data is not None
         assert data.session_id == "xxxxxx"
+        assert data.intents == Intents.DEFAULT
     finally:
         await bot.close()

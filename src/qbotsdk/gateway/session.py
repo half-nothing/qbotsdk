@@ -31,29 +31,42 @@ class SessionState:
 
     只有 session_id 非空才允许 Resume
     seq 是最后收到的事件序号, 跳与 Resume 都要带它
+    intents 是建立会话时用的订阅位, Resume 不改它, 换过就得重新 Identify; 没有会话时是 0
     """
 
-    __slots__ = ("seq", "session_id")
+    __slots__ = ("intents", "seq", "session_id")
 
     def __init__(self) -> None:
         self.session_id: str | None = None
         self.seq: int | None = None
+        self.intents: int = 0
 
     @property
     def can_resume(self) -> bool:
         return self.session_id is not None
 
-    def update(self, session_id: str | None = None, seq: int | None = None) -> None:
+    def update(
+        self,
+        session_id: str | None = None,
+        seq: int | None = None,
+        intents: int | None = None,
+    ) -> None:
         if session_id is not None:
             self.session_id = session_id
         if seq is not None:
             self.seq = seq
+        if intents is not None:
+            self.intents = intents
 
     def reset(self) -> None:
         """会话作废。"""
 
         self.session_id = None
         self.seq = None
+        self.intents = 0
 
     def __repr__(self) -> str:
-        return f"SessionState(session_id={self.session_id!r}, seq={self.seq!r})"
+        return (
+            f"SessionState(session_id={self.session_id!r}, seq={self.seq!r}, "
+            f"intents={self.intents!r})"
+        )

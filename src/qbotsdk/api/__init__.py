@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from qbotsdk.module.http_client import HTTPClient
 from qbotsdk.module.rate_limit import RateLimiter
+from qbotsdk.module.send_guard import LocalRateLimitGuard, SendGuard
 
 from .channel import ChannelResource
 from .group import GroupResource
@@ -34,13 +35,17 @@ class ApiClient:
 
     def __init__(self, http: HTTPClient) -> None:
         options = http.options
-        # 关掉限流就整层不建桶, 资源层拿到的 limiter 为 None
-        limiter = RateLimiter(options.rate_limits) if options.respect_rate_limits else None
+        # 调用方注入的切面优先; 没注入且开着限流才用本地令牌桶
+        guard: SendGuard | None = options.send_guard
+        if guard is None and options.respect_rate_limits:
+            guard = LocalRateLimitGuard(RateLimiter(options.rate_limits))
+        # 暴露出来便于调用方查询剩余额度或替换实现
+        self.send_guard = guard
         self.user = UserResource(http)
         self.guild = GuildResource(http)
-        self.group = GroupResource(http, limiter=limiter)
+        self.group = GroupResource(http, guard=guard)
         self.channel = ChannelResource(http)
         self.message = MessageResource(http)
-        self.user_message = UserMessageResource(http, limiter=limiter)
+        self.user_message = UserMessageResource(http, guard=guard)
         self.interaction = InteractionResource(http)
         self.reaction = ReactionResource(http)

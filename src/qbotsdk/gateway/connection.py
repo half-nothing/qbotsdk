@@ -187,14 +187,26 @@ class GatewayConnection:
         data = await self._storage.load()
         if data is None:
             return
-        self.session.update(session_id=data.session_id, seq=data.seq)
+        if data.intents != self._intents:
+            # intents 只在 Identify 时生效, 旧会话拿去 Resume 只会沿用旧订阅
+            logger.info(
+                "Discarding gateway session {}: intents changed (stored={}, current={})",
+                data.session_id,
+                data.intents,
+                self._intents,
+            )
+            await self._drop_session()
+            return
+        self.session.update(session_id=data.session_id, seq=data.seq, intents=data.intents)
         logger.info("Restored gateway session {} (seq={})", data.session_id, data.seq)
 
     async def _save_session(self) -> None:
         session_id = self.session.session_id
         if session_id is None:
             return
-        await self._storage.save(SessionData(session_id=session_id, seq=self.session.seq))
+        await self._storage.save(
+            SessionData(session_id=session_id, seq=self.session.seq, intents=self.session.intents)
+        )
 
     async def _drop_session(self) -> None:
         """会话作废：内存和存储一起清空。"""
@@ -274,7 +286,7 @@ class GatewayConnection:
                 self.session.update(seq=payload.s)
             if payload.t == "READY":
                 ready = ReadyEvent.model_validate(payload.d if isinstance(payload.d, dict) else {})
-                self.session.update(session_id=ready.session_id)
+                self.session.update(session_id=ready.session_id, intents=self._intents)
                 await self._save_session()
                 logger.info("Gateway session ready: {}", ready.session_id)
             else:

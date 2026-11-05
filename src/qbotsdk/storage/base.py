@@ -12,10 +12,15 @@ from qbotsdk.model.base import QQModel
 
 
 class SessionData(QQModel):
-    """一条可续连的会话, seq 是最后收到的事件序号。"""
+    """一条可续连的会话, seq 是最后收到的事件序号。
+
+    intents 是建立这条会话时用的订阅位, Resume 不会改它, 配置换过就必须重新 Identify。
+    该字段始终是整数, 旧版本写下的存档没有它, 解析为 0 而不是缺失。
+    """
 
     session_id: str = Field(alias="session_id")
     seq: int | None = Field(default=None, alias="seq")
+    intents: int = Field(default=0, alias="intents")
 
 
 class SessionStorage(ABC):

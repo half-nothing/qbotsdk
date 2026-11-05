@@ -40,6 +40,13 @@ class TokenBucket:
     def capacity(self) -> float:
         return self._capacity
 
+    def _refill_now(self) -> None:
+        now = self._clock()
+        elapsed = now - self._updated
+        if elapsed > 0:
+            self._tokens = min(self._capacity, self._tokens + elapsed * self._refill)
+            self._updated = now
+
     def take(self) -> float | None:
         """取一个令牌。
 
@@ -47,15 +54,17 @@ class TokenBucket:
         取不到返回还需要等待的秒数
         """
 
-        now = self._clock()
-        elapsed = now - self._updated
-        if elapsed > 0:
-            self._tokens = min(self._capacity, self._tokens + elapsed * self._refill)
-            self._updated = now
+        self._refill_now()
         if self._tokens >= 1.0:
             self._tokens -= 1.0
             return None
         return (1.0 - self._tokens) / self._refill
+
+    def peek(self) -> float:
+        """看一眼当前可用令牌, 不扣减。"""
+
+        self._refill_now()
+        return self._tokens
 
 
 class RateLimiter:
@@ -80,15 +89,16 @@ class RateLimiter:
     def limit_of(self, scope: str) -> float:
         return self._limits.get(scope, 0.0)
 
-    def check(self, scope: str, key: str) -> None:
-        """有额度就扣一个, 没额度抛 RateLimitExceededError。
+    def acquire(self, scope: str, key: str) -> tuple[float | None, float]:
+        """取一个令牌, 返回 ``(需要等待的秒数, 该 scope 的限额)``。
 
-        scope 没有配置或配额为 0 时视为不限流。
+        无需等待时秒数为 ``None``; scope 没有配置或配额为 0 时视为不限流, 返回
+        ``(None, 0.0)``, 调用方据此放行。
         """
 
         limit = self._limits.get(scope, 0.0)
         if limit <= 0:
-            return
+            return None, limit
         bucket = self._buckets.get((scope, key))
         if bucket is None:
             if len(self._buckets) >= _MAX_BUCKETS:
@@ -96,6 +106,25 @@ class RateLimiter:
                 self._buckets.pop(next(iter(self._buckets)))
             bucket = TokenBucket(limit, clock=self._clock)
             self._buckets[(scope, key)] = bucket
-        wait = bucket.take()
+        return bucket.take(), limit
+
+    def remaining(self, scope: str, key: str) -> float | None:
+        """当前还能发多少条; scope 不限流时返回 ``None``。"""
+
+        limit = self._limits.get(scope, 0.0)
+        if limit <= 0:
+            return None
+        bucket = self._buckets.get((scope, key))
+        if bucket is None:
+            return limit
+        return bucket.peek()
+
+    def check(self, scope: str, key: str) -> None:
+        """有额度就扣一个, 没额度抛 RateLimitExceededError。
+
+        scope 没有配置或配额为 0 时视为不限流。
+        """
+
+        wait, limit = self.acquire(scope, key)
         if wait is not None:
             raise RateLimitExceededError(scope, key, wait, limit=limit)

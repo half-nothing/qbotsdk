@@ -5,6 +5,11 @@
 ### 新增
 
 - 上下文带命中的路由：`ctx.route` 是这次命中路径背后的完整 `Route`，`ExecutionResult.handler` 是真正执行的处理器。同一个 handler 注册成多条路径时它们指向同一个函数对象，按处理器限速或埋点时用 `ctx.route.handler` 做键，不会再按命令名漏算。
+- 发送切面：`ClientOptions(send_guard=...)` 注入 `SendGuard`，发送前 `before_send` 放行或拒绝，发送后 `after_send` 拿到成功或异常，用来判断主动消息是否触达配额；不注入时默认用本地令牌桶 `LocalRateLimitGuard`，`RateLimitExceededError` 新增 `reason`。
+
+### 修复
+
+- 会话存档记录建立时的 `intents`（整数，缺省 0）。换过 intents 后重启不再 Resume 旧会话，存档与当前配置不一致时丢弃并重新 Identify，新订阅立即生效；旧版本写下的存档没有该字段，按 0 处理，升级后首次启动通常会重建一次会话。
 
 ## [0.7.2] - 2026-11-04
 

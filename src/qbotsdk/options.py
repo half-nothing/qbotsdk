@@ -5,8 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from qbotsdk.module.send_guard import SendGuard
-
 
 @dataclass(frozen=True, slots=True)
 class ClientOptions:
@@ -30,8 +28,10 @@ class ClientOptions:
     respect_rate_limits: bool = True
     # 覆盖默认限流(条/分钟), 键为 "group" 与 "c2c", 0 表示不限
     rate_limits: Mapping[str, float] | None = None
-    # 发送切面; 不传时按 respect_rate_limits 决定是否用本地令牌桶
-    send_guard: SendGuard | None = None
+    # 覆盖默认日上限(条/天), 键为 "group" 与 "c2c", 0 表示不限
+    daily_limits: Mapping[str, int] | None = None
+    # 机器人级总速率(条/分钟), 只统计主动消息; None 或 0 表示不限
+    global_rate_limit: float | None = None
 
     def __post_init__(self) -> None:
         """验证配置参数是否合法。"""
@@ -46,3 +46,8 @@ class ClientOptions:
         for scope, limit in (self.rate_limits or {}).items():
             if limit < 0:
                 raise ValueError(f"rate limit for {scope} must not be negative")
+        for scope, quota in (self.daily_limits or {}).items():
+            if quota < 0:
+                raise ValueError(f"daily limit for {scope} must not be negative")
+        if self.global_rate_limit is not None and self.global_rate_limit < 0:
+            raise ValueError("global rate limit must not be negative")

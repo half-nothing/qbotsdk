@@ -15,7 +15,7 @@
 - **消息即对象**：收到的事件可以直接 `await event.reply(...)`。
 - **命令与权限**：`Router` 用前缀树匹配命令，支持模板参数、`--` 选项与子路由 `include`；权限键按操作拆分，内置 `/permission` 管理命令，存储可选内存、文件、Redis 或关系库。
 - **按钮回调**：`@router.button` 把按钮点击路由到带 pydantic 载荷的处理器，`ack` 策略自动回应客户端，不必自己调 `respond`。
-- **容错内置**：429 按 `Retry-After` 重试，幂等请求遇 5xx 与网络异常退避重试，本地令牌桶限流，错误统一成 `QQBotError` 体系。
+- **容错内置**：429 按 `Retry-After` 重试，幂等请求遇 5xx 与网络异常退避重试，本地限流分会话速率、会话日配额与机器人总速率三层，错误统一成 `QQBotError` 体系。
 - **原始报文兜底**：每个模型都带 `raw`，官方新增字段时可以直接取用，不必等 SDK 更新。
 - **类型完整**：pydantic v2 模型、全量类型标注、随包分发 `py.typed`。
 
@@ -487,37 +487,42 @@ user:member-1
 按钮与快捷菜单回调用 `router.button(载荷模型)` 注册，handler 里写 `return Reply(text="已处理")`
 或 `await ctx.reply("已处理")` 都可以，框架按 `ack` 策略把它变成客户端回应。
 
-## 主动消息限额
+## 本地限流
 
-群聊与单聊的主动消息（不带 `reply_to` 或 `event_id`）受上游配额限制，用尽后接口返回 `40034100`。
-`ClientOptions(send_guard=...)` 可以挂一个切面：发送前 `before_send` 决定放不放行，发送后 `after_send`
-拿到结果（成功为 `None`，失败为异常对象），用来记录配额、切换通道或提前拦截。
+发消息前 `RateLimiter` 会依次检查三层限制，任何一层没额度都会在本地拦下，请求不会发出：
+
+| 层 | 统计范围 | 默认值 | 配置项 |
+|---|---|---|---|
+| 会话速率 | 每个群 / 每个单聊 | 20 条/分钟 | `rate_limits` |
+| 会话日配额 | 每个群 / 每个单聊 | 1000 条/天 | `daily_limits` |
+| 机器人总速率 | 所有主动消息共享 | 不限 | `global_rate_limit` |
+
+被动回复（带 `reply_to` 或 `event_id`）只走前两层，不占机器人总速率，避免正常回复被主动消息的配额拖住。
+这几层都是本进程内的计数：多实例部署时各算各的，最终仍以服务端的 `40034100` 为准。
 
 ```python
-from qbotsdk import APIError, Bot, ClientOptions, QQBotError
-from qbotsdk.module.send_guard import SendContext, SendGuard, SendVerdict
+from qbotsdk import Bot, ClientOptions
 
+options = ClientOptions(
+    # 每个群每分钟 20 条、每个单聊每分钟 10 条
+    rate_limits={"group": 20.0, "c2c": 10.0},
+    # 每个群每天 1000 条、单聊不限
+    daily_limits={"group": 1000, "c2c": 0},
+    # 整个机器人每分钟最多 200 条主动消息
+    global_rate_limit=200.0,
+)
 
-class QuotaGuard(SendGuard):
-    async def before_send(self, context: SendContext) -> SendVerdict | None:
-        if context.active and await quota_exhausted(context.target):
-            return SendVerdict.deny(retry_after=60.0, reason="proactive quota exhausted")
-        return None
-
-    async def after_send(self, context: SendContext, error: QQBotError | None) -> None:
-        if isinstance(error, APIError) and error.code == 40034100:
-            await record_quota_hit(context.target)
-
-
-options = ClientOptions(send_guard=QuotaGuard())
+async with Bot(app_id="app", app_secret="secret", options=options) as bot:
+    await bot.api.group.send_message("group-openid", content="hello")
 ```
 
-`before_send` 返回 `None` 或 `SendVerdict.allow()` 表示放行，返回 `SendVerdict.deny(...)` 时不发请求并抛
-`RateLimitExceededError`，`retry_after`、`limit`、`reason` 会带在异常上。切面在发送链路上同步等待，别在里面做长耗时操作；
-`after_send` 抛出的异常只记一条日志，不会覆盖发送本身的结果。
+`rate_limits` 与 `daily_limits` 的键是 scope（`group`、`c2c`），值为 0 表示不限；
+`global_rate_limit` 传 `None` 或 0 表示不限。任一限制被触发都会抛 `RateLimitExceededError`，
+异常上的 `window` 说明是哪一层（`minute` / `day` / `bot`），`retry_after` 是预计需要等待的秒数。
+`ClientOptions(respect_rate_limits=False)` 会整体关掉本地限流。
 
-不传 `send_guard` 时默认使用本地令牌桶（`respect_rate_limits=False` 可关闭，此时切面为 `None`）；
-显式注入的切面不受该开关影响，关掉本地限流后依然生效。
+查询剩余额度：`bot.api.limiter.remaining("group", group_openid)` 返回这一分钟还剩几条，
+`daily_remaining(...)` 返回这一天还剩几条（没有配置日配额时返回 `None`）。
 
 ## 原始报文
 

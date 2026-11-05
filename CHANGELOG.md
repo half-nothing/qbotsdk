@@ -5,7 +5,7 @@
 ### 新增
 
 - 上下文带命中的路由：`ctx.route` 是这次命中路径背后的完整 `Route`，`ExecutionResult.handler` 是真正执行的处理器。同一个 handler 注册成多条路径时它们指向同一个函数对象，按处理器限速或埋点时用 `ctx.route.handler` 做键，不会再按命令名漏算。
-- 发送切面：`ClientOptions(send_guard=...)` 注入 `SendGuard`，发送前 `before_send` 放行或拒绝，发送后 `after_send` 拿到成功或异常，用来判断主动消息是否触达配额；不注入时默认用本地令牌桶 `LocalRateLimitGuard`，`RateLimitExceededError` 新增 `reason`。
+- 三层本地限流：会话速率（`rate_limits`，条/分钟）、会话日配额（`daily_limits`，条/天，默认每群/每单聊 1000）、机器人总速率（`global_rate_limit`，只统计主动消息）。`RateLimitExceededError` 新增 `window`，用来区分 `minute` / `day` / `bot`；被动回复不占机器人总速率。
 
 ### 修复
 

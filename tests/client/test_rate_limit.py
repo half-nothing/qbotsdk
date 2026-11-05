@@ -96,6 +96,51 @@ def test_limiter_ignores_unknown_scope(clock: FakeClock) -> None:
         limiter.check("unknown", "a")
 
 
+def test_limiter_enforces_daily_quota(clock: FakeClock) -> None:
+    limiter = RateLimiter({"group": 1000.0}, daily_limits={"group": 2}, clock=clock)
+
+    limiter.check("group", "a")
+    limiter.check("group", "a")
+    with pytest.raises(RateLimitExceededError) as info:
+        limiter.check("group", "a")
+
+    assert info.value.window == "day"
+    assert info.value.retry_after > 0
+    # 配额按会话计, 换一个群仍有额度
+    limiter.check("group", "b")
+
+
+def test_limiter_caps_bot_wide_active_messages(clock: FakeClock) -> None:
+    limiter = RateLimiter(
+        {"group": 1000.0},
+        daily_limits={"group": 0},
+        global_rate=2.0,
+        clock=clock,
+    )
+
+    limiter.check("group", "a", active=True)
+    limiter.check("group", "b", active=True)
+    with pytest.raises(RateLimitExceededError) as info:
+        limiter.check("group", "c", active=True)
+
+    assert info.value.window == "bot"
+    # 被动回复不占机器人级额度
+    limiter.check("group", "d", active=False)
+
+
+def test_limiter_has_default_daily_limit(clock: FakeClock) -> None:
+    limiter = RateLimiter(clock=clock)
+
+    assert limiter.daily_limit_of("group") == 1000
+    assert limiter.daily_limit_of("c2c") == 1000
+    assert limiter.daily_limit_of("unknown") == 0
+
+
+def test_options_reject_negative_daily_limit() -> None:
+    with pytest.raises(ValueError, match="must not be negative"):
+        ClientOptions(daily_limits={"group": -1})
+
+
 def test_limiter_rejects_negative_limit() -> None:
     with pytest.raises(ValueError, match="must not be negative"):
         RateLimiter({"group": -1.0})

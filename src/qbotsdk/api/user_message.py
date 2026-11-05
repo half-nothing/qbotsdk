@@ -8,21 +8,20 @@
 
 from __future__ import annotations
 
-from qbotsdk.exceptions import QQBotError
 from qbotsdk.model.draft import InputNotify, MessageMarkdown, UserMessageDraft
 from qbotsdk.model.keyboard import Keyboard
 from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
 from qbotsdk.model.message import UserMessageReceipt
 from qbotsdk.module.http_client import HTTPClient
-from qbotsdk.module.send_guard import SendContext, SendGuard, check_send, report_send
+from qbotsdk.module.rate_limit import RateLimiter
 
 from ._parse import expect_object
 
 
 class UserMessageResource:
-    def __init__(self, http: HTTPClient, *, guard: SendGuard | None = None) -> None:
+    def __init__(self, http: HTTPClient, *, limiter: RateLimiter | None = None) -> None:
         self._http = http
-        self._guard = guard
+        self._limiter = limiter
 
     async def send_message(
         self,
@@ -48,13 +47,12 @@ class UserMessageResource:
         """
 
         path = f"/v2/users/{user_openid}/messages"
-        context = SendContext(
-            scope="c2c",
-            target=user_openid,
-            active=reply_to is None and event_id is None,
-            path=path,
-        )
-        await check_send(self._guard, context)
+        if self._limiter is not None:
+            self._limiter.check(
+                "c2c",
+                user_openid,
+                active=reply_to is None and event_id is None,
+            )
         if reply_to is not None and msg_seq is None:
             msg_seq = 1
         draft = UserMessageDraft(
@@ -67,15 +65,10 @@ class UserMessageResource:
             msg_seq=msg_seq,
             is_wakeup=is_wakeup or None,
         )
-        try:
-            payload = await self._http.post(
-                path,
-                json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
-            )
-        except QQBotError as error:
-            await report_send(self._guard, context, error)
-            raise
-        await report_send(self._guard, context, None)
+        payload = await self._http.post(
+            path,
+            json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
+        )
         return UserMessageReceipt.model_validate(expect_object(payload, path))
 
     async def notify_input(self, user_openid: str, *, seconds: int = 60) -> UserMessageReceipt:

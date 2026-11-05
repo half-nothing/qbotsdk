@@ -389,7 +389,7 @@ async def ban(ctx: GroupContext, member: str) -> Reply:
 
 
 # 同一个 handler，另一条路径
-router.command("封禁 <member>", on=GroupMessageCreate)(ban)  
+router.command("封禁 <member>", on=GroupMessageCreate)(ban)
 ```
 
 ### 权限

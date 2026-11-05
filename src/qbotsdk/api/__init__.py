@@ -44,11 +44,12 @@ class ApiClient:
             )
         # 暴露出来便于调用方查询剩余额度
         self.limiter = limiter
+        hook = options.send_hook
         self.user = UserResource(http)
         self.guild = GuildResource(http)
-        self.group = GroupResource(http, limiter=limiter)
-        self.channel = ChannelResource(http)
-        self.message = MessageResource(http)
-        self.user_message = UserMessageResource(http, limiter=limiter)
+        self.group = GroupResource(http, limiter=limiter, hook=hook)
+        self.channel = ChannelResource(http, hook=hook)
+        self.message = MessageResource(http, hook=hook)
+        self.user_message = UserMessageResource(http, limiter=limiter, hook=hook)
         self.interaction = InteractionResource(http)
         self.reaction = ReactionResource(http)

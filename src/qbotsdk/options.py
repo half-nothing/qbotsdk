@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from qbotsdk.module.send_hook import SendHook
+
 
 @dataclass(frozen=True, slots=True)
 class ClientOptions:
@@ -32,6 +34,8 @@ class ClientOptions:
     daily_limits: Mapping[str, int] | None = None
     # 机器人级总速率(条/分钟), 只统计主动消息; None 或 0 表示不限
     global_rate_limit: float | None = None
+    # 发送结果切面, 每次发送结束后回调一次; None 表示不观察
+    send_hook: SendHook | None = None
 
     def __post_init__(self) -> None:
         """验证配置参数是否合法。"""

@@ -36,6 +36,20 @@ class MessageMarkdown(QQModel):
     )
 
 
+def _markdown_text(markdown: MessageMarkdown | None) -> str | None:
+    """取 Markdown 正文, 没有正文时返回 None。"""
+
+    if markdown is None or not markdown.content:
+        return None
+    return markdown.content
+
+
+def _join_text(*parts: str | None) -> str:
+    """把若干片段拼成一段可读文本, 空片段跳过。"""
+
+    return "\n".join(part for part in parts if part)
+
+
 def _lift_keyboard_to_markdown(data: Any) -> Any:
     """把带 keyboard 的纯文本消息升成 Markdown 消息。
 
@@ -101,6 +115,23 @@ class ChannelMessageDraft(QQModel):
     markdown: MessageMarkdown | None = Field(alias="markdown", default=None)
     message_reference: MessageReference | None = Field(alias="message_reference", default=None)
 
+    def to_text(self) -> str:
+        """转成可读文本, 供记录或日志使用。
+
+        正文与 Markdown 取原文, 图片带上地址, embed / ark 这类没有文字的部分
+        用 `[embed]` / `[ark]` 占位, 多个片段按行拼接。
+        """
+
+        image = f"[image] {self.image}" if self.image is not None else None
+        parts = [
+            self.content,
+            _markdown_text(self.markdown),
+            image,
+            "[embed]" if self.embed is not None else None,
+            "[ark]" if self.ark is not None else None,
+        ]
+        return _join_text(*parts)
+
     @model_validator(mode="after")
     def _check_content(self) -> ChannelMessageDraft:
         """content / embed / ark / image / markdown 至少要有一样, 否则平台无法下发"""
@@ -136,6 +167,17 @@ class GroupMessageDraft(QQModel):
     msg_id: str | None = Field(alias="msg_id", default=None)
     event_id: str | None = Field(alias="event_id", default=None)
     msg_seq: int | None = Field(alias="msg_seq", default=None)
+
+    def to_text(self) -> str:
+        """转成可读文本: 正文或 Markdown 原文, 富媒体与键盘用占位符表示。"""
+
+        parts = [
+            self.content,
+            _markdown_text(self.markdown),
+            "[media]" if self.media is not None else None,
+            "[keyboard]" if self.keyboard is not None else None,
+        ]
+        return _join_text(*parts)
 
     @model_validator(mode="before")
     @classmethod
@@ -189,6 +231,18 @@ class UserMessageDraft(QQModel):
     event_id: str | None = Field(alias="event_id", default=None)
     msg_seq: int | None = Field(alias="msg_seq", default=None)
     is_wakeup: bool | None = Field(alias="is_wakeup", default=None)
+
+    def to_text(self) -> str:
+        """转成可读文本: 正文或 Markdown 原文, 富媒体、键盘与输入中状态用占位符表示。"""
+
+        parts = [
+            self.content,
+            _markdown_text(self.markdown),
+            "[media]" if self.media is not None else None,
+            "[keyboard]" if self.keyboard is not None else None,
+            "[input notify]" if self.input_notify is not None else None,
+        ]
+        return _join_text(*parts)
 
     @model_validator(mode="before")
     @classmethod

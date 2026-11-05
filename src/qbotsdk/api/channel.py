@@ -8,10 +8,12 @@ from pathlib import Path
 
 from aiohttp import FormData
 
+from qbotsdk.exceptions import QQBotError
 from qbotsdk.model.channel import Channel
 from qbotsdk.model.draft import ChannelMessageDraft, MessageMarkdown, MessageReference
 from qbotsdk.model.message import Message
 from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.send_hook import SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
 
@@ -28,8 +30,9 @@ def _content_type(file_name: str) -> str:
 
 
 class ChannelResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HTTPClient, *, hook: SendHook | None = None) -> None:
         self._http = http
+        self._hook = hook
 
     async def get(self, channel_id: str) -> Channel:
         """子频道详情。"""
@@ -71,47 +74,74 @@ class ChannelResource:
 
         path = f"/channels/{channel_id}/messages"
         reference = MessageReference(message_id=reply_to) if reply_to is not None else None
+        proactive = reply_to is None and event_id is None
+        # Markdown 消息不带 content, 同传时以 markdown 为准
+        draft = ChannelMessageDraft(
+            content=None if markdown is not None else content,
+            markdown=markdown,
+            image=image,
+            event_id=event_id,
+            message_reference=reference,
+        )
 
-        if file_image is not None:
-            # Markdown 消息不带 content, 同传时以 markdown 为准
-            text = None if markdown is not None else content
-            file_bytes: bytes = file_image
+        try:
+            if file_image is not None:
+                text = draft.content
+                file_bytes: bytes = file_image
 
-            def build_form() -> FormData:
-                form = FormData()
-                if text is not None:
-                    form.add_field("content", text)
-                if image is not None:
-                    form.add_field("image", image)
-                if event_id is not None:
-                    form.add_field("event_id", event_id)
-                if markdown is not None:
-                    form.add_field("markdown", _as_form_json(markdown))
-                if reference is not None:
-                    form.add_field("message_reference", _as_form_json(reference))
-                form.add_field(
-                    "file_image",
-                    file_bytes,
-                    filename=file_name,
-                    content_type=_content_type(file_name),
+                def build_form() -> FormData:
+                    form = FormData()
+                    if text is not None:
+                        form.add_field("content", text)
+                    if image is not None:
+                        form.add_field("image", image)
+                    if event_id is not None:
+                        form.add_field("event_id", event_id)
+                    if markdown is not None:
+                        form.add_field("markdown", _as_form_json(markdown))
+                    if reference is not None:
+                        form.add_field("message_reference", _as_form_json(reference))
+                    form.add_field(
+                        "file_image",
+                        file_bytes,
+                        filename=file_name,
+                        content_type=_content_type(file_name),
+                    )
+                    return form
+
+                data = await self._http.post_form(path, form=build_form)
+            else:
+                data = await self._http.post(
+                    path,
+                    json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
                 )
-                return form
-
-            data = await self._http.post_form(path, form=build_form)
-        else:
-            draft = ChannelMessageDraft(
-                content=None if markdown is not None else content,
-                markdown=markdown,
-                image=image,
-                event_id=event_id,
-                message_reference=reference,
+        except QQBotError as error:
+            await notify_send(
+                self._hook,
+                SendRecord(
+                    scope="channel",
+                    target=channel_id,
+                    path=path,
+                    proactive=proactive,
+                    message=draft,
+                    error=error,
+                ),
             )
-            data = await self._http.post(
-                path,
-                json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
-            )
+            raise
 
-        return Message.model_validate(expect_object(data, path))
+        message = Message.model_validate(expect_object(data, path))
+        await notify_send(
+            self._hook,
+            SendRecord(
+                scope="channel",
+                target=channel_id,
+                path=path,
+                proactive=proactive,
+                message=draft,
+                message_id=message.id,
+            ),
+        )
+        return message
 
     async def recall_message(
         self,

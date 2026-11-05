@@ -19,12 +19,13 @@ if TYPE_CHECKING:
     from qbotsdk.model.media import MediaInfo
     from qbotsdk.model.message import GroupMessageReceipt
     from qbotsdk.module.http_client import HTTPClient
+    from qbotsdk.module.send_hook import SendHook
 
 
 class MessageResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HTTPClient, *, hook: SendHook | None = None) -> None:
         self._http = http
-        self._group = GroupResource(http)
+        self._group = GroupResource(http, hook=hook)
 
     async def reply(
         self,

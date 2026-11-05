@@ -524,6 +524,43 @@ async with Bot(app_id="app", app_secret="secret", options=options) as bot:
 查询剩余额度：`bot.api.limiter.remaining("group", group_openid)` 返回这一分钟还剩几条，
 `daily_remaining(...)` 返回这一天还剩几条（没有配置日配额时返回 `None`）。
 
+## 发送记录
+
+`ClientOptions(send_hook=...)` 可以挂一个切面，统一观察所有发出的消息：每次发送结束后回调一次，
+群聊、单聊、频道三条通道都覆盖，`event.reply()` 这类高层入口最终也走同一个切面。
+
+```python
+from qbotsdk import Bot, ClientOptions
+from qbotsdk.module.send_hook import SendHook, SendRecord
+
+
+class SendLog(SendHook):
+    async def on_sent(self, record: SendRecord) -> None:
+        if record.error is not None:
+            await log_failure(record)
+        else:
+            await save_message(record)
+
+
+options = ClientOptions(send_hook=SendLog())
+
+async with Bot(app_id="app", app_secret="secret", options=options) as bot:
+    await bot.api.group.send_message("group-openid", content="hello")
+```
+
+`SendRecord` 的字段：`scope` 是通道（`group` / `c2c` / `channel`），`target` 是对应的
+群 openid、用户 openid 或子频道 id，`path` 是实际请求路径，`proactive` 表示这条是不是主动消息，
+`message` 是真正发出去的那条消息本身，群聊/单聊是 `GroupMessageDraft`/`UserMessageDraft`，
+频道是 `ChannelMessageDraft`：正文、Markdown、图片或富媒体、keyboard、回复引用都在上面，
+`record.message.model_dump(by_alias=True, exclude_none=True)` 就是可直接落库的完整请求体；
+要展示或写日志时用 `record.message.to_text()`，它把正文与 Markdown 还原成文字，
+图片带上地址，富媒体、keyboard 这类没有文字的部分用 `[media]`、`[keyboard]` 占位。
+`message_id` 与 `error` 二选一：发送成功时前者是平台返回的消息 id，失败时后者是抛出的
+`QQBotError`（包括本地限流拦下的 `RateLimitExceededError`，此时请求没发出去，`message` 也可能为 `None`）。
+
+切面只做观察，不能改写消息、也不会截断发送：回调抛异常只会记一条日志，发送结果照旧返回。
+不传 `send_hook` 就不产生任何回调。
+
 ## 原始报文
 
 SDK 给每个响应模型和事件模型都挂了一个 `raw`，内容是**解析这条数据时用的那份 dict 本身**

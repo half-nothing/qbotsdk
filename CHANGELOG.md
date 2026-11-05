@@ -6,6 +6,7 @@
 
 - 上下文带命中的路由：`ctx.route` 是这次命中路径背后的完整 `Route`，`ExecutionResult.handler` 是真正执行的处理器。同一个 handler 注册成多条路径时它们指向同一个函数对象，按处理器限速或埋点时用 `ctx.route.handler` 做键，不会再按命令名漏算。
 - 三层本地限流：会话速率（`rate_limits`，条/分钟）、会话日配额（`daily_limits`，条/天，默认每群/每单聊 1000）、机器人总速率（`global_rate_limit`，只统计主动消息）。`RateLimitExceededError` 新增 `window`，用来区分 `minute` / `day` / `bot`；被动回复不占机器人总速率。
+- 发送记录：`ClientOptions(send_hook=...)` 注入 `SendHook`，每次发送结束后回调一次 `SendRecord`（通道、目标、是否主动消息、消息 id 或异常，另带 `message` 完整出站消息，Markdown、富媒体与 keyboard 都在上面），群聊、单聊与频道都覆盖，`event.reply()` 也走同一路径；草稿模型的 `to_text()` 把消息还原成可读文本，富媒体、keyboard 等用占位符表示；切面只观察，回调异常不影响发送结果。
 
 ### 修复
 

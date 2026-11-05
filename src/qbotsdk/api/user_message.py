@@ -8,20 +8,29 @@
 
 from __future__ import annotations
 
+from qbotsdk.exceptions import QQBotError
 from qbotsdk.model.draft import InputNotify, MessageMarkdown, UserMessageDraft
 from qbotsdk.model.keyboard import Keyboard
 from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
 from qbotsdk.model.message import UserMessageReceipt
 from qbotsdk.module.http_client import HTTPClient
 from qbotsdk.module.rate_limit import RateLimiter
+from qbotsdk.module.send_hook import SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
 
 
 class UserMessageResource:
-    def __init__(self, http: HTTPClient, *, limiter: RateLimiter | None = None) -> None:
+    def __init__(
+        self,
+        http: HTTPClient,
+        *,
+        limiter: RateLimiter | None = None,
+        hook: SendHook | None = None,
+    ) -> None:
         self._http = http
         self._limiter = limiter
+        self._hook = hook
 
     async def send_message(
         self,
@@ -47,29 +56,53 @@ class UserMessageResource:
         """
 
         path = f"/v2/users/{user_openid}/messages"
-        if self._limiter is not None:
-            self._limiter.check(
-                "c2c",
-                user_openid,
-                active=reply_to is None and event_id is None,
+        proactive = reply_to is None and event_id is None
+        draft: UserMessageDraft | None = None
+        try:
+            if self._limiter is not None:
+                self._limiter.check("c2c", user_openid, active=proactive)
+            if reply_to is not None and msg_seq is None:
+                msg_seq = 1
+            draft = UserMessageDraft(
+                content=content,
+                markdown=markdown,
+                media=media,
+                keyboard=keyboard,
+                msg_id=reply_to,
+                event_id=event_id,
+                msg_seq=msg_seq,
+                is_wakeup=is_wakeup or None,
             )
-        if reply_to is not None and msg_seq is None:
-            msg_seq = 1
-        draft = UserMessageDraft(
-            content=content,
-            markdown=markdown,
-            media=media,
-            keyboard=keyboard,
-            msg_id=reply_to,
-            event_id=event_id,
-            msg_seq=msg_seq,
-            is_wakeup=is_wakeup or None,
+            payload = await self._http.post(
+                path,
+                json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
+            )
+        except QQBotError as error:
+            await notify_send(
+                self._hook,
+                SendRecord(
+                    scope="c2c",
+                    target=user_openid,
+                    path=path,
+                    proactive=proactive,
+                    message=draft,
+                    error=error,
+                ),
+            )
+            raise
+        receipt = UserMessageReceipt.model_validate(expect_object(payload, path))
+        await notify_send(
+            self._hook,
+            SendRecord(
+                scope="c2c",
+                target=user_openid,
+                path=path,
+                proactive=proactive,
+                message=draft,
+                message_id=receipt.id,
+            ),
         )
-        payload = await self._http.post(
-            path,
-            json=draft.model_dump(by_alias=True, exclude_none=True, mode="json"),
-        )
-        return UserMessageReceipt.model_validate(expect_object(payload, path))
+        return receipt
 
     async def notify_input(self, user_openid: str, *, seconds: int = 60) -> UserMessageReceipt:
         """给用户展示「机器人正在输入」, 最多 60 秒。

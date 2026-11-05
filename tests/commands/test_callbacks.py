@@ -32,6 +32,7 @@ async def test_button_routes_json_payload_and_acks_once() -> None:
     assert seen == ["v"]
     assert result.status is Status.HANDLED
     assert result.command == "demo.button"
+    assert result.handler is on_button
     assert result.replied is True
     assert isinstance(event.api, FakeApi)
     assert event.api.interaction.calls == [0]

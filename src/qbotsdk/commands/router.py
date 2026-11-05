@@ -518,7 +518,7 @@ class Router:
             result = await self._invoke_command(inner, match)
             return self._to_reply(result, kind="command")
 
-        ctx = self._context(invocation, command=route.name)
+        ctx = self._context(invocation, command=route.name, route=route)
         reply, status, error = await self._execute(
             ctx,
             permission=route.permission,
@@ -528,7 +528,9 @@ class Router:
             middlewares=route.middlewares,
         )
         await self._send(ctx, reply, mention=route.mention)
-        return self._result(ctx, status=status, command=route.name, reply=reply, error=error)
+        return self._result(
+            ctx, status=status, command=route.name, handler=route.handler, reply=reply, error=error
+        )
 
     async def _handle_partial(self, invocation: Invocation, partial: Partial) -> ExecutionResult:
         """停在有子节点却没有 handler 的节点上, 回一句用法。"""
@@ -572,7 +574,7 @@ class Router:
             result = await self._invoke_callback(inner, match)
             return self._to_reply(result, kind="callback")
 
-        ctx = self._context(invocation, command=route.name)
+        ctx = self._context(invocation, command=route.name, route=route)
         reply, status, error = await self._execute(
             ctx,
             permission=route.permission,
@@ -582,9 +584,13 @@ class Router:
             middlewares=route.middlewares,
         )
         await self._send(ctx, reply)
-        return self._result(ctx, status=status, command=route.name, reply=reply, error=error)
+        return self._result(
+            ctx, status=status, command=route.name, handler=route.handler, reply=reply, error=error
+        )
 
-    def _context(self, invocation: Invocation, *, command: str | None) -> Context:
+    def _context(
+        self, invocation: Invocation, *, command: str | None, route: Route | None = None
+    ) -> Context:
         context_type = _CONTEXT_TYPES[invocation.kind]
         ctx = context_type(
             event=invocation.event,
@@ -594,6 +600,7 @@ class Router:
             api=invocation.event.api,
             mentions=invocation.mentions,
             command=command,
+            route=route,
         )
         ctx._sender = self._delivery(ctx, invocation)
         return ctx
@@ -698,10 +705,12 @@ class Router:
         command: str | None,
         reply: Reply | None,
         error: CommandError | None,
+        handler: Callable[..., Awaitable[object]] | None = None,
     ) -> ExecutionResult:
         return ExecutionResult(
             status=status,
             command=command,
+            handler=handler,
             reply=reply,
             replied=bool(ctx.state.get("replied")),
             error=error,

@@ -296,8 +296,10 @@ async def test_a_handler_must_be_annotated_to_return_reply() -> None:
 
 async def test_one_handler_may_be_registered_at_several_paths() -> None:
     router = Router(reply_mention=False)
+    seen: list[Context] = []
 
     async def stop(ctx: Context) -> Reply:
+        seen.append(ctx)
         return Reply(text="stopped")
 
     router.command("server stop", on=ON)(stop)
@@ -306,3 +308,12 @@ async def test_one_handler_may_be_registered_at_several_paths() -> None:
     assert (await router.handle(group_event("/halt"))).status is Status.HANDLED
     assert (await router.handle(group_event("/server stop"))).status is Status.HANDLED
     assert [route.name for route in router.commands] == ["halt", "server stop"]
+
+    halt, server_stop = seen[0].route, seen[1].route
+    assert halt is not None
+    assert server_stop is not None
+    assert halt is not server_stop
+    assert halt.handler is stop
+    assert server_stop.handler is stop
+    assert seen[0].command == "halt"
+    assert seen[1].command == "server stop"

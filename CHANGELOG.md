@@ -1,5 +1,11 @@
 # 更新日志
 
+## [0.8.0] - 2026-11-05
+
+### 新增
+
+- 上下文带命中的路由：`ctx.route` 是这次命中路径背后的完整 `Route`，`ExecutionResult.handler` 是真正执行的处理器。同一个 handler 注册成多条路径时它们指向同一个函数对象，按处理器限速或埋点时用 `ctx.route.handler` 做键，不会再按命令名漏算。
+
 ## [0.7.2] - 2026-11-04
 
 ### 修复
@@ -95,6 +101,7 @@
 - `Bot` 默认使用 `WebSocketAdapter()`；`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[0.8.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.8.0
 [0.7.2]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.2
 [0.7.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.1
 [0.7.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.0

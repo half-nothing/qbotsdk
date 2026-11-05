@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from .errors import CommandError
     from .reply import Reply
 
@@ -35,6 +37,7 @@ class ExecutionResult:
 
     status: Status = Status.NOT_FOUND
     command: str | None = None
+    handler: Callable[..., Awaitable[object]] | None = field(default=None, repr=False)
     reply: Reply | None = None
     replied: bool = False
     error: CommandError | None = None

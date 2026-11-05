@@ -8,7 +8,7 @@ from .options import ClientOptions
 
 __author__ = "Half_nothing"
 __email__ = "Half_nothing@163.com"
-__version__ = "0.7.2"
+__version__ = "0.8.0"
 
 __all__ = [
     "APIError",

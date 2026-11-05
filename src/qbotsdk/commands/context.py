@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from qbotsdk.model.message import GroupMessageReceipt, Message, UserMessageReceipt
     from qbotsdk.model.user import MentionUser
 
+    from .route import Route
+
     # 各类事件回复后拿到的回执
     ReplyResult = GroupMessageReceipt | UserMessageReceipt | Message
 
@@ -46,7 +48,10 @@ class Sender(Protocol):
 class Context:
     """一次调用的上下文, handler 的第一个形参就是它。
 
-    principal 是场景主体键, account 是账号主体键, 两者都由适配器从事件里解析。"""
+    principal 是场景主体键, account 是账号主体键, 两者都由适配器从事件里解析。
+
+    command 是这次命中的路径, route 是这条路径背后的完整注册。
+    """
 
     event: EventModel
     kind: Kind
@@ -56,6 +61,7 @@ class Context:
     api: ApiProtocol | None = None
     mentions: tuple[MentionUser, ...] = ()
     command: str | None = None
+    route: Route | None = field(default=None, repr=False)
     args: dict[str, object] = field(default_factory=dict)
     raw_args: tuple[str, ...] = ()
     text: str = ""

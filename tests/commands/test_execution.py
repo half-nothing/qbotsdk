@@ -451,3 +451,17 @@ async def test_a_handler_that_replied_itself_is_not_answered_twice() -> None:
     assert result.replied is True
     assert result.reply is not None
     assert result.reply.text == "ignored"
+
+
+async def test_execution_result_carries_the_handler_that_ran() -> None:
+    router = Router(reply_mention=False)
+
+    @router.command("ping", on=ON)
+    async def ping(ctx: Context) -> Reply:
+        return Reply(text="pong")
+
+    result = await router.handle(group_event("/ping"))
+
+    assert result.command == "ping"
+    assert result.handler is ping
+    assert ExecutionResult().handler is None

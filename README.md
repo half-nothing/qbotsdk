@@ -376,6 +376,22 @@ async def roll(ctx: GroupContext, sides: int, *, loud: bool = False, times: int 
 带前缀但没命中任何命令时默认静默；需要提示就 `Router(reply_unknown=True)`，
 回复文案是 `Messages.unknown_command`，可整体或按键替换。不带前缀的普通聊天不会触发任何回复。
 
+### 处理器身份
+
+`ctx.command` 是这次命中的路径。
+同一个 handler 注册多条路径时每条路径各有一个名字，但 `handler` 是同一个函数对象：
+
+```python
+@router.command("ban <member>", on=GroupMessageCreate)
+async def ban(ctx: GroupContext, member: str) -> Reply:
+    hit(ctx.route.handler)  # 两条路径共用这一个键
+    return Reply(text=f"banned {member}")
+
+
+# 同一个 handler，另一条路径
+router.command("封禁 <member>", on=GroupMessageCreate)(ban)  
+```
+
 ### 权限
 
 权限键自己声明，注册命令时挂上去：

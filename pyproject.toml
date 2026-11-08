@@ -1,6 +1,6 @@
 [project]
 name = "qbotsdk"
-version = "0.9.0"
+version = "0.9.1"
 description = "Async SDK for the QQ bot open platform"
 keywords = ["qq", "qqbot", "bot", "sdk", "websocket", "webhook", "asyncio"]
 authors = [

@@ -109,6 +109,20 @@ async def test_missing_ack_reconnects(gateway: FakeGateway, client: HTTPClient) 
         await stop_connection(conn, task)
 
 
+async def test_close_timeout_does_not_stall_reconnect(
+    gateway: FakeGateway, client: HTTPClient
+) -> None:
+    # 对端握手后就不读帧了, 永远不会回 CLOSE 帧, 关闭握手只能靠超时收场
+    gateway.silent = True
+    options = ClientOptions(backoff_base=0.001, backoff_max=0.01, timeout_ws_close=0.2)
+    conn = GatewayConnection(client, options=options)
+    task = asyncio.create_task(conn.run())
+    try:
+        await wait_until(lambda: gateway.connections >= 2, timeout=3.0)
+    finally:
+        await stop_connection(conn, task)
+
+
 async def test_resume_after_expired_session(gateway: FakeGateway, client: HTTPClient) -> None:
     gateway.close_after_ready = 4009
     conn, task = await run_connection(client)

@@ -16,6 +16,8 @@ class ClientOptions:
     timeout_total: float = 30.0
     # 连接建立超时
     timeout_connect: float = 10.0
+    # WebSocket 关闭握手等对端 CLOSE 帧的上限
+    timeout_ws_close: float = 1.0
     # 含首次请求在内的最大尝试次数
     max_attempts: int = 3
     # 指数退避基数, 实际等待为 base * 2 ** (attempt - 1)
@@ -41,7 +43,7 @@ class ClientOptions:
         """验证配置参数是否合法。"""
         if self.max_attempts < 1:
             raise ValueError("max_attempts must be at least 1")
-        if self.timeout_total <= 0 or self.timeout_connect <= 0:
+        if self.timeout_total <= 0 or self.timeout_connect <= 0 or self.timeout_ws_close <= 0:
             raise ValueError("timeout values must be positive")
         if self.backoff_base < 0 or self.backoff_max < 0:
             raise ValueError("backoff values must not be negative")

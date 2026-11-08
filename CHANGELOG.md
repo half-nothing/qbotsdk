@@ -1,5 +1,11 @@
 # 更新日志
 
+## [0.9.1] - 2026-11-08
+
+### 修复
+
+- 网关关闭握手补上超时上限。建连时显式关掉了总超时与接收超时，`ws_close` 也被一并置空，对端迟迟不回 CLOSE 帧时 `close()` 会一直等下去，心跳断掉后的重连整个停摆，现场表现为十几分钟没有任何动作；现在 `ClientOptions` 新增 `timeout_ws_close`，默认 1 秒，超时后照常按关闭码判定并重连。
+
 ## [0.9.0] - 2026-11-05
 
 ### 新增
@@ -112,6 +118,7 @@
 - `Bot` 默认使用 `WebSocketAdapter()`；`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[0.9.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.1
 [0.9.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.0
 [0.8.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.8.0
 [0.7.2]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.7.2

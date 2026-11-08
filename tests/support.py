@@ -8,6 +8,7 @@ method/path/query/headers/body，而不只是返回值。
 
 from __future__ import annotations
 
+import asyncio
 import json as jsonlib
 import pathlib
 import socket
@@ -150,6 +151,9 @@ class FakeGateway:
     def __init__(self) -> None:
         self.heartbeat_interval = 50  # 毫秒
         self.ack_heartbeat = True
+        # 握手后就不读帧: 对端发来的 CLOSE 帧无人应答, 关闭握手只能靠超时收场
+        self.silent = False
+        self._silent_stop = asyncio.Event()
         self.close_after_ready: int | None = None
         self.frames: list[dict[str, Any]] = []
         self.connections = 0
@@ -176,6 +180,8 @@ class FakeGateway:
         self._ws_url = f"ws://127.0.0.1:{port}/websocket"
 
     async def stop(self) -> None:
+        # 先放掉装死的连接, 否则 cleanup 会一直等它们结束
+        self._silent_stop.set()
         if self._runner is not None:
             await self._runner.cleanup()
             self._runner = None
@@ -204,6 +210,10 @@ class FakeGateway:
         await ws.send_str(
             HelloFrame(d=HelloData(heartbeat_interval=self.heartbeat_interval)).to_json()
         )
+        if self.silent:
+            # 只握手不读帧: 心跳收不到 ACK, CLOSE 帧也得不到回应
+            await self._silent_stop.wait()
+            return ws
         async for message in ws:
             if message.type is not aiohttp.WSMsgType.TEXT:
                 continue

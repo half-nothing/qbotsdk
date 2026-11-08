@@ -140,8 +140,9 @@ class GatewayConnection:
                 url,
                 autoclose=True,
                 autoping=True,
-                # 长连接不用总超时, 连接是否活着由心跳判断
-                timeout=ClientWSTimeout(),
+                # 长连接不用总超时, 连接是否活着由心跳判断;
+                # 但 ws_close 必须给值, 留空会让关闭握手无限等对端的 CLOSE 帧
+                timeout=ClientWSTimeout(ws_close=self._options.timeout_ws_close),
             )
         except WSServerHandshakeError as exc:
             raise GatewayError(f"gateway handshake failed with HTTP {exc.status}") from exc

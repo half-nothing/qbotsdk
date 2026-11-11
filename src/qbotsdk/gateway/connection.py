@@ -1,10 +1,22 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""网关连接流程, Hello → Identify / Resume → 心跳 → 断线重连。
+"""
+网关连接流程: Hello → Identify / Resume → 心跳 → 断线重连。
 
-这一层只负责连接活着并且事件能被读出来
-读完的事件按原样放进 events 队列
-带 t 的 ready / resumed 会顺带更新 session 状态, 让下一次重连能走 Resume。
+这一层负责连接活着并且事件能被读出来, 读完的事件按原样放进 events 队列。
+带 t 的 ready / resumed 会顺带更新 session 状态。
 """
 
 from __future__ import annotations
@@ -25,7 +37,7 @@ from loguru import logger
 
 from qbotsdk.exceptions import TransportError
 from qbotsdk.model.event import ReadyEvent
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.options import ClientOptions
 from qbotsdk.storage import MemorySessionStorage, SessionData, SessionStorage
 
@@ -45,6 +57,8 @@ from .payload import (
     close_action,
 )
 from .session import GatewayInfo, SessionState
+
+__all__ = ["GatewayConnection"]
 
 # 官方只给了 [0, 1] 一种分片写法, 本期不做自动分片
 _DEFAULT_SHARD = (0, 1)
@@ -69,7 +83,7 @@ class GatewayConnection:
 
     def __init__(
         self,
-        http: HTTPClient,
+        http: HttpClient,
         *,
         options: ClientOptions | None = None,
         intents: int | None = None,
@@ -210,7 +224,7 @@ class GatewayConnection:
         )
 
     async def _drop_session(self) -> None:
-        """会话作废：内存和存储一起清空。"""
+        """会话作废: 内存和存储一起清空。"""
 
         self.session.reset()
         await self._storage.clear()
@@ -230,7 +244,7 @@ class GatewayConnection:
 
     @staticmethod
     async def _hello(ws: ClientWebSocketResponse) -> float:
-        """等 op 10 Hello, 返回心跳间隔（秒）。"""
+        """等 op 10 Hello, 返回心跳间隔(秒)。"""
 
         while True:
             message = await ws.receive()

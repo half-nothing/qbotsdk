@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """网关层的协议常量与载荷模型。"""
 
@@ -11,6 +23,25 @@ from pydantic import Field
 
 from qbotsdk.model.base import QQModel
 
+__all__ = [
+    "CloseAction",
+    "Frame",
+    "GatewayCloseCode",
+    "GatewayClosedError",
+    "GatewayError",
+    "GatewayPayload",
+    "HeartbeatAckFrame",
+    "HeartbeatFrame",
+    "HelloData",
+    "HelloFrame",
+    "IdentifyData",
+    "IdentifyFrame",
+    "Intents",
+    "OpCode",
+    "ResumeData",
+    "ResumeFrame",
+    "close_action",
+]
 
 class OpCode(IntEnum):
     """官方 payload 的 op 全表。"""
@@ -47,8 +78,8 @@ class Intents:
     """
     GUILD_MESSAGES: ClassVar[int] = 1 << 9
     """
-    - MESSAGE_CREATE 发送消息事件，代表频道内的全部消息
-    - MESSAGE_DELETE 删除（撤回）消息事件
+    - MESSAGE_CREATE 发送消息事件, 代表频道内的全部消息
+    - MESSAGE_DELETE 删除(撤回)消息事件
     """
     GUILD_MESSAGE_REACTIONS: ClassVar[int] = 1 << 10
     """
@@ -58,7 +89,7 @@ class Intents:
     DIRECT_MESSAGE: ClassVar[int] = 1 << 12
     """
     - DIRECT_MESSAGE_CREATE 当收到用户发给机器人的私信消息时
-    - DIRECT_MESSAGE_DELETE 删除（撤回）消息事件
+    - DIRECT_MESSAGE_DELETE 删除(撤回)消息事件
     """
     GROUP_MEMBER_EVENT: ClassVar[int] = 1 << 24
     """
@@ -185,7 +216,7 @@ class ResumeFrame(Frame):
 
 
 class HeartbeatFrame(Frame):
-    """心跳帧；d 是最近收到的 s, 一次都还没收到就是 null。"""
+    """心跳帧;d 是最近收到的 s, 一次都还没收到就是 null。"""
 
     op: OpCode = OpCode.HEARTBEAT
     d: int | None = None
@@ -244,7 +275,7 @@ _INTERNAL_ERROR_RANGE: Final[range] = range(4900, 4914)
 
 
 def close_action(code: int) -> CloseAction:
-    """按关闭码决定重连方式；未知码按不可恢复处理, 避免死循环重连。"""
+    """按关闭码决定重连方式;未知码按不可恢复处理, 避免死循环重连。"""
 
     if code in _CLOSE_ACTIONS:
         return _CLOSE_ACTIONS[code]

@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """开箱即用的 Webhook 服务器。"""
 
@@ -15,6 +27,8 @@ from .handler import build_webhook_handler
 if TYPE_CHECKING:
     from .dispatcher import Dispatcher
 
+__all__ = ["CALLBACK_PORTS", "WebhookServer"]
+
 # 平台允许在管理端配置的回调端口
 CALLBACK_PORTS = frozenset({80, 443, 8080, 8443})
 
@@ -25,7 +39,7 @@ _TLS_PORTS = frozenset({443, 8443})
 class WebhookServer:
     """把事件回调转发给分发器。
 
-    一般通过 `WebhookAdapter` 使用, 也可以用这个低层实现接进自己的 aiohttp 应用：
+    一般通过 `WebhookAdapter` 使用, 也可以用这个低层实现接进自己的 aiohttp 应用:
 
     ```python
     server = WebhookServer(bot.dispatcher, "secret", certfile="cert.pem", keyfile="key.pem")

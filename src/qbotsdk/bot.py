@@ -1,6 +1,23 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""机器人门面：把 HTTP 资源层与事件分发串起来, 接入方式由适配器决定。"""
+
+"""
+机器人门面, 组装各模块并对外提供接口
+
+把 HTTP 资源层与事件分发串起来, 接入方式由适配器决定。
+"""
 
 from __future__ import annotations
 
@@ -18,13 +35,14 @@ from .adapter.websocket import WebSocketAdapter
 from .api import ApiClient
 from .gateway.dispatcher import Dispatcher
 from .model.event import EventModel, UnknownEvent
-from .model.user import GuildUser
 from .module.http_client import HTTPClient
 from .options import ClientOptions
 
+__all__ = ["Bot"]
+
 
 class Bot:
-    """默认用 WebSocket 长连接收事件, 换接入方式就传 `adapter=`。
+    """默认用 WebSocket 长连接收事件, 换接入方式显示传递 `adapter=`。
 
     ```python
     bot = Bot(app_id, app_secret)  # 等价于 adapter=WebSocketAdapter()
@@ -42,11 +60,10 @@ class Bot:
     ) -> None:
         """创建门面, 不做任何网络操作。
 
-        Args:
-            app_id:        机器人 AppID。
-            app_secret:    机器人 AppSecret。
-            adapter:       接入方式, 不传用 WebSocketAdapter()。
-            options:       客户端配置, 见 ClientOptions。
+        :param app_id:        机器人 AppID。
+        :param app_secret:    机器人 AppSecret。
+        :param adapter:       接入方式, 不传用 WebSocketAdapter()。
+        :param options:       客户端配置, 见 ClientOptions。
         """
 
         self._http = HTTPClient(app_id, app_secret, options=options)
@@ -65,7 +82,7 @@ class Bot:
 
     @property
     def dispatcher(self) -> Dispatcher:
-        """事件分发器, `on()` 只是它的转发。"""
+        """事件分发器, ``on()`` 只是它的转发。"""
 
         return self._dispatcher
 
@@ -75,11 +92,18 @@ class Bot:
         [Callable[[EventContext[E]], Awaitable[None]]],
         Callable[[EventContext[E]], Awaitable[None]],
     ]:
-        """注册事件处理器, 只接受 `async def`。
+        """注册事件处理器, 只接受异步函数。
 
-        事件对象在 `ctx.event` 上; 能回复的事件类型直接提供 `reply()` 方法
-        （`GroupAtMessageCreate`/`C2CMessageCreate`/`ChannelMessageCreate`）,
-        互动事件用 `respond()`, 没有这些方法的事件就是不支持回复。
+        事件对象在 `ctx.event` 上, 支持回复的事件类型直接提供 `reply()` 方法
+
+        目前支持回复的事件如下:
+            - `GroupAtMessageCreate`
+            - `C2CMessageCreate`
+            - `ChannelMessageCreate`
+
+        互动事件提供`respond()`方法, 用于响应事件
+
+        两个方法都没有的事件就是不支持回复。
         """
 
         return self._dispatcher.on(event_type)
@@ -97,7 +121,9 @@ class Bot:
     async def start(self) -> None:
         """让适配器开始收事件, 立即返回。
 
-        处理器的注册可以放在 start() 前后；重复调用抛 `RuntimeError`。
+        处理器的注册放在调用start()前后均可
+
+        :raise RuntimeError: 重复调用时抛出
         """
 
         if self._started:
@@ -111,7 +137,7 @@ class Bot:
     async def stop(self) -> None:
         """停掉适配器并清空事件订阅。
 
-        停止后订阅会被清空, 再次 start() 需要重新注册处理器。
+        停止后订阅会被清空, 需要重新注册处理器。
         """
 
         if self._started:
@@ -124,7 +150,7 @@ class Bot:
         *,
         signals: Iterable[int] = (SIGINT, SIGTERM),
     ) -> None:
-        """启动并阻塞到收到退出信号, 之后停掉适配器。"""
+        """启动并阻塞, 直到收到退出信号。"""
 
         await self.start()
         try:
@@ -137,7 +163,7 @@ class Bot:
         *,
         signals: Iterable[int] = (SIGINT, SIGTERM),
     ) -> None:
-        """阻塞到收到任一退出信号。"""
+        """阻塞直到收到任一退出信号。"""
 
         loop = get_running_loop()
         stopped = Event()
@@ -171,11 +197,6 @@ class Bot:
                 loop.remove_signal_handler(sig)
             for sig, previous in restores:
                 signal(sig, previous)
-
-    async def get_me(self) -> GuildUser:
-        """已弃用：请改用 `bot.api.user.me()`, v0.3 移除。"""
-
-        return await self._api.user.me()
 
     async def close(self) -> None:
         await self.stop()

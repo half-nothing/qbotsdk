@@ -1,8 +1,32 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
 from enum import IntEnum
+
+__all__ = [
+    "ERROR_CODE_RANGES",
+    "RETRYABLE_CODES",
+    "APIError",
+    "ErrorCode",
+    "QQBotError",
+    "RateLimitExceededError",
+    "TransportError",
+    "describe_code",
+    "error_code_of",
+]
 
 # 错误体里只有 err_code 稳定, message 会变, 因此判定一律看 err_code
 _BODY_PREVIEW_LIMIT = 2048
@@ -19,7 +43,7 @@ ERROR_CODE_RANGES: dict[tuple[int, int], str] = {
 
 
 class ErrorCode(IntEnum):
-    """本阶段收录的官方错误码。
+    """收录的官方错误码。
 
     这是便利集合而不是白名单, 未知错误码保留原值, 不因不在表里就丢弃。
     """
@@ -51,7 +75,6 @@ def describe_code(code: int) -> str:
 
     :param code: API或者事件中拿到的错误码
     :return: 错误码的人类友好表示方式, 如果没有匹配到有效结果, 返回空串
-    :rtype: str
     """
 
     try:
@@ -151,11 +174,7 @@ class APIError(QQBotError):
 
 
 class RateLimitExceededError(QQBotError):
-    """本地令牌桶判定「这一发会超限」时抛出, 不打到服务端。
-
-    注意它只约束**本进程**：多实例部署仍会撞服务端的 `40034100`,
-    那条路径依旧走 `APIError`。
-    """
+    """本地令牌桶判定某次发送会触发服务器限速时抛出。"""
 
     def __init__(
         self,
@@ -217,7 +236,7 @@ def _preview(data: object) -> object:
 def error_code_of(payload: object) -> int:
     """取响应体里的业务错误码, 取不到时返回 0。
 
-    凭证接口与 REST 接口都用它判定「HTTP 200 但业务失败」的情形。
+    凭证接口与REST接口都用它判定HTTP200但业务失败的情形。
     """
 
     if not isinstance(payload, dict):

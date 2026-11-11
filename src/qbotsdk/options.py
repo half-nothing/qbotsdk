@@ -1,11 +1,26 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Literal
 
 from qbotsdk.module.send_hook import SendHook
+
+__all__ = ["ClientOptions"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,9 +46,9 @@ class ClientOptions:
     # 主动消息是否走本地令牌桶; 关掉就完全交给服务端频控
     respect_rate_limits: bool = True
     # 覆盖默认限流(条/分钟), 键为 "group" 与 "c2c", 0 表示不限
-    rate_limits: Mapping[str, float] | None = None
+    rate_limits: Mapping[Literal["group", "c2c"], float] | None = None
     # 覆盖默认日上限(条/天), 键为 "group" 与 "c2c", 0 表示不限
-    daily_limits: Mapping[str, int] | None = None
+    daily_limits: Mapping[Literal["group", "c2c"], int] | None = None
     # 机器人级总速率(条/分钟), 只统计主动消息; None 或 0 表示不限
     global_rate_limit: float | None = None
     # 发送结果切面, 每次发送结束后回调一次; None 表示不观察

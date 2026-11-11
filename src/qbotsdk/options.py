@@ -18,7 +18,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal
 
-from qbotsdk.module.send_hook import SendHook
+from qbotsdk.module import SendHook
 
 __all__ = ["ClientOptions"]
 

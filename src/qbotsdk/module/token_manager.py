@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
@@ -13,6 +25,8 @@ from qbotsdk.constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
 from qbotsdk.exceptions import APIError, TransportError, error_code_of
 from qbotsdk.model.token import Token
 
+__all__ = ["TokenManager"]
+
 # 提前60s刷新, 平台只在旧token到期前60s内才签发新token, 且旧token在这60s内仍有效
 _REFRESH_BUFFER_SECONDS = 60
 
@@ -23,14 +37,14 @@ _TOKEN_PATH = TOKEN_URL.removeprefix(BASE_URL)
 class TokenManager:
     """获取并缓存访问令牌
 
-    两个时间点分开记：
+    两个时间点分开记:
 
-    - ``refresh_at``：到点后就主动换新。平台只在旧 token 到期前 60 秒内才签发新 token,
+    - ``refresh_at``: 到点后就主动换新。平台只在旧 token 到期前 60 秒内才签发新 token,
       所以正常路径下这里是「到期 - 60 秒」。
-    - ``hard_expire_at``：到点后旧 token 确定不可用了。刷新失败时只要还没到这里,
+    - ``hard_expire_at``: 到点后旧 token 确定不可用了。刷新失败时只要还没到这里,
       就继续用旧 token, 让调用方不至于因为一次凭证抖动而失败。
 
-    并发的第一波调用由 ``Lock`` 收敛成一次凭证请求（双检锁）。
+    并发的第一波调用由 ``Lock`` 收敛成一次凭证请求(双检锁)。
     """
 
     def __init__(

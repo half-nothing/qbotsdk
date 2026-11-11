@@ -1,9 +1,21 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """发送结果的旁路回调。
 
-切面只做观察, 不参与限流、重试与消息内容: 每次发送结束（成功或被拒）后回调一次,
-调用方可以据此记账、统计或写审计日志。回调抛出的异常只记日志, 不改变发送结果。
+切面只做观察, 不参与限流、重试与消息内容: 每次发送结束(成功或被拒)后回调一次,
+调用方据此记账、统计或写审计日志。回调抛出的异常只记日志, 不改变发送结果。
 """
 
 from __future__ import annotations
@@ -17,7 +29,7 @@ from qbotsdk.model.draft import ChannelMessageDraft, GroupMessageDraft, UserMess
 
 __all__ = ["MessageDraft", "SendHook", "SendRecord", "notify_send"]
 
-# 三条通道各自的出站消息模型, 记录里带上完整内容（markdown / 富媒体 / keyboard 等）
+# 三条通道各自的出站消息模型, 记录里带上完整内容(markdown / 富媒体 / keyboard 等)
 MessageDraft = GroupMessageDraft | UserMessageDraft | ChannelMessageDraft
 
 

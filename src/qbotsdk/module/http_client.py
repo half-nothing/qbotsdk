@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from __future__ import annotations
 
@@ -29,6 +41,8 @@ from qbotsdk.options import ClientOptions
 
 from .token_manager import TokenManager
 
+__all__ = ["FormSource", "HttpClient"]
+
 # 5xx 与网络异常无法确认服务端是否已处理, 只对有幂等语义的方法重试
 _RETRYABLE_STATUS: frozenset[int] = frozenset({500, 502, 503, 504})
 _RETRYABLE_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "PUT", "DELETE"})
@@ -47,12 +61,12 @@ def _make_form(form: FormSource) -> tuple[FormData, bool]:
 
 
 async def _sleep(seconds: float) -> None:
-    """可替换的等待函数：测试里 monkeypatch 掉它, 避免真实等待。"""
+    """可替换的等待函数: 测试里 monkeypatch 掉它, 避免真实等待。"""
     await sleep(seconds)
 
 
 def _decode(text: str) -> object:
-    """空包体返回 None；JSON 返回解析结果；其余原样返回文本。"""
+    """空包体返回 None;JSON 返回解析结果;其余原样返回文本。"""
 
     stripped = text.strip()
     if not stripped:
@@ -92,7 +106,6 @@ class _RawResponse:
     payload: object
 
 
-# noinspection PyUnusedLocal
 async def _on_request_start(
     session: ClientSession,
     trace_config_ctx: object,
@@ -101,7 +114,6 @@ async def _on_request_start(
     logger.trace("HTTP --> {} {}", params.method, params.url)
 
 
-# noinspection PyUnusedLocal
 async def _on_request_end(
     session: ClientSession,
     trace_config_ctx: object,
@@ -115,7 +127,6 @@ async def _on_request_end(
     )
 
 
-# noinspection PyUnusedLocal
 async def _on_request_exception(
     session: ClientSession,
     trace_config_ctx: object,
@@ -129,7 +140,7 @@ async def _on_request_exception(
     )
 
 
-class HTTPClient:
+class HttpClient:
     """传输层, 超时、重试、限流与错误映射。"""
 
     def __init__(
@@ -309,7 +320,7 @@ class HTTPClient:
         token = await self._token_manager.get_token(session)
         # 鉴权头格式固定为 "QQBot <token>"
         headers = {"Authorization": f"{AUTHORIZATION_SCHEME} {token}"}
-        # 用 yarl 拼接 URL, 避免字符串拼接的斜杠/编码问题；path 前导斜杠会被 yarl 拒绝
+        # 用 yarl 拼接 URL, 避免字符串拼接的斜杠/编码问题;path 前导斜杠会被 yarl 拒绝
         url = URL(BASE_URL) / path.lstrip("/")
         logger.trace("Request {} {} body={} form={}", method, url, json, form is not None)
         async with session.request(

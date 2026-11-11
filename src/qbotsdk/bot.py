@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 """
 机器人门面, 组装各模块并对外提供接口
 
@@ -35,7 +34,7 @@ from .adapter.websocket import WebSocketAdapter
 from .api import ApiClient
 from .gateway.dispatcher import Dispatcher
 from .model.event import EventModel, UnknownEvent
-from .module.http_client import HTTPClient
+from .module.http_client import HttpClient
 from .options import ClientOptions
 
 __all__ = ["Bot"]
@@ -66,7 +65,7 @@ class Bot:
         :param options:       客户端配置, 见 ClientOptions。
         """
 
-        self._http = HTTPClient(app_id, app_secret, options=options)
+        self._http = HttpClient(app_id, app_secret, options=options)
         self._api = ApiClient(self._http)
         self._adapter: Adapter = adapter if adapter is not None else WebSocketAdapter()
         self._dispatcher = Dispatcher(api=self._api)

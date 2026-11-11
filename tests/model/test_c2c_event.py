@@ -79,7 +79,7 @@ def test_c2c_quote_message_parses_nested_elements() -> None:
 
     element = event.msg_elements[0]
     assert element.message_type == 103
-    assert element.content == "每天坚持阅读半小时，可以提升专注力。"
+    assert element.content == "每天坚持阅读半小时, 可以提升专注力。"
     assert element.attachments[0].content_type == "image/png"
     assert element.ark_data is not None
     assert element.ark_data.fields["title"] == "阅读计划"

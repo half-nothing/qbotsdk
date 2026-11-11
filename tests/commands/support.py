@@ -20,7 +20,7 @@ from qbotsdk.model.message import GroupMessageReceipt, UserMessageReceipt
 
 
 class FakeGroupSender:
-    """记录发出去的群消息，不碰网络。"""
+    """记录发出去的群消息, 不碰网络。"""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
@@ -31,7 +31,7 @@ class FakeGroupSender:
 
 
 class FakeUserSender:
-    """记录发出去的单聊消息，不碰网络。"""
+    """记录发出去的单聊消息, 不碰网络。"""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
@@ -50,7 +50,7 @@ class FakeInteraction:
 
 
 class FakeChannelSender:
-    """频道消息用不到回复，只为满足 `ApiProtocol`。"""
+    """频道消息用不到回复, 只为满足 `ApiProtocol`。"""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []

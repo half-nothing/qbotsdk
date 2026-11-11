@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""包的版本号要与安装元数据一致，构建配置写错时这里会先红。"""
+"""包的版本号要与安装元数据一致, 构建配置写错时这里会先红。"""
 
 from __future__ import annotations
 

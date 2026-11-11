@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""事件层接线：`Bot.on()`、`ctx.reply()`、`api.message.reply()` 与 start/stop。"""
+"""事件层接线: `Bot.on()`、`ctx.reply()`、`api.message.reply()` 与 start/stop。"""
 
 from __future__ import annotations
 

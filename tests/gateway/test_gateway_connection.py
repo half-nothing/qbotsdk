@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""网关连接层：握手、心跳、重连与 Resume，全部打本地假网关。"""
+"""网关连接层: 握手、心跳、重连与 Resume, 全部打本地假网关。"""
 
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ async def test_heartbeat_carries_latest_seq(gateway: FakeGateway, client: HTTPCl
     try:
         await wait_until(lambda: sum(1 for f in gateway.frames if f["op"] == 1) >= 2)
         beats = [f for f in gateway.frames if f["op"] == 1]
-        # READY 之后 seq 是 1，心跳必须带它
+        # READY 之后 seq 是 1, 心跳必须带它
         assert all(beat["d"] == 1 for beat in beats)
     finally:
         await stop_connection(conn, task)

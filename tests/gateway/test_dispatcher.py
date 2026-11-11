@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""分发层：注册、异常隔离、去重与队列消费。"""
+"""分发层: 注册、异常隔离、去重与队列消费。"""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""频道消息接口：JSON 与 multipart 两种包体、撤回、以及消息域占位。"""
+"""频道消息接口: JSON 与 multipart 两种包体、撤回、以及消息域占位。"""
 
 from __future__ import annotations
 

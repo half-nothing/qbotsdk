@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""命令层与 Bot 的接线：路由器不订阅事件，调用方在自己的回调里手动分派。"""
+"""命令层与 Bot 的接线: 路由器不订阅事件, 调用方在自己的回调里手动分派。"""
 
 from __future__ import annotations
 

@@ -1,9 +1,9 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""测试辅助，一个本地 aiohttp 服务，记录收到的每一次调用。
+"""测试辅助, 一个本地 aiohttp 服务, 记录收到的每一次调用。
 
-用例断言的是「SDK 发了什么」，因此 `MockServer.calls` 会记下每次调用的
-method/path/query/headers/body，而不只是返回值。
+用例断言的是「SDK 发了什么」, 因此 `MockServer.calls` 会记下每次调用的
+method/path/query/headers/body, 而不只是返回值。
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class MockServer:
         self._app = aiohttp.web.Application()
         self._runner: aiohttp.web.AppRunner | None = None
         self._url = ""
-        # 路由表在服务启动后仍可增补：所有请求先落到统一分发器
+        # 路由表在服务启动后仍可增补: 所有请求先落到统一分发器
         self._routes: dict[tuple[str, str], Handler] = {}
         self.calls: list[RecordedCall] = []
 
@@ -106,7 +106,7 @@ class MockServer:
         site = aiohttp.web.TCPSite(self._runner, "127.0.0.1", _free_port())
         await site.start()
         assert site._server is not None
-        # aiohttp 把监听地址放在 TCPSite 的私有 server 上，抽象基类没有 sockets 属性
+        # aiohttp 把监听地址放在 TCPSite 的私有 server 上, 抽象基类没有 sockets 属性
         port = site._server.sockets[0].getsockname()[1]  # type: ignore[attr-defined]
         self._url = f"http://127.0.0.1:{port}"
 
@@ -121,7 +121,7 @@ async def token_handler(request: aiohttp.web.Request) -> aiohttp.web.StreamRespo
 
 
 def add_token_route(server: MockServer, handler: Handler | None = None) -> None:
-    """注册凭证接口；默认返回固定 token，需要计数时传自定义 handler。"""
+    """注册凭证接口: 默认返回固定 token, 需要计数时传自定义 handler。"""
 
     server.route("POST", TOKEN_PATH, handler if handler is not None else token_handler)
 
@@ -142,10 +142,10 @@ def load_frame(name: str) -> GatewayPayload:
 
 
 class FakeGateway:
-    """假网关：一个本地服务同时提供凭证、`/gateway/bot` 与 websocket。
+    """假网关: 一个本地服务同时提供凭证、`/gateway/bot` 与 websocket。
 
-    用例要断言「SDK 发了什么」，所以每帧都记进 `frames`；`hello` 的心跳间隔
-    可以调小到几十毫秒，让心跳与重连在测试里几毫秒内就能观察到。
+    用例要断言「SDK 发了什么」, 所以每帧都记进 `frames`: `hello` 的心跳间隔
+    可以调小到几十毫秒, 让心跳与重连在测试里几毫秒内就能观察到。
     """
 
     def __init__(self) -> None:

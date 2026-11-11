@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""发送结果切面：群聊、单聊、频道三条通道各回调一次。"""
+"""发送结果切面: 群聊、单聊、频道三条通道各回调一次。"""
 
 from __future__ import annotations
 

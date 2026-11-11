@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""Webhook 纯函数的用例，签名向量逐字用官方示例。"""
+"""Webhook 纯函数的用例, 签名向量逐字用官方示例。"""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def test_validation_response_matches_official_vector() -> None:
 
 
 def test_seed_repeats_secret_for_odd_length() -> None:
-    """5 字节 secret 要重复到 32 字节，写死 `secret * 2` 会得到另一个签名。"""
+    """5 字节 secret 要重复到 32 字节, 写死 `secret * 2` 会得到另一个签名。"""
 
     response = build_validation_response("abcde", PLAIN_TOKEN, EVENT_TS)
 
@@ -48,7 +48,7 @@ def test_empty_secret_is_rejected() -> None:
 
 
 def test_verify_accepts_official_signature() -> None:
-    """验证签名签的是 `event_ts + plain_token`，形状与 `timestamp + body` 相同。"""
+    """验证签名签的是 `event_ts + plain_token`, 形状与 `timestamp + body` 相同。"""
 
     assert verify_webhook_signature(BOT_SECRET, OFFICIAL_SIGNATURE, EVENT_TS, PLAIN_TOKEN.encode())
 

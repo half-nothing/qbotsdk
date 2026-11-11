@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""Redis 会话存储的地址拼装与客户端构造（不连真实 Redis）。"""
+"""Redis 会话存储的地址拼装与客户端构造(不连真实 Redis)。"""
 
 from __future__ import annotations
 

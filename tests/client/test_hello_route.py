@@ -24,7 +24,7 @@ async def test_get_me_injects_authorization_header(bot: Bot, server: MockServer)
 
     server.route("GET", "/users/@me", me_handler)
 
-    me = await bot.get_me()
+    me = await bot.api.user.me()
 
     assert me.id == "123"
     assert me.username == "tester"

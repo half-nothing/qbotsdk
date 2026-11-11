@@ -1,8 +1,8 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""AT_MESSAGE_CREATE 事件（频道 @ 机器人）。
+"""AT_MESSAGE_CREATE 事件(频道 @ 机器人)。
 
-事件体在官方 api-v2 没有独立页面，字段按「消息对象(Message)」表格建模：
+事件体在官方 api-v2 没有独立页面, 字段按「消息对象(Message)」表格建模:
 https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/template/model.html
 """
 

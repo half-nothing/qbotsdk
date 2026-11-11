@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""执行管线：绑定、错误映射、权限、中间件与守卫。"""
+"""执行管线: 绑定、错误映射、权限、中间件与守卫。"""
 
 from __future__ import annotations
 

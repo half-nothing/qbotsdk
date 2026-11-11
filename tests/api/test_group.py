@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群组资源层：路径拼接、游标翻页、群相关模型的字段映射。"""
+"""群组资源层: 路径拼接、游标翻页、群相关模型的字段映射。"""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ async def test_group_members_pagination(bot: Bot, server: MockServer) -> None:
 
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         if request.query.get("cursor"):
-            # 末页：next_cursor 为空串，但仍带一条成员
+            # 末页: next_cursor 为空串, 但仍带一条成员
             return aiohttp.web.json_response({"members": [last_member], "next_cursor": ""})
         return aiohttp.web.json_response(first_page)
 
@@ -71,7 +71,7 @@ async def test_group_members_pagination(bot: Bot, server: MockServer) -> None:
         *(item["member_openid"] for item in first_page["members"]),
         "LAST",
     ]
-    # 首屏不带 cursor，第二屏带上一页的 next_cursor
+    # 首屏不带 cursor, 第二屏带上一页的 next_cursor
     assert [call.query for call in calls_to(server, MEMBERS_PATH)] == [
         {},
         {"cursor": first_page["next_cursor"]},
@@ -110,7 +110,7 @@ async def test_group_mute_setting(bot: Bot, server: MockServer) -> None:
     assert state.global_rule.mode is MuteMode.SCHEDULE
     assert len(state.global_rule.schedule_rules) == 2
     assert state.global_rule.recurring_rules[0].weekdays == [1, 2, 3, 4, 5, 6, 7]
-    # HH:mm 不做时间解析，保持官方给的原样
+    # HH:mm 不做时间解析, 保持官方给的原样
     assert state.global_rule.recurring_rules[0].start_time == "13:05"
     assert state.members[0].mute_expire_at.year == 2026
 
@@ -131,7 +131,7 @@ JOIN_REQUEST_PAYLOAD = {
             "verify_info": {
                 "method": "verify_message",
                 "verify_message": "让我进群",
-                "review_qa_list": [],
+                "review_qa_list": [{"question": "问题", "answer": "答案"}],
             },
         }
     ],

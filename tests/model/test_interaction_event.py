@@ -2,7 +2,7 @@
 
 """INTERACTION_CREATE 事件与互动回调。
 
-事件体与响应接口来源：
+事件体与响应接口来源:
 - https://bot.q.qq.com/wiki/develop/api-v2/autogen/event/interaction_create.html
 - https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/interactions_interaction_id.put.html
 """
@@ -126,6 +126,28 @@ def test_authorize_event_parses_authorize_data() -> None:
     assert event.data.resolved is not None
     assert event.data.resolved.authorize_data is not None
     assert event.data.resolved.authorize_data.scope == "c2c_push"
+
+
+def test_unknown_interaction_type_is_kept_verbatim() -> None:
+    # 点进机器人设置页时, 网关会推送官方文档尚未列出的 type。
+    payload: dict[str, Any] = {
+        "application_id": "102057050",
+        "data": {"resolved": {}, "type": 2001},
+        "group_openid": "98F65EBF6F597A782C6411929AF802F2",
+        "id": "73ee6ece-c784-49b6-8653-cd70f60ea395",
+        "scene": "group",
+        "timestamp": "2026-11-11T11:22:08+08:00",
+        "type": 2001,
+        "version": 1,
+    }
+
+    event = parse_event("INTERACTION_CREATE", payload)
+
+    assert isinstance(event, InteractionCreate)
+    assert event.type == 2001
+    assert event.needs_response is False
+    assert event.data is not None
+    assert event.data.type == 2001
 
 
 async def test_respond_calls_put_with_code() -> None:

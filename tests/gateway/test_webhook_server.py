@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""WebhookServer 的用例：配置校验、明文回调、TLS 链路、验签失败。"""
+"""WebhookServer 的用例: 配置校验、明文回调、TLS 链路、验签失败。"""
 
 from __future__ import annotations
 

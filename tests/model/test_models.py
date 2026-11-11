@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""模型层测试，官方响应示例 JSON 原文 → 模型。"""
+"""模型层测试, 官方响应示例 JSON 原文 → 模型。"""
 
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ def test_unknown_field_ignored() -> None:
 def test_models_are_frozen() -> None:
     guild = Guild.model_validate(load_object("guild.json"))
     with pytest.raises(ValidationError):
-        guild.name = "changed"
+        guild.name = "changed"  # pyrefly: ignore[read-only]
 
 
 def test_field_name_construction() -> None:

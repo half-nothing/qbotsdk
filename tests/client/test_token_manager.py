@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""TokenManager 的生命周期：单飞刷新、刷新窗口、失败回退、硬过期。"""
+"""TokenManager 的生命周期: 单飞刷新、刷新窗口、失败回退、硬过期。"""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ EXPIRES_IN = 7200
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> dict[str, float]:
-    """把 monotonic 换成可推进的假时钟，时间相关断言不真等。"""
+    """把 monotonic 换成可推进的假时钟, 时间相关断言不真等。"""
 
     now = {"value": 1000.0}
     monkeypatch.setattr(qbotsdk.module.token_manager, "monotonic", lambda: now["value"])
@@ -28,7 +28,7 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> dict[str, float]:
 
 
 def counting_token_route(server: MockServer, expires_in: int = EXPIRES_IN) -> None:
-    """每次调用返回不同的 token，次数就是凭证接口被打了多少次。"""
+    """每次调用返回不同的 token, 次数就是凭证接口被打了多少次。"""
 
     state = {"n": 0}
 
@@ -71,7 +71,7 @@ async def test_refresh_after_window(
     async with aiohttp.ClientSession() as session:
         assert await manager.get_token(session) == "token-1"
 
-        # 已过 refresh_at（到期前 60 秒），旧 token 仍在硬有效期内
+        # 已过 refresh_at(到期前 60 秒), 旧 token 仍在硬有效期内
         clock["value"] += EXPIRES_IN - 30
         assert await manager.get_token(session) == "token-2"
 
@@ -90,7 +90,7 @@ async def test_fallback_after_refresh_failure(
         add_token_route(server, server_error_handler)
         clock["value"] += EXPIRES_IN - 30
 
-        # 刷新失败但旧 token 还没到硬过期时间，继续用它
+        # 刷新失败但旧 token 还没到硬过期时间, 继续用它
         assert await manager.get_token(session) == "token-1"
 
     assert token_call_count(server) == 2
@@ -106,7 +106,7 @@ async def test_hard_expire_raises(
         assert await manager.get_token(session) == "token-1"
 
         add_token_route(server, server_error_handler)
-        # 连硬有效期都过了，刷新又失败，只能把错误抛给调用方
+        # 连硬有效期都过了, 刷新又失败, 只能把错误抛给调用方
         clock["value"] += EXPIRES_IN + 1
 
         with pytest.raises(APIError) as info:
@@ -135,7 +135,7 @@ async def test_invalidate_forces_refresh(
 async def test_short_lived_token_refreshes_at_half_lifetime(
     server: MockServer, point_at: None, clock: dict[str, float]
 ) -> None:
-    # expires_in 比 60 秒的预留窗口还短，退化成半程刷新，不能每次调用都打凭证接口
+    # expires_in 比 60 秒的预留窗口还短, 退化成半程刷新, 不能每次调用都打凭证接口
     counting_token_route(server, expires_in=30)
     manager = TokenManager("app", "secret")
 
@@ -152,7 +152,7 @@ async def test_short_lived_token_refreshes_at_half_lifetime(
 async def test_error_body_with_200_raises_api_error(
     server: MockServer, point_at: None, clock: dict[str, float]
 ) -> None:
-    """凭证接口用 HTTP 200 返回 err_code，应转成 APIError，而不是交给 pydantic 校验。"""
+    """凭证接口用 HTTP 200 返回 err_code, 应转成 APIError, 而不是交给 pydantic 校验。"""
 
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response(
@@ -176,7 +176,7 @@ async def test_error_body_with_200_raises_api_error(
 async def test_malformed_200_body_raises_api_error(
     server: MockServer, point_at: None, clock: dict[str, float]
 ) -> None:
-    """200 但包体不是凭证结构时，同样抛 APIError，不让 ValidationError 泄漏出去。"""
+    """200 但包体不是凭证结构时, 同样抛 APIError, 不让 ValidationError 泄漏出去。"""
 
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response({"message": "something went wrong"})

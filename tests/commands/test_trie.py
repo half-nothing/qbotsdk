@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""命令树的单元测试：插入、回溯匹配、死节点 usage 与选项扫描。"""
+"""命令树的单元测试: 插入、回溯匹配、死节点 usage 与选项扫描。"""
 
 from __future__ import annotations
 

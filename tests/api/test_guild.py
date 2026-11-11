@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""资源层端到端测试：本地 mock 服务 + 官方示例快照，断言「发了什么」和「解析成什么」。"""
+"""资源层端到端测试: 本地 mock 服务 + 官方示例快照, 断言「发了什么」和「解析成什么」。"""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ DATA = Path(__file__).parents[1] / "data"
 
 
 def snapshot(name: str) -> Any:
-    """读取官方响应示例，原样喂给 mock 服务。"""
+    """读取官方响应示例, 原样喂给 mock 服务。"""
 
     return json.loads((DATA / name).read_text(encoding="utf-8"))
 
@@ -109,15 +109,14 @@ async def test_get_me_forwards_to_user_resource(bot: Bot, server: MockServer) ->
     payload = {"id": "123", "username": "tester", "avatar": "", "bot": True}
     json_route(server, "GET", "/users/@me", payload)
 
-    first = await bot.get_me()
-    second = await bot.api.user.me()
+    data = await bot.api.user.me()
 
-    assert first.id == second.id == "123"
-    assert len([call for call in server.calls if call.path == "/users/@me"]) == 2
+    assert data.id == "123"
+    assert len([call for call in server.calls if call.path == "/users/@me"]) == 1
 
 
 async def test_shape_mismatch_raises(bot: Bot, server: MockServer) -> None:
-    # 官方契约是裸数组；返回对象形状说明契约变了，必须显式报错而不是猜
+    # 官方契约是裸数组: 返回对象形状说明契约变了, 必须显式报错而不是猜
     json_route(server, "GET", "/guilds/123/channels", {"channels": []})
 
     with pytest.raises(TransportError) as info:

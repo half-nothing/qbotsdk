@@ -1,11 +1,11 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""T1：payload 解析、intents 常量、关闭码表。
+"""T1: payload 解析、intents 常量、关闭码表。
 
-快照来源：
-- `gateway_ready.json`：官方 READY 示例（version / session_id / user / shard）。
-- `gateway_group_at_message_create.json`：字段取自设计文档 §5.3 的官方字段表，
-  事件页本身抓不到逐字示例，因此结构按字段表构造，不冒充逐字快照。
+快照来源:
+- `gateway_ready.json`: 官方 READY 示例(version / session_id / user / shard)。
+- `gateway_group_at_message_create.json`: 字段取自设计文档 §5.3 的官方字段表,
+  事件页本身抓不到逐字示例, 因此结构按字段表构造, 不冒充逐字快照。
 """
 
 from __future__ import annotations
@@ -121,4 +121,4 @@ def test_payload_is_frozen() -> None:
     payload = GatewayPayload.model_validate({"op": 11})
 
     with pytest.raises(ValidationError):
-        payload.op = OpCode.HELLO
+        payload.op = OpCode.HELLO  # pyrefly: ignore[read-only]

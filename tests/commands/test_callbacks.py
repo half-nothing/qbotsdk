@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""按钮回调：载荷路由、字面量兜底与 ack 策略。"""
+"""按钮回调: 载荷路由、字面量兜底与 ack 策略。"""
 
 from __future__ import annotations
 

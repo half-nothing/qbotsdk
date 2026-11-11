@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""会话存储：内存、文件两种实现的读写与合并策略。"""
+"""会话存储: 内存、文件两种实现的读写与合并策略。"""
 
 from __future__ import annotations
 

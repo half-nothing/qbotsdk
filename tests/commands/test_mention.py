@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""回复前的 @ 发送者：默认开启、三种关闭方式，以及 @ 只在 markdown 里生效。"""
+"""回复前的 @ 发送者: 默认开启、三种关闭方式, 以及 @ 只在 markdown 里生效。"""
 
 from __future__ import annotations
 

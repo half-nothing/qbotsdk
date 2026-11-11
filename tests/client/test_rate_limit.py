@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""主动消息配额层：令牌桶、开关、被动回复次数上限。"""
+"""主动消息配额层: 令牌桶、开关、被动回复次数上限。"""
 
 from __future__ import annotations
 

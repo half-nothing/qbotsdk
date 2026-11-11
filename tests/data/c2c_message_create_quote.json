@@ -13,7 +13,7 @@
   "msg_elements": [
     {
       "message_type": 103,
-      "content": "每天坚持阅读半小时，可以提升专注力。",
+      "content": "每天坚持阅读半小时, 可以提升专注力。",
       "attachments": [
         {
           "content_type": "image/png",

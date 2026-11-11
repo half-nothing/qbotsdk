@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群富媒体上传：URL 与二进制两条路径、参数互斥、体积上限。"""
+"""群富媒体上传: URL 与二进制两条路径、参数互斥、体积上限。"""
 
 from __future__ import annotations
 

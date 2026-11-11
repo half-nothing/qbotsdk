@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""单聊（C2C）消息接口：msg_type 推断、被动回复 seq、输入中状态、撤回、上传。"""
+"""单聊(C2C)消息接口: msg_type 推断、被动回复 seq、输入中状态、撤回、上传。"""
 
 from __future__ import annotations
 

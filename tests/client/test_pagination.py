@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""分页测试：去重、空页终止、游标推进。"""
+"""分页测试: 去重、空页终止、游标推进。"""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def route_pages(
     *,
     cursor_key: str = "after",
 ) -> None:
-    """按 query 里的游标返回对应页；传列表则忽略游标，恒返回同一页。"""
+    """按 query 里的游标返回对应页: 传列表则忽略游标, 恒返回同一页。"""
 
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         if isinstance(pages, list):

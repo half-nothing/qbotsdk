@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群消息接口：msg_type 推断、msg_seq 去重语义、键盘嵌套形状、撤回。"""
+"""群消息接口: msg_type 推断、msg_seq 去重语义、键盘嵌套形状、撤回。"""
 
 from __future__ import annotations
 

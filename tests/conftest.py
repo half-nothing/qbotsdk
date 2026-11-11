@@ -1,6 +1,6 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""共享夹具，所有测试都通过本地 mock 服务驱动，不访问真实 QQ 接口。"""
+"""共享夹具, 所有测试都通过本地 mock 服务驱动, 不访问真实 QQ 接口。"""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ async def server() -> AsyncIterator[MockServer]:
 
 @pytest.fixture
 def point_at(server: MockServer, monkeypatch: pytest.MonkeyPatch) -> None:
-    """把 BASE_URL / TOKEN_URL 指向本地服务，模块路径与设计文档一致。"""
+    """把 BASE_URL / TOKEN_URL 指向本地服务, 模块路径与设计文档一致。"""
 
     monkeypatch.setattr(qbotsdk.module.token_manager, "TOKEN_URL", f"{server.url}{TOKEN_PATH}")
     monkeypatch.setattr(qbotsdk.module.http_client, "BASE_URL", server.url)

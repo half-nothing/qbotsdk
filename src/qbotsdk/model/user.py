@@ -1,22 +1,44 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """用户对象。"""
 
 from __future__ import annotations
 
+from typing import override
+
 from pydantic import Field
 
 from .base import QQModel
 
+__all__ = [
+    "C2CUser",
+    "GroupUser",
+    "GuildUser",
+    "MentionUser",
+    "User",
+]
+
 
 class User(QQModel):
-    """最小的用户标识：只有 `id`。"""
+    """最小的用户标识: 只有 `id`。"""
 
     id: str = Field(alias="id")
 
     @property
     def openid(self) -> str | None:
-        """场景相关的 openid；基类没有这个概念。"""
+        """场景相关的 openid;基类没有这个概念。"""
 
         return None
 
@@ -47,6 +69,7 @@ class GroupUser(User):
     user_openid: str | None = Field(alias="user_openid", default=None)
     member_role: str | None = Field(alias="member_role", default=None)
 
+    @override
     @property
     def openid(self) -> str | None:
         return self.member_openid
@@ -71,6 +94,7 @@ class C2CUser(User):
     union_openid: str | None = Field(alias="union_openid", default=None)
     union_user_account: str | None = Field(alias="union_user_account", default=None)
 
+    @override
     @property
     def openid(self) -> str | None:
         return self.user_openid

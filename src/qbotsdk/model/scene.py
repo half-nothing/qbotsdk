@@ -1,8 +1,20 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""消息事件里的复合结构：消息场景、附件、卡片数据、消息元素。
+"""消息事件里的复合结构: 消息场景、附件、卡片数据、消息元素。
 
-字段来源：
+字段来源:
 
 - 群@机器人消息: https://bot.qq.com/wiki/develop/api-v2/autogen/event/group_at_message_create.html
 - 单聊消息事件: https://bot.qq.com/wiki/develop/api-v2/autogen/event/c2c_message_create.html
@@ -16,9 +28,18 @@ from pydantic import Field, field_validator
 
 from .base import QQModel
 
+__all__ = [
+    "ARKData",
+    "Attachment",
+    "ElementAuthor",
+    "MessageElement",
+    "MessageScene",
+    "split_ext",
+]
+
 
 def split_ext(value: object) -> object:
-    """把官方 ext 的 ["k=v", ...] 切成字典；不是列表就原样返回。"""
+    """把官方 ext 的 ["k=v", ...] 切成字典;不是列表就原样返回。"""
 
     if not isinstance(value, list):
         return value
@@ -58,7 +79,7 @@ class Attachment(QQModel):
 
 
 class ARKData(QQModel):
-    """结构化卡片消息（message_type=3）的数据。"""
+    """结构化卡片消息(message_type=3)的数据。"""
 
     prompt: str = Field(alias="prompt", default="")
     ark_type: str = Field(alias="ark_type", default="")

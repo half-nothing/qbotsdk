@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """发送消息的请求体模型。
 
@@ -20,6 +32,16 @@ from .base import QQModel
 from .keyboard import Keyboard
 from .media import MediaInfo
 
+__all__ = [
+    "ChannelMessageDraft",
+    "GroupMessageDraft",
+    "GroupMessageType",
+    "InputNotify",
+    "MessageMarkdown",
+    "MessageReference",
+    "UserMessageDraft",
+    "UserMessageType",
+]
 
 class MessageReference(QQModel):
     """引用消息, 频道与群聊共用 {"message_id": ...} 这一形状。"""
@@ -213,11 +235,11 @@ class GroupMessageDraft(QQModel):
 class UserMessageDraft(QQModel):
     """单聊消息请求体。
 
-    与群聊的差别只有 msg_type 多了 6（输入中状态）以及 is_wakeup,
-    所以不复用 `GroupMessageDraft`：复用会把两套枚举塞进同一个校验器,
+    与群聊的差别只有 msg_type 多了 6(输入中状态)以及 is_wakeup,
+    所以不复用 `GroupMessageDraft`: 复用会把两套枚举塞进同一个校验器,
     校验器里得按长度判断是哪种消息, 反而更难读。
 
-    msg_type 留空时按内容推断：media → 7, markdown → 2, input_notify → 6, 否则 0。
+    msg_type 留空时按内容推断: media → 7, markdown → 2, input_notify → 6, 否则 0。
     """
 
     msg_type: UserMessageType | None = Field(alias="msg_type", default=None)

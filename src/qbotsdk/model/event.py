@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """网关下发的 t 事件模型。"""
 
@@ -8,7 +20,7 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any, Final, Protocol
+from typing import TYPE_CHECKING, Any, Final, Protocol, override
 
 from async_event_bus import AbstractEvent
 from pydantic import ConfigDict, Field, PrivateAttr, field_validator
@@ -25,6 +37,58 @@ if TYPE_CHECKING:
     from .keyboard import Keyboard
     from .media import MediaInfo
     from .message import GroupMessageReceipt, UserMessageReceipt
+
+__all__ = [
+    "C2C_REPLY_LIMIT",
+    "EVENT_MODELS",
+    "GROUP_REPLY_LIMIT",
+    "ApiProtocol",
+    "AuthorizeData",
+    "C2CMessageCreate",
+    "C2CMsgReceive",
+    "C2CMsgReject",
+    "ChannelCreate",
+    "ChannelDelete",
+    "ChannelEvent",
+    "ChannelMessageCreate",
+    "ChannelSender",
+    "ChannelUpdate",
+    "ChatSender",
+    "DirectMessageCreate",
+    "EventModel",
+    "FriendAdd",
+    "FriendAuthor",
+    "FriendDel",
+    "GroupAddRobot",
+    "GroupAtMessageCreate",
+    "GroupDelRobot",
+    "GroupJoinRequest",
+    "GroupMemberAdd",
+    "GroupMemberRemove",
+    "GroupMessageCreate",
+    "GroupMsgReceive",
+    "GroupMsgReject",
+    "GroupSender",
+    "GuildCreate",
+    "GuildDelete",
+    "GuildEvent",
+    "GuildMessageCreate",
+    "GuildUpdate",
+    "InteractionCode",
+    "InteractionCreate",
+    "InteractionData",
+    "InteractionMessageScene",
+    "InteractionResolved",
+    "InteractionResponder",
+    "InteractionType",
+    "MessageAudit",
+    "MessageAuditPass",
+    "MessageAuditReject",
+    "ReadyEvent",
+    "RenderedMentions",
+    "ResumedEvent",
+    "UnknownEvent",
+]
 
 # 官方限制: 群聊每条消息最多被动回复 5 次, 单聊 4 次, 超出会返回 40034128
 GROUP_REPLY_LIMIT = 5
@@ -167,7 +231,7 @@ class RenderedMentions:
 
 
 class _GroupMessageBase(EventModel):
-    """群聊消息事件的公共字段：@ 机器人与全量模式下的载荷一致。"""
+    """群聊消息事件的公共字段: @ 机器人与全量模式下的载荷一致。"""
 
     id: str = Field(alias="id")
     author: GroupUser = Field(alias="author")
@@ -289,6 +353,7 @@ class GroupAtMessageCreate(_GroupMessageBase):
     content 里 @机器人 的前缀已被平台去掉, 消息里 @ 其他人时, 官方没有承诺 content 里保留对应标记。
     """
 
+    @override
     @property
     def mentioned_me(self) -> bool:
         """未开启全量时只有 @ 到机器人本人才会下发本事件, 恒为 True。"""
@@ -493,7 +558,7 @@ class C2CMessageCreate(EventModel):
 class ChannelMessageCreate(Message, EventModel):
     """t = AT_MESSAGE_CREATE, 频道里 @ 机器人。
 
-    官方 api-v2 没有这一事件的事件体表格（页面回落到「启动接入」）,
+    官方 api-v2 没有这一事件的事件体表格(页面回落到「启动接入」),
     这里按「消息对象(Message)」表格建模, 字段与频道发送接口的响应同源。
     """
 
@@ -628,6 +693,7 @@ class InteractionType(IntEnum):
     USER_AUTHORIZE = 18
     GROUP_AUTHORIZE = 19
     GROUP_AUTHORIZE_STATUS = 20
+    SETTING_ENTRY = 2001
 
 
 class InteractionCode(IntEnum):
@@ -677,7 +743,7 @@ class InteractionResolved(EventModel):
 class InteractionData(EventModel):
     """互动事件的数据体。
 
-    官方示例 3（授权事件）只带 `resolved`, 没有外层 `type`, 所以这里可缺省。
+    官方示例 3(授权事件)只带 `resolved`, 没有外层 `type`, 所以这里可缺省。
     """
 
     type: InteractionType | None = Field(alias="type", default=None)
@@ -687,8 +753,8 @@ class InteractionData(EventModel):
 class InteractionCreate(EventModel):
     """t = INTERACTION_CREATE, 用户点击消息按钮、快捷菜单等。
 
-    `type=11`（消息按钮）与 `type=12`（快捷菜单）必须调用 `respond()` 回应,
-    否则客户端一直 loading 到超时；其余类型可以不回应。
+    `type=11`(消息按钮)与 `type=12`(快捷菜单)必须调用 `respond()` 回应,
+    否则客户端一直 loading 到超时;其余类型可以不回应。
     """
 
     id: str = Field(alias="id")
@@ -707,14 +773,14 @@ class InteractionCreate(EventModel):
 
     @property
     def needs_response(self) -> bool:
-        """是否属于必须回应的类型（消息按钮、快捷菜单）。"""
+        """是否属于必须回应的类型(消息按钮、快捷菜单)。"""
 
         return self.type in (InteractionType.INLINE_KEYBOARD, InteractionType.CALLBACK_COMMAND)
 
     async def respond(self, code: InteractionCode = InteractionCode.OK) -> None:
         """回应这次互动, 让客户端停止 loading。
 
-        同一个 interaction_id 只能回应一次；只有消息按钮与快捷菜单需要回应。
+        同一个 interaction_id 只能回应一次;只有消息按钮与快捷菜单需要回应。
         """
 
         api = self.api
@@ -766,7 +832,7 @@ EVENT_MODELS: Final[dict[str, type[EventModel]]] = {
 
 
 def parse_event(t: str, data: object) -> EventModel:
-    """按 `t` 把 `d` 解析成具体事件模型；认不出的走 UnknownEvent。"""
+    """按 `t` 把 `d` 解析成具体事件模型;认不出的走 UnknownEvent。"""
 
     model = EVENT_MODELS.get(t)
     if model is None:

@@ -1,8 +1,20 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """子频道 (Channel) 模型与相关枚举。
 
-参考文档：https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/channels_channel_id.get.html
+参考文档: https://bot.q.qq.com/wiki/develop/api-v2/autogen/api/channels_channel_id.get.html
 """
 
 from __future__ import annotations
@@ -12,6 +24,14 @@ from enum import IntEnum
 from pydantic import Field
 
 from .base import QQModel
+
+__all__ = [
+    "Channel",
+    "ChannelSubType",
+    "ChannelType",
+    "PrivateType",
+    "SpeakPermission",
+]
 
 
 class ChannelType(IntEnum):
@@ -23,7 +43,7 @@ class ChannelType(IntEnum):
     LIVE = 10005  # 直播
     APP = 10006  # 应用
     FORUM = 10007  # 论坛
-    # 也许是日程？
+    # 也许是日程?
     # 文档里面完全没有这个类型, 但实际API返回里面有这个类型
     # TX我丢雷老母
     SCHEDULE = 10011

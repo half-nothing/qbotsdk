@@ -42,8 +42,8 @@ async def wait_until(predicate: Callable[[], bool], *, timeout: float = 2.0) -> 
     raise AssertionError("condition was not met in time")
 
 
-def _fake_http() -> qbotsdk.module.http_client.HTTPClient:
-    return qbotsdk.module.http_client.HTTPClient("app", "secret", options=OPTIONS)
+def _fake_http() -> qbotsdk.module.http_client.HttpClient:
+    return qbotsdk.module.http_client.HttpClient("app", "secret", options=OPTIONS)
 
 
 class FakeClock:

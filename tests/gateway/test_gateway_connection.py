@@ -14,7 +14,7 @@ import qbotsdk.module.http_client
 import qbotsdk.module.token_manager
 from qbotsdk.gateway.connection import GatewayConnection
 from qbotsdk.gateway.payload import GatewayError, Intents
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, FakeGateway, load_frame
 
@@ -36,8 +36,8 @@ async def gateway(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeGateway]
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[HTTPClient]:
-    http = HTTPClient("app", "secret", options=OPTIONS)
+async def client() -> AsyncIterator[HttpClient]:
+    http = HttpClient("app", "secret", options=OPTIONS)
     try:
         yield http
     finally:
@@ -54,7 +54,7 @@ async def wait_until(predicate: Callable[[], bool], *, timeout: float = 2.0) -> 
     raise AssertionError("condition was not met in time")
 
 
-async def run_connection(client: HTTPClient) -> tuple[GatewayConnection, asyncio.Task[None]]:
+async def run_connection(client: HttpClient) -> tuple[GatewayConnection, asyncio.Task[None]]:
     conn = GatewayConnection(client, options=OPTIONS)
     task = asyncio.create_task(conn.run())
     return conn, task
@@ -67,7 +67,7 @@ async def stop_connection(conn: GatewayConnection, task: asyncio.Task[None]) -> 
         await task
 
 
-async def test_identify_after_hello(gateway: FakeGateway, client: HTTPClient) -> None:
+async def test_identify_after_hello(gateway: FakeGateway, client: HttpClient) -> None:
     conn, task = await run_connection(client)
     try:
         await wait_until(lambda: not conn.events.empty())
@@ -87,7 +87,7 @@ async def test_identify_after_hello(gateway: FakeGateway, client: HTTPClient) ->
         await stop_connection(conn, task)
 
 
-async def test_heartbeat_carries_latest_seq(gateway: FakeGateway, client: HTTPClient) -> None:
+async def test_heartbeat_carries_latest_seq(gateway: FakeGateway, client: HttpClient) -> None:
     conn, task = await run_connection(client)
     try:
         await wait_until(lambda: sum(1 for f in gateway.frames if f["op"] == 1) >= 2)
@@ -98,7 +98,7 @@ async def test_heartbeat_carries_latest_seq(gateway: FakeGateway, client: HTTPCl
         await stop_connection(conn, task)
 
 
-async def test_missing_ack_reconnects(gateway: FakeGateway, client: HTTPClient) -> None:
+async def test_missing_ack_reconnects(gateway: FakeGateway, client: HttpClient) -> None:
     gateway.ack_heartbeat = False
     conn, task = await run_connection(client)
     try:
@@ -110,7 +110,7 @@ async def test_missing_ack_reconnects(gateway: FakeGateway, client: HTTPClient) 
 
 
 async def test_close_timeout_does_not_stall_reconnect(
-    gateway: FakeGateway, client: HTTPClient
+    gateway: FakeGateway, client: HttpClient
 ) -> None:
     # 对端握手后就不读帧了, 永远不会回 CLOSE 帧, 关闭握手只能靠超时收场
     gateway.silent = True
@@ -123,7 +123,7 @@ async def test_close_timeout_does_not_stall_reconnect(
         await stop_connection(conn, task)
 
 
-async def test_resume_after_expired_session(gateway: FakeGateway, client: HTTPClient) -> None:
+async def test_resume_after_expired_session(gateway: FakeGateway, client: HttpClient) -> None:
     gateway.close_after_ready = 4009
     conn, task = await run_connection(client)
     try:
@@ -137,7 +137,7 @@ async def test_resume_after_expired_session(gateway: FakeGateway, client: HTTPCl
         await stop_connection(conn, task)
 
 
-async def test_fatal_close_code_stops(gateway: FakeGateway, client: HTTPClient) -> None:
+async def test_fatal_close_code_stops(gateway: FakeGateway, client: HttpClient) -> None:
     gateway.close_after_ready = 4014
     conn = GatewayConnection(client, options=OPTIONS)
     with pytest.raises(GatewayError):
@@ -145,7 +145,7 @@ async def test_fatal_close_code_stops(gateway: FakeGateway, client: HTTPClient) 
     assert gateway.connections == 1
 
 
-async def test_replayed_frames_do_not_rewind_the_sequence(client: HTTPClient) -> None:
+async def test_replayed_frames_do_not_rewind_the_sequence(client: HttpClient) -> None:
     conn = GatewayConnection(client, options=OPTIONS)
     conn.session.update(session_id="sid", seq=10)
     frame = load_frame("gateway_group_at_message_create.json")

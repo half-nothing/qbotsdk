@@ -12,7 +12,7 @@ from aiohttp import FormData
 
 import qbotsdk.module.http_client
 from qbotsdk.exceptions import APIError, ErrorCode, TransportError
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.options import ClientOptions
 from tests.support import TOKEN_PATH, MockServer, add_token_route
 
@@ -33,16 +33,16 @@ async def client(
     server: MockServer,
     point_at: None,
     sleeps: list[float],
-) -> AsyncIterator[HTTPClient]:
+) -> AsyncIterator[HttpClient]:
     add_token_route(server)
-    http = HTTPClient("app", "secret")
+    http = HttpClient("app", "secret")
     try:
         yield http
     finally:
         await http.close()
 
 
-async def test_204_returns_none(client: HTTPClient, server: MockServer) -> None:
+async def test_204_returns_none(client: HttpClient, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.Response(status=204)
 
@@ -51,7 +51,7 @@ async def test_204_returns_none(client: HTTPClient, server: MockServer) -> None:
     assert await client.request("DELETE", "/ping") is None
 
 
-async def test_non_json_body(client: HTTPClient, server: MockServer) -> None:
+async def test_non_json_body(client: HttpClient, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.Response(text="pong", content_type="text/plain")
 
@@ -60,7 +60,7 @@ async def test_non_json_body(client: HTTPClient, server: MockServer) -> None:
     assert await client.request("GET", "/text") == "pong"
 
 
-async def test_err_code_mapped(client: HTTPClient, server: MockServer) -> None:
+async def test_err_code_mapped(client: HttpClient, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response(
             {"err_code": 11253, "message": "no permission"}, status=403
@@ -77,7 +77,7 @@ async def test_err_code_mapped(client: HTTPClient, server: MockServer) -> None:
     assert error.code_name == "ERROR_CHECK_APP_PRIVILEGE_NOT_PASS"
 
 
-async def test_trace_id_from_header(client: HTTPClient, server: MockServer) -> None:
+async def test_trace_id_from_header(client: HttpClient, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response(
             {"err_code": 12002, "message": "bad request"},
@@ -94,7 +94,7 @@ async def test_trace_id_from_header(client: HTTPClient, server: MockServer) -> N
 
 
 async def test_429_retries_with_retry_after(
-    client: HTTPClient,
+    client: HttpClient,
     server: MockServer,
     sleeps: list[float],
 ) -> None:
@@ -114,7 +114,7 @@ async def test_429_retries_with_retry_after(
 
 
 async def test_429_retry_after_too_long(
-    client: HTTPClient,
+    client: HttpClient,
     server: MockServer,
     sleeps: list[float],
 ) -> None:
@@ -135,7 +135,7 @@ async def test_429_retry_after_too_long(
 
 
 async def test_500_no_retry_for_post(
-    client: HTTPClient,
+    client: HttpClient,
     server: MockServer,
     sleeps: list[float],
 ) -> None:
@@ -155,7 +155,7 @@ async def test_500_no_retry_for_post(
 
 
 async def test_500_retries_for_get(
-    client: HTTPClient,
+    client: HttpClient,
     server: MockServer,
     sleeps: list[float],
 ) -> None:
@@ -186,7 +186,7 @@ async def test_timeout_raises_transport_error(
         return aiohttp.web.json_response({"ok": True})
 
     server.route("GET", "/slow", handler)
-    http = HTTPClient(
+    http = HttpClient(
         "app",
         "secret",
         options=ClientOptions(timeout_total=0.1, max_attempts=1),
@@ -198,7 +198,7 @@ async def test_timeout_raises_transport_error(
         await http.close()
 
 
-async def test_401_refreshes_token_once(client: HTTPClient, server: MockServer) -> None:
+async def test_401_refreshes_token_once(client: HttpClient, server: MockServer) -> None:
     attempts = {"n": 0}
 
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
@@ -222,7 +222,7 @@ def _upload_form() -> FormData:
     return form
 
 
-async def test_post_form_sends_multipart(client: HTTPClient, server: MockServer) -> None:
+async def test_post_form_sends_multipart(client: HttpClient, server: MockServer) -> None:
     async def handler(request: aiohttp.web.Request) -> aiohttp.web.StreamResponse:
         return aiohttp.web.json_response({"ok": True})
 
@@ -238,7 +238,7 @@ async def test_post_form_sends_multipart(client: HTTPClient, server: MockServer)
 
 
 async def test_post_not_retried_by_default(
-    client: HTTPClient,
+    client: HttpClient,
     server: MockServer,
     sleeps: list[float],
 ) -> None:
@@ -273,7 +273,7 @@ async def test_retry_post_when_enabled(
         return aiohttp.web.json_response({"ok": True})
 
     server.route("POST", "/flaky", handler)
-    http = HTTPClient("app", "secret", options=ClientOptions(retry_post=True))
+    http = HttpClient("app", "secret", options=ClientOptions(retry_post=True))
     try:
         assert await http.post_form("/flaky", form=_upload_form) == {"ok": True}
     finally:

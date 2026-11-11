@@ -1,22 +1,20 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """文本交互标记模型。
 
-参考文档：https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/trans/text-chain.html
-
-官方把「@ 某人」「@ 全部成员」「指令」「跳转子频道」「系统表情」都做成嵌在正文里的标记,
-渲染成字符串后才放进 `content` 或 `MessageMarkdown.content`。这里的节点只负责
-「结构化地描述标记 → 渲染成官方字符串」以及反方向的解析, 不参与请求体序列化,
-所以用 dataclass 而不是 `QQModel`。
-
-几个容易踩的边界:
-
-- `AtUser` 的 `id` 在群聊里填 `member_openid`、在文字子频道里填 `user_openid`; 两者的 id
-  空间不同, 本模型不做转换, 由调用方按场景给对。
-- 群聊的 `AtUser` 只支持 markdown 消息; 文字子频道支持文本、图文与 markdown 三种。
-- `AtEveryone` 在群聊里要求机器人是群管理员, 且每个群每个自然日只能发一次。
-- `CommandEnter` 与 `CommandInput` 都会对文本做 urlencode, 解析时再解回来。
-- `<@userid>` 与 `@everyone` 是即将弃用的旧协议, 这里既不渲染也不解析。
+参考文档: https://bot.q.qq.com/wiki/develop/api-v2/server-inter/message/trans/text-chain.html
 """
 
 from __future__ import annotations
@@ -24,7 +22,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Final, override
 from urllib.parse import quote, unquote
 
 __all__ = [
@@ -43,7 +41,7 @@ _MAX_TEXT: Final[int] = 100
 
 
 def _check_text(value: str, *, name: str = "text") -> None:
-    """指令文本的长度限制来自官方：必填项最多 100 字符。"""
+    """指令文本的长度限制来自官方: 必填项最多 100 字符。"""
 
     if not value:
         raise ValueError(f"{name} must not be empty")
@@ -64,6 +62,7 @@ class PlainText(TextNode):
 
     text: str
 
+    @override
     def render(self) -> str:
         return self.text
 
@@ -78,6 +77,7 @@ class AtUser(TextNode):
         if not self.openid:
             raise ValueError("openid must not be empty")
 
+    @override
     def render(self) -> str:
         return f'<qqbot-at-user id="{self.openid}" />'
 
@@ -86,6 +86,7 @@ class AtUser(TextNode):
 class AtEveryone(TextNode):
     """@ 全部成员。"""
 
+    @override
     def render(self) -> str:
         return "<qqbot-at-everyone />"
 
@@ -99,6 +100,7 @@ class CommandEnter(TextNode):
     def __post_init__(self) -> None:
         _check_text(self.text)
 
+    @override
     def render(self) -> str:
         return f'<qqbot-cmd-enter text="{quote(self.text, safe="")}" />'
 
@@ -116,6 +118,7 @@ class CommandInput(TextNode):
         if self.show is not None:
             _check_text(self.show, name="show")
 
+    @override
     def render(self) -> str:
         parts = [f'text="{quote(self.text, safe="")}"']
         if self.show is not None:
@@ -135,6 +138,7 @@ class ChannelLink(TextNode):
         if not self.channel_id:
             raise ValueError("channel_id must not be empty")
 
+    @override
     def render(self) -> str:
         return f"<#{self.channel_id}>"
 
@@ -143,7 +147,7 @@ class ChannelLink(TextNode):
 class EmojiMarkup(TextNode):
     """系统表情, 仅支持 `type = 1` 的表情 id。
 
-    与 `qbotsdk.model.reaction.Emoji` 区分：那个是请求体里的表情对象, 这个是正文里的表情标记。
+    与 `qbotsdk.model.reaction.Emoji` 区分: 那个是请求体里的表情对象, 这个是正文里的表情标记。
     """
 
     emoji_id: str
@@ -152,6 +156,7 @@ class EmojiMarkup(TextNode):
         if not self.emoji_id:
             raise ValueError("emoji_id must not be empty")
 
+    @override
     def render(self) -> str:
         return f"<emoji:{self.emoji_id}>"
 

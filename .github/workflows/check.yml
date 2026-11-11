@@ -51,7 +51,7 @@ jobs:
         run: pdm run ruff format --check
 
       - name: Static code type checking
-        run: pdm run mypy
+        run: pdm run pyrefly check
 
       - name: Run unit test
         run: pdm run pytest -q

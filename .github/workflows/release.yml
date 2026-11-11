@@ -40,7 +40,7 @@ jobs:
         run: pdm run ruff check
 
       - name: Type check
-        run: pdm run mypy
+        run: pdm run pyrefly check
 
       - name: Run tests
         run: pdm run pytest -q

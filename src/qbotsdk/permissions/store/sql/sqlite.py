@@ -1,17 +1,31 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """SQLite 存储。"""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from sqlalchemy import URL, Table
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from .backend import SqlBackend
 from .base import SqlPermissionStorage
+
+__all__ = ["SqlitePermissionStorage"]
 
 
 class SqlitePermissionStorage(SqlPermissionStorage):
@@ -30,10 +44,12 @@ class SqlitePermissionStorage(SqlPermissionStorage):
         url = URL.create(SqlBackend.SQLITE.drivername, database=str(self.path))
         super().__init__(url, table_prefix=table_prefix, create_tables=create_tables)
 
+    @override
     @staticmethod
     def _insert_statement(table: Table) -> Any:
         return sqlite_insert(table)
 
+    @override
     @staticmethod
     def _conflict_statement(
         statement: Any,

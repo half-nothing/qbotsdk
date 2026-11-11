@@ -1,10 +1,22 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """内置权限管理命令。"""
 
 from __future__ import annotations
 
-import secrets
+from secrets import choice
 from typing import TYPE_CHECKING, Final
 
 from qbotsdk.commands.context import Context
@@ -26,6 +38,8 @@ if TYPE_CHECKING:
     from qbotsdk.model.event import EventModel
 
     from .store.base import PermissionStorage
+
+__all__ = ["PermissionCommands", "install_permission_commands"]
 
 _ALPHABET: Final[str] = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 _PREFIXES: Final[tuple[str, ...]] = ("group:", "c2c:", "user:", "guild:")
@@ -51,7 +65,7 @@ class PermissionCommands(PermissionGroup, namespace="permission"):
 def _new_code() -> str:
     """`ABCD-2345` 形态, 去掉容易看混的 0/O/1/I。"""
 
-    raw = "".join(secrets.choice(_ALPHABET) for _ in range(8))
+    raw = "".join(choice(_ALPHABET) for _ in range(8))
     return f"{raw[:4]}-{raw[4:]}"
 
 
@@ -125,7 +139,7 @@ def install_permission_commands(
     *,
     code_ttl: float = 600.0,
 ) -> None:
-    """把权限管理命令装进路由。"""
+    """为命令路由安装权限管理命令。"""
 
     async def _describe(principal: str) -> tuple[list[str], bool]:
         """一个主体的作用域、直接授予、被分配的角色与角色权限。"""

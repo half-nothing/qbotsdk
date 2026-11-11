@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """权限存储抽象与缓存装饰器。"""
 
@@ -6,18 +18,19 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from time import monotonic
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from qbotsdk.permissions.grant import Grant, PendingGrant, Role
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+__all__ = ["CachedPermissionStorage", "PermissionStorage"]
 
 class PermissionStorage(ABC):
     """授予与角色的存储接口, 全异步, `close()` 默认空实现。
 
-    权限读多写少, 写入集中在管理命令；实现要能容忍并发调用。
+    权限读多写少, 写入集中在管理命令;实现要能容忍并发调用。
     """
 
     @abstractmethod
@@ -69,7 +82,7 @@ class PermissionStorage(ABC):
         """原子取走授权码, 过期、不存在或已被领走都返回 None。"""
 
     async def rules(self, principal: str) -> frozenset[Grant]:
-        """直接授予 ∪ 角色及其父角色的授予, 环用 visited 集合终止。"""
+        """直接授予 U 角色及其父角色的授予, 环用 visited 集合终止。"""
 
         rules = set(await self.grants(principal))
         visited: set[str] = set()
@@ -87,7 +100,7 @@ class PermissionStorage(ABC):
         return frozenset(rules)
 
     async def close(self) -> None:  # noqa: B027
-        """释放资源, 退出前调用；默认什么都不做。"""
+        """释放资源, 退出前调用;默认什么都不做。"""
         pass
 
 
@@ -119,6 +132,7 @@ class CachedPermissionStorage(PermissionStorage):
 
         return self._store
 
+    @override
     async def rules(self, principal: str) -> frozenset[Grant]:
         cached = self._rules.get(principal)
         now = self._clock()
@@ -172,6 +186,7 @@ class CachedPermissionStorage(PermissionStorage):
     async def pop_pending(self, code: str) -> PendingGrant | None:
         return await self._store.pop_pending(code)
 
+    @override
     async def close(self) -> None:
         self._rules.clear()
         await self._store.close()

@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """权限判定。"""
 
@@ -11,6 +23,8 @@ from .node import Permission
 
 if TYPE_CHECKING:
     from .store.base import PermissionStorage
+
+__all__ = ["PermissionChecker", "account_of", "candidates"]
 
 
 def account_of(principal: str) -> str | None:
@@ -26,7 +40,7 @@ def account_of(principal: str) -> str | None:
 
 
 def candidates(key: str) -> tuple[str, ...]:
-    """server.admin.stop → 自己、server.admin.*、server.*、`*`。"""
+    """构建某个权限键的可匹配的权限列表"""
 
     parts = key.split(".")
     if parts[-1] == "*":
@@ -40,7 +54,7 @@ def candidates(key: str) -> tuple[str, ...]:
 
 
 class PermissionChecker:
-    """查询存储并给出判定, 读取规则交给存储实现或缓存层。"""
+    """查询存储并给出判定。"""
 
     __slots__ = ("_store",)
 
@@ -52,7 +66,7 @@ class PermissionChecker:
         return self._store
 
     async def allows(self, principal: str, permission: Permission | str) -> bool:
-        key = permission.key if isinstance(permission, Permission) else str(permission)
+        key = permission.key if isinstance(permission, Permission) else permission
         if not key:
             raise ValueError("permission must have a key")
         scopes = [principal]

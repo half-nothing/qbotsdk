@@ -1,11 +1,23 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """SQL存储的公共部分, 连接、表、读写流程。"""
 
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast, override
 
 from loguru import logger
 from pydantic import ValidationError
@@ -32,6 +44,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from sqlalchemy import Table
+
+__all__ = ["SqlPermissionStorage"]
 
 
 def _encode_grants(grants: Iterable[Grant]) -> str:
@@ -241,6 +255,7 @@ class SqlPermissionStorage(PermissionStorage):
             return None
         return record.to_pending()
 
+    @override
     async def close(self) -> None:
         if self._engine is not None:
             await self._engine.dispose()

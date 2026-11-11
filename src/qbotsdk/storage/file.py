@@ -1,6 +1,18 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""文件存储, 会话写进一个 JSON 文件, 进程重启后还能接着 Resume。"""
+"""文件存储, 会话写进一个文件。"""
 
 from __future__ import annotations
 
@@ -10,10 +22,13 @@ from contextlib import suppress
 from os import replace
 from pathlib import Path
 from time import monotonic
+from typing import override
 
 from loguru import logger
 
 from .base import SessionData, SessionStorage
+
+__all__ = ["FileSessionStorage"]
 
 
 class FileSessionStorage(SessionStorage):
@@ -38,10 +53,9 @@ class FileSessionStorage(SessionStorage):
     ) -> None:
         """记录文件位置与落盘节奏。
 
-        Args:
-            path:           会话文件路径, 父目录不存在时自动创建。
-            flush_interval: 两次写盘的最小间隔, 也是待写值最长滞留时间。
-            clock:          单调时钟, 测试可以换成假时钟。
+        :param path:           会话文件路径, 父目录不存在时自动创建。
+        :param flush_interval: 两次写盘的最小间隔, 也是待写值最长滞留时间。
+        :param clock:          单调时钟, 测试可以换成假时钟。
         """
 
         self._path = Path(path).expanduser()
@@ -79,10 +93,11 @@ class FileSessionStorage(SessionStorage):
             self._cancel_flush_task()
             return
         self._pending = data
-        # 换了会话说明 session_id 变了, 必须立刻落盘, 否则重启接不上
+        # session_id改变说明会话改变, 此时立刻落盘
         if self._written[0] != data.session_id:
             self._write()
             return
+        # 如果上次落盘时间距写入时间超过节拍, 则立刻落盘
         if self._clock() - self._last_write >= self._flush_interval:
             self._write()
             return
@@ -96,6 +111,7 @@ class FileSessionStorage(SessionStorage):
         with suppress(FileNotFoundError):
             self._path.unlink()
 
+    @override
     async def close(self) -> None:
         self._cancel_flush_task()
         self._flush()
@@ -123,6 +139,10 @@ class FileSessionStorage(SessionStorage):
             self._write()
 
     def _write(self) -> None:
+        """将内存中的会话信息写入本地文件。
+
+        首先写入到同名的.tmp文件, 写入完成后再整体替换
+        """
         data = self._pending
         if data is None:
             return

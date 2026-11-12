@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """命令树, 按事件类型各一棵, 字面量、可变参数与 rest 三类边。"""
 
@@ -9,6 +21,8 @@ from dataclasses import dataclass, field
 
 from .route import Route
 from .template import PathTemplate, Placeholder
+
+__all__ = ["Node", "Partial", "TextMatch", "insert", "resolve", "usage_for"]
 
 
 @dataclass(slots=True)
@@ -97,8 +111,8 @@ def resolve(root: Node, tokens: Sequence[str]) -> TextMatch | Partial | None:
 
     :param root: 待查找的解析树的根节点
     :param tokens: 待匹配的token列表
-    :return: 返回 :class:`TextMatch` 表示完整命中；
-        返回 :class:`Partial` 表示 token 已耗尽但节点还可继续；
+    :return: 返回 :class:`TextMatch` 表示完整命中;
+        返回 :class:`Partial` 表示 token 已耗尽但节点还可继续;
         返回 ``None`` 表示没有匹配。
     """
 
@@ -237,6 +251,3 @@ def _is_rest(part: Placeholder) -> bool:
     """判断占位符是否为 rest 类型。"""
 
     return part.converter == "rest"
-
-
-__all__ = ["Node", "Partial", "TextMatch", "insert", "resolve", "usage_for"]

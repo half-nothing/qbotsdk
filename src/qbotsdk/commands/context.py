@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """单次命令执行的上下文, 按事件类型细分出可直接使用的回复签名。"""
 
@@ -6,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, Protocol, cast
+from typing import TYPE_CHECKING, Literal, Protocol, cast, override
 
 if TYPE_CHECKING:
     from qbotsdk.bot import Bot
@@ -21,6 +33,17 @@ if TYPE_CHECKING:
 
     # 各类事件回复后拿到的回执
     ReplyResult = GroupMessageReceipt | UserMessageReceipt | Message
+
+__all__ = [
+    "C2CContext",
+    "ChannelContext",
+    "Context",
+    "GroupContext",
+    "InteractionContext",
+    "Kind",
+    "ReplyResult",
+    "Sender",
+]
 
 Kind = Literal["group", "c2c", "channel", "interaction"]
 
@@ -106,6 +129,7 @@ class Context:
 class GroupContext(Context):
     """群消息里的上下文。"""
 
+    @override
     async def reply(
         self,
         content: str | None = None,
@@ -130,6 +154,7 @@ class GroupContext(Context):
 class C2CContext(Context):
     """单聊里的上下文。"""
 
+    @override
     async def reply(
         self,
         content: str | None = None,
@@ -154,6 +179,7 @@ class C2CContext(Context):
 class ChannelContext(Context):
     """频道消息里的上下文。"""
 
+    @override
     async def reply(
         self,
         content: str | None = None,
@@ -167,5 +193,6 @@ class ChannelContext(Context):
 class InteractionContext(Context):
     """按钮、快捷菜单等互动事件的上下文。"""
 
+    @override
     async def reply(self, content: str | None = None) -> None:
         await self._deliver(content)

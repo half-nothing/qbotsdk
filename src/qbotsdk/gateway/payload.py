@@ -43,6 +43,7 @@ __all__ = [
     "close_action",
 ]
 
+
 class OpCode(IntEnum):
     """官方 payload 的 op 全表。"""
 

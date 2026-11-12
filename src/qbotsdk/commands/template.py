@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """路径模板, 把一段命令文本编译成可以逐段入树的结构。"""
 
@@ -9,6 +21,8 @@ from dataclasses import dataclass
 from keyword import iskeyword
 
 from .convert import DEFAULT_CONVERTERS, Converter
+
+__all__ = ["PathTemplate", "Placeholder", "compile_template"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,7 +70,7 @@ def _parse_segment(segment: str, converters: Mapping[str, Converter]) -> str | P
 
     :param segment: 一个token元素, 可以是
     :param converters: 转换器字典, 用于校验声明的参数类型是否合法
-    :return: 如果是纯字面量, 则返回字符串；如果是以<>包裹的占位符, 则返回 :class:`Placeholder`
+    :return: 如果是纯字面量, 则返回字符串;如果是以<>包裹的占位符, 则返回 :class:`Placeholder`
     :raise ValueError: 如果token格式错误
     """
 
@@ -90,7 +104,7 @@ def compile_template(
     把模板文本编译成 :class:`PathTemplate`, 模版文件以空格分隔, 每部分中不允许出现空格。
 
     :param source: 待编译模板文本
-    :param converters: 转换器字典, 用于校验声明的参数类型是否合法；
+    :param converters: 转换器字典, 用于校验声明的参数类型是否合法;
         如果未显式传递, 则默认为 `DEFAULT_CONVERTERS`
     :return: 编译后的 :class:`PathTemplate`
     :raise ValueError: 如果模板文本不符合规范

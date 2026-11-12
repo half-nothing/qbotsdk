@@ -23,7 +23,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from .payload import GatewayPayload
 
-__all__ =[
+__all__ = [
     "build_ack_payload",
     "build_validation_response",
     "parse_webhook_event",

@@ -20,6 +20,7 @@ from enum import StrEnum
 
 __all__ = ["SqlBackend"]
 
+
 class SqlBackend(StrEnum):
     """权限存储支持的关系库。"""
 

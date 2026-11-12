@@ -43,6 +43,7 @@ __all__ = [
     "UserMessageType",
 ]
 
+
 class MessageReference(QQModel):
     """引用消息, 频道与群聊共用 {"message_id": ...} 这一形状。"""
 

@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 __all__ = ["QQModel"]
 
+
 class QQModel(BaseModel):
     """所有 API 返回对象的基类。
 

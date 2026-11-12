@@ -23,7 +23,7 @@ from pydantic import Field
 
 from .base import QQModel
 
-__all__=[
+__all__ = [
     "GlobalMuteRule",
     "Group",
     "GroupBotState",
@@ -37,6 +37,7 @@ __all__=[
     "MuteScheduleRule",
     "RecvMsgSetting",
 ]
+
 
 class GroupMemberRole(StrEnum):
     """群成员角色。"""

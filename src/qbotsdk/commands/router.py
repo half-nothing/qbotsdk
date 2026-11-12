@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """路由器, 按事件类型分桶的注册表, 以及一次分派的执行管线。"""
 
@@ -54,6 +66,8 @@ if TYPE_CHECKING:
 
     from .context import ReplyResult
 
+__all__ = ["Guard", "Middleware", "Router", "strip_prefix"]
+
 Middleware = Callable[[Context, Callable[[Context], Awaitable[Reply]]], Awaitable[Reply]]
 Guard = Callable[[Context], Awaitable[None]]
 
@@ -65,7 +79,7 @@ _CONTEXT_TYPES: dict[Kind, type[Context]] = {
     "interaction": InteractionContext,
 }
 
-# 文本路由：每个事件类型一棵命令树
+# 文本路由: 每个事件类型一棵命令树
 _TextTree = dict[type[EventModel], Node]
 
 
@@ -77,7 +91,7 @@ class _CallbackMatch:
 
 
 def strip_prefix(text: str, prefix: str) -> str | None:
-    """剥掉命令前缀；不是以它开头、或剥完为空则返回 None。"""
+    """剥掉命令前缀;不是以它开头、或剥完为空则返回 None。"""
 
     stripped = text.lstrip()
     if not stripped.startswith(prefix):
@@ -123,7 +137,7 @@ def _wrap(
 class Router:
     """命令与按钮的注册表, 也是执行入口。
 
-    一条路由声明它属于哪些事件类型；`handle()` 按 `type(event)` 取对应分桶,
+    一条路由声明它属于哪些事件类型;`handle()` 按 `type(event)` 取对应分桶,
     因此同一个路由器可以同时服务群、单聊、频道与互动事件, 而互不干扰。
     """
 
@@ -143,7 +157,7 @@ class Router:
         """创建路由器。
 
         Args:
-            prefix:     命令前缀, 默认 `/`；传空串表示不剥前缀。
+            prefix:     命令前缀, 默认 `/`;传空串表示不剥前缀。
             checker:    权限检查器, 声明了 permission 却没有它时一律拒绝。
             middlewares: 中间件, 按外层到内层的顺序执行。
             guards:     守卫, 在权限检查之前执行。
@@ -152,7 +166,7 @@ class Router:
             strict:     True 时注册期校验权限键是否已登记。
             reply_unknown: 前缀命中但没有对应命令时是否回 `messages.unknown_command`。
                         命令层是可选模块, 默认不回, 避免抢先用户的其它回调。
-            reply_mention: 回复正文前是否带 @发送者, 默认带；单聊不带, 频道只在 markdown 里带。
+            reply_mention: 回复正文前是否带 @发送者, 默认带;单聊不带, 频道只在 markdown 里带。
         """
 
         self._prefix = prefix
@@ -260,7 +274,7 @@ class Router:
         同一个 handler 可以多次注册来提供多条路径, 每条路径各自校验形参与选项。
 
         Args:
-            path:    命令模板, 例如 `"server <name:str>"`；末尾 `<text:rest>` 吃掉剩余 token。
+            path:    命令模板, 例如 `"server <name:str>"`;末尾 `<text:rest>` 吃掉剩余 token。
             on:      这条命令在哪些事件上生效, 群聊要显式区分全量消息与仅 @ 机器人。
             usage:   用法说明, `UsageError` 没有文案时用它。
             permission: 需要的权限键。
@@ -310,7 +324,7 @@ class Router:
         permission: Permission | str | None = None,
         ack: AckPolicy = "pre",
     ) -> Callable[[CallbackHandler], CallbackHandler]:
-        """登记一条按钮回调；`target` 是载荷模型或字面量字符串。
+        """登记一条按钮回调;`target` 是载荷模型或字面量字符串。
 
         按钮目前只有 `InteractionCreate` 一个来源, `on` 因此有默认值。
         """
@@ -450,7 +464,7 @@ class Router:
             raise ValueError(f"unknown permission {route.permission!r}")
 
     def match(self, text: str, *, on: type[EventModel]) -> TextMatch | Partial | None:
-        """按前缀与命令树匹配一段文本；返回值可能是命中、缺参数或未命中。"""
+        """按前缀与命令树匹配一段文本;返回值可能是命中、缺参数或未命中。"""
 
         remainder = strip_prefix(text, self._prefix)
         if remainder is None:
@@ -493,7 +507,7 @@ class Router:
     async def handle(self, event: EventModel) -> ExecutionResult:
         """处理一条事件并返回执行结果。
 
-        调用方在自己的事件回调里手动调用它；
+        调用方在自己的事件回调里手动调用它;
         未命中任何路由时 `handled` 为 False,
         路由器不会发送任何东西
         """
@@ -551,7 +565,7 @@ class Router:
         )
 
     async def _handle_unknown(self, invocation: Invocation) -> ExecutionResult:
-        """前缀命中却查不到命令时的可选提示；普通聊天文本仍然静默。"""
+        """前缀命中却查不到命令时的可选提示;普通聊天文本仍然静默。"""
 
         if not self._reply_unknown:
             return ExecutionResult()
@@ -774,7 +788,7 @@ class Router:
     def _with_mention(self, ctx: Context, reply: Reply, mention: bool | None) -> str | None:
         """按「回复自己的设置 → 命令的设置 → 路由器的默认」决定是否在正文前 @。
 
-        返回带 @ 标记的正文；不需要 @ 时返回 `None`。@ 只在 markdown 消息里生效，
+        返回带 @ 标记的正文; 不需要 @ 时返回 `None`。@ 只在 markdown 消息里生效,
         所以返回了正文时调用方要按 markdown 发送。
         """
 
@@ -888,11 +902,3 @@ def _check_options(options: Mapping[str, type]) -> None:
             raise TypeError(f"option name {name!r} is not a valid identifier")
         if kind not in (bool, int, float, str):
             raise TypeError(f"option {name!r} must be bool, int, float or str")
-
-
-__all__ = [
-    "Guard",
-    "Middleware",
-    "Router",
-    "strip_prefix",
-]

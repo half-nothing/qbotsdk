@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """路由条目, 事件类型、触发器与签名校验。
 
@@ -26,6 +38,21 @@ from .template import PathTemplate
 if TYPE_CHECKING:
     from .router import Guard, Middleware
 
+__all__ = [
+    "AckPolicy",
+    "Binding",
+    "CallbackHandler",
+    "CommandHandler",
+    "PayloadTrigger",
+    "Route",
+    "TextTrigger",
+    "Trigger",
+    "action_of",
+    "build_binding",
+    "check_callback_handler",
+    "event_types",
+]
+
 CommandHandler = Callable[..., Awaitable[object]]
 CallbackHandler = Callable[..., Awaitable[object]]
 
@@ -48,7 +75,7 @@ class Binding:
 
 @dataclass(frozen=True, slots=True)
 class TextTrigger:
-    """文本触发器：命令模板与是否绑定参数。"""
+    """文本触发器: 命令模板与是否绑定参数。"""
 
     template: PathTemplate
     bind_args: bool = True
@@ -60,7 +87,7 @@ class TextTrigger:
 
 @dataclass(frozen=True, slots=True)
 class PayloadTrigger:
-    """按钮触发器：载荷模型、字面量或前缀。"""
+    """按钮触发器: 载荷模型、字面量或前缀。"""
 
     key: str
     model: type[BaseModel] | None = None

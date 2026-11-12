@@ -25,6 +25,8 @@ __all__ = [
     "SessionStartLimit",
     "SessionState",
 ]
+
+
 class SessionStartLimit(QQModel):
     """同一 AppID 的建连配额。"""
 

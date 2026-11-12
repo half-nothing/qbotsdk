@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 __all__ = ["CachedPermissionStorage", "PermissionStorage"]
 
+
 class PermissionStorage(ABC):
     """授予与角色的存储接口, 全异步, `close()` 默认空实现。
 

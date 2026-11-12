@@ -16,9 +16,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from qbotsdk.module import SendHook
+if TYPE_CHECKING:
+    from qbotsdk.module import SendHook
 
 __all__ = ["ClientOptions"]
 

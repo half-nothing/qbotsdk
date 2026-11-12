@@ -8,7 +8,6 @@ import pytest
 
 from qbotsdk.permissions import (
     Grant,
-    MemoryPermissionStorage,
     PendingGrant,
     Permission,
     PermissionChecker,
@@ -19,6 +18,7 @@ from qbotsdk.permissions import (
     candidates,
     validate_key,
 )
+from qbotsdk.permissions.store import MemoryPermissionStorage
 
 
 class DemoGroup(PermissionGroup, namespace="demo"):

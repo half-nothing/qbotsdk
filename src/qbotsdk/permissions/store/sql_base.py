@@ -22,19 +22,12 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast, override
 from loguru import logger
 from pydantic import ValidationError
 
-from qbotsdk.permissions import (
-    Grant,
-    GrantList,
-    NameList,
-    PendingGrant,
-    PendingRecord,
-    PermissionStorage,
-    Role,
-    Scope,
-)
+from qbotsdk.permissions import Grant, PendingGrant, Role, Scope
 
+from .base import PermissionStorage
 from .schema import PermissionSchema
 from .sql_backend import SqlBackend
+from .wire import GrantList, NameList, PendingRecord
 
 try:  # pragma: no cover
     from sqlalchemy import delete, select

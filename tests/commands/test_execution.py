@@ -18,7 +18,8 @@ from qbotsdk.commands import (
     UsageError,
 )
 from qbotsdk.model.event import GroupMessageCreate
-from qbotsdk.permissions import Grant, MemoryPermissionStorage, PermissionChecker
+from qbotsdk.permissions import Grant, PermissionChecker
+from qbotsdk.permissions.store import MemoryPermissionStorage
 from tests.commands.support import FakeApi, group_event
 
 ON = GroupMessageCreate

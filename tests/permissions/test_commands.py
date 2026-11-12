@@ -7,11 +7,11 @@ from __future__ import annotations
 from qbotsdk.commands import Router
 from qbotsdk.permissions import (
     Grant,
-    MemoryPermissionStorage,
     PermissionChecker,
     Role,
     install_permission_commands,
 )
+from qbotsdk.permissions.store import MemoryPermissionStorage
 from tests.commands.support import FakeApi, c2c_event, group_event
 
 OWNER = "group:group-1:member-1"

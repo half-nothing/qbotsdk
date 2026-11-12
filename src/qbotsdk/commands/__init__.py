@@ -117,5 +117,5 @@ __all__ = [
     "insert",
     "resolve",
     "strip_prefix",
-    "usage_for"
+    "usage_for",
 ]

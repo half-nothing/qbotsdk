@@ -74,6 +74,7 @@ from .event import ReadyEvent as ReadyEvent
 from .event import RenderedMentions as RenderedMentions
 from .event import ResumedEvent as ResumedEvent
 from .event import UnknownEvent as UnknownEvent
+from .event import parse_event as parse_event
 from .group import GlobalMuteRule as GlobalMuteRule
 from .group import Group as Group
 from .group import GroupBotState as GroupBotState
@@ -270,4 +271,5 @@ __all__ = [
     "UserMessageReceipt",
     "UserMessageType",
     "VerifyInfo",
+    "parse_event",
 ]

@@ -88,6 +88,7 @@ __all__ = [
     "RenderedMentions",
     "ResumedEvent",
     "UnknownEvent",
+    "parse_event",
 ]
 
 # 官方限制: 群聊每条消息最多被动回复 5 次, 单聊 4 次, 超出会返回 40034128

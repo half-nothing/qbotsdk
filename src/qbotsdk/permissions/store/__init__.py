@@ -22,6 +22,7 @@ from .base import CachedPermissionStorage as CachedPermissionStorage
 from .base import PermissionStorage as PermissionStorage
 from .file import FilePermissionStorage as FilePermissionStorage
 from .memory import MemoryPermissionStorage as MemoryPermissionStorage
+from .schema import PermissionSchema as PermissionSchema
 from .wire import GrantField as GrantField
 from .wire import GrantList as GrantList
 from .wire import NameList as NameList
@@ -46,6 +47,7 @@ __all__ = [
     "MysqlPermissionStorage",
     "NameList",
     "PendingRecord",
+    "PermissionSchema",
     "PermissionStorage",
     "PostgresPermissionStorage",
     "RedisPermissionStorage",

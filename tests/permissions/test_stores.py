@@ -15,23 +15,21 @@ from sqlalchemy.dialects import postgresql as postgresql_dialect
 from sqlalchemy.dialects import sqlite as sqlite_dialect
 from sqlalchemy.schema import CreateTable
 
-from qbotsdk.permissions import (
+from qbotsdk.permissions import Grant, PendingGrant, Role
+from qbotsdk.permissions.store import (
     CachedPermissionStorage,
     FilePermissionStorage,
-    Grant,
+    GrantList,
     MemoryPermissionStorage,
-    PendingGrant,
-    PermissionStorage,
-    Role,
-)
-from qbotsdk.permissions.store.sql import (
     MysqlPermissionStorage,
+    PendingRecord,
     PermissionSchema,
+    PermissionStorage,
     PostgresPermissionStorage,
+    RoleRecord,
     SqlBackend,
     SqlitePermissionStorage,
 )
-from qbotsdk.permissions.store.wire import GrantList, PendingRecord, RoleRecord
 
 
 class FakeClock:
@@ -293,7 +291,7 @@ async def test_missing_driver_raises_an_install_hint(monkeypatch: pytest.MonkeyP
     def _boom(*args: object, **kwargs: object) -> None:
         raise ModuleNotFoundError("No module named 'asyncmy'")
 
-    monkeypatch.setattr("qbotsdk.permissions.store.sql.sql_base.py.create_async_engine", _boom)
+    monkeypatch.setattr("qbotsdk.permissions.store.sql_base.create_async_engine", _boom)
     store = MysqlPermissionStorage(database="qbot")
 
     with pytest.raises(ImportError, match=r"pip install qbotsdk\[mysql\]"):

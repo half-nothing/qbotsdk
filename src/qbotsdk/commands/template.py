@@ -57,7 +57,7 @@ class PathTemplate:
         return tuple(part for part in self.placeholders if part.converter != "rest")
 
 
-def _parse_segment(segment: str, converters: Mapping[str, Converter]) -> str | Placeholder:
+def _parse_segment(segment: str, converters: Mapping[str, type[Converter]]) -> str | Placeholder:
     """
     把一个 token 解析成字面段或占位符。
 
@@ -98,7 +98,7 @@ def _parse_segment(segment: str, converters: Mapping[str, Converter]) -> str | P
 
 
 def compile_template(
-    source: str, *, converters: Mapping[str, Converter] | None = None
+    source: str, *, converters: Mapping[str, type[Converter]] | None = None
 ) -> PathTemplate:
     """
     把模板文本编译成 :class:`PathTemplate`, 模版文件以空格分隔, 每部分中不允许出现空格。

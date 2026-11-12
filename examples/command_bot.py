@@ -159,14 +159,15 @@ def build_keyboard() -> Keyboard:
 
 
 class UppercaseConverter:
-    """自定义转换器: 只要 `annotation` 与一个纯函数 `parse`。
+    """自定义转换器: 只要 `annotation` 与一个静态方法 `parse`。
 
-    转换器拿不到事件, 转换失败就抛异常, 路由器会把它变成用法提示。
+    注册的是类本身, 不用实例化;转换器拿不到事件, 转换失败就抛异常, 路由器会把它变成用法提示。
     """
 
     annotation = str
 
-    def parse(self, raw: str) -> str:
+    @staticmethod
+    def parse(raw: str) -> str:
         return raw.upper()
 
 
@@ -219,7 +220,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
         messages=Messages(unknown_command="没有这条命令, 发 /help 看看。"),
     )
     router.use(timing)
-    router.add_converter("upper", UppercaseConverter())
+    router.add_converter("upper", UppercaseConverter)
     install_permission_commands(router, store)
 
     @router.command("ping", on=TEXT_EVENTS, description="回 pong")

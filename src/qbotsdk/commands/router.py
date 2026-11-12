@@ -146,7 +146,7 @@ class Router:
         middlewares: Iterable[Middleware] = (),
         guards: Iterable[Guard] = (),
         messages: Messages | None = None,
-        converters: Mapping[str, Converter] | None = None,
+        converters: Mapping[str, type[Converter]] | None = None,
         strict: bool = False,
         reply_unknown: bool = False,
         reply_mention: bool = True,
@@ -171,7 +171,7 @@ class Router:
         self._middlewares: list[Middleware] = list(middlewares)
         self._guards: list[Guard] = list(guards)
         self._messages = messages if messages is not None else Messages()
-        self._converters: dict[str, Converter] = dict(DEFAULT_CONVERTERS)
+        self._converters: dict[str, type[Converter]] = dict(DEFAULT_CONVERTERS)
         if converters is not None:
             self._converters.update(converters)
         self._strict = strict
@@ -196,7 +196,7 @@ class Router:
         return self._messages
 
     @property
-    def converters(self) -> Mapping[str, Converter]:
+    def converters(self) -> Mapping[str, type[Converter]]:
         return self._converters
 
     @property
@@ -234,7 +234,7 @@ class Router:
             merged.update(route.on)
         return frozenset(merged)
 
-    def add_converter(self, name: str, converter: Converter) -> None:
+    def add_converter(self, name: str, converter: type[Converter]) -> None:
         """注册自定义转换器, 已注册的模板不受影响。"""
 
         if not name:

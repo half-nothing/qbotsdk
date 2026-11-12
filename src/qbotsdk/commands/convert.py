@@ -36,12 +36,14 @@ _MENTION_TAG: Final[Pattern[str]] = compile(r"<@!?([^>]+)>")
 
 @runtime_checkable
 class Converter(Protocol):
-    """转换器协议。"""
+    """转换器协议: 注册的是类本身, `parse` 按静态方法调用, 不需要实例化。"""
 
     annotation: type[Any]
 
-    def parse(self, raw: str) -> Any:
+    @staticmethod
+    def parse(raw: str) -> Any:
         """把 token 转成目标类型, 失败时抛 `TypeError` 或 `ValueError`。"""
+        ...
 
 
 class StrConverter:
@@ -49,21 +51,24 @@ class StrConverter:
 
     annotation = str
 
-    def parse(self, raw: str) -> str:
+    @staticmethod
+    def parse(raw: str) -> str:
         return raw
 
 
 class IntConverter:
     annotation = int
 
-    def parse(self, raw: str) -> int:
+    @staticmethod
+    def parse(raw: str) -> int:
         return int(raw)
 
 
 class FloatConverter:
     annotation = float
 
-    def parse(self, raw: str) -> float:
+    @staticmethod
+    def parse(raw: str) -> float:
         return float(raw)
 
 
@@ -72,7 +77,8 @@ class MentionConverter:
 
     annotation = str
 
-    def parse(self, raw: str) -> str:
+    @staticmethod
+    def parse(raw: str) -> str:
         token = raw.strip()
         match = _MENTION_TAG.fullmatch(token)
         if match is not None:
@@ -87,20 +93,21 @@ class RestConverter:
 
     annotation = str
 
-    def parse(self, raw: str) -> str:
+    @staticmethod
+    def parse(raw: str) -> str:
         return raw
 
 
-DEFAULT_CONVERTERS: Final[dict[str, Converter]] = {
-    "str": StrConverter(),
-    "int": IntConverter(),
-    "float": FloatConverter(),
-    "mention": MentionConverter(),
-    "rest": RestConverter(),
+DEFAULT_CONVERTERS: Final[dict[str, type[Converter]]] = {
+    "str": StrConverter,
+    "int": IntConverter,
+    "float": FloatConverter,
+    "mention": MentionConverter,
+    "rest": RestConverter,
 }
 
 
-def accepts_annotation(converter: Converter, annotation: object) -> bool:
+def accepts_annotation(converter: type[Converter], annotation: object) -> bool:
     """注解是否与转换器的产出类型一致;没有注解视为一致。"""
 
     if annotation is None:

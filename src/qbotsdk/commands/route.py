@@ -195,7 +195,7 @@ def build_binding(
     template: PathTemplate,
     *,
     bind_args: bool,
-    converters: Mapping[str, Converter] | None = None,
+    converters: Mapping[str, type[Converter]] | None = None,
     options: Mapping[str, type] | None = None,
 ) -> Binding:
     """把 handler 签名与模板、选项对照好, 不合规直接抛 `TypeError`。"""

@@ -85,6 +85,6 @@ def test_converters_reject_bad_values() -> None:
 
 
 def test_accepts_annotation_requires_exact_match() -> None:
-    assert accepts_annotation(MentionConverter(), str) is True
-    assert accepts_annotation(MentionConverter(), int) is False
-    assert accepts_annotation(MentionConverter(), None) is True
+    assert accepts_annotation(MentionConverter, str) is True
+    assert accepts_annotation(MentionConverter, int) is False
+    assert accepts_annotation(MentionConverter, None) is True

@@ -1,6 +1,18 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""群组（QQ 群）域接口, 读写。"""
+"""群组(QQ 群)域接口, 读写。"""
 
 from __future__ import annotations
 
@@ -14,12 +26,14 @@ from qbotsdk.model.join_request import JoinRequestAction, JoinRequestPage
 from qbotsdk.model.keyboard import Keyboard
 from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
 from qbotsdk.model.message import GroupMessageReceipt
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.module.pagination import paginate
 from qbotsdk.module.rate_limit import RateLimiter
 from qbotsdk.module.send_hook import SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
+
+__all__ = ["GroupResource"]
 
 # 二进制直传上限, 官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
 # 但 file_data 字段本身限制 5MB, 超过要走 url 或分片上传。
@@ -29,7 +43,7 @@ _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 class GroupResource:
     def __init__(
         self,
-        http: HTTPClient,
+        http: HttpClient,
         *,
         limiter: RateLimiter | None = None,
         hook: SendHook | None = None,
@@ -45,7 +59,7 @@ class GroupResource:
         return Group.model_validate(expect_object(await self._http.get(path), path))
 
     async def bot_state(self, group_openid: str) -> GroupBotState:
-        """机器人在群内的状态：是否收主动推送、接收消息范围、自身角色。"""
+        """机器人在群内的状态: 是否收主动推送、接收消息范围、自身角色。"""
 
         path = f"/v2/groups/{group_openid}/bot_state"
         return GroupBotState.model_validate(expect_object(await self._http.get(path), path))
@@ -54,7 +68,7 @@ class GroupResource:
         """
         群成员分页, 每次最多 30 条。
 
-        `cursor` 首次不传, 后续传上一页的 `next_cursor`；
+        `cursor` 首次不传, 后续传上一页的 `next_cursor`;
         返回整页而不是列表, 因为末页标志 `next_cursor` 与成员在同一层。
         """
 
@@ -142,7 +156,7 @@ class GroupResource:
         )
 
     async def mute_setting(self, group_openid: str) -> GroupMuteState:
-        """群禁言状态, 机器人为群管理员时才有权限（错误码 11253）。"""
+        """群禁言状态, 机器人为群管理员时才有权限(错误码 11253)。"""
 
         path = f"/v2/groups/{group_openid}/restrict_chat_setting"
         return GroupMuteState.model_validate(expect_object(await self._http.get(path), path))
@@ -250,7 +264,7 @@ class GroupResource:
         file_name: str | None = None,
         srv_send_msg: bool = False,
     ) -> UploadedFile:
-        """上传群富媒体（图片 / 视频 / 语音 / 文件）。
+        """上传群富媒体(图片 / 视频 / 语音 / 文件)。
 
         url 与 file_data 二选一, 前者交给服务端下载, 后者 base64 编码后随 JSON 直传, 上限 5MB。
         返回的 file_info 直接填进 send_message 的 media。

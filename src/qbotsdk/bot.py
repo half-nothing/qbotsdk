@@ -29,12 +29,11 @@ from typing import Any
 
 from async_event_bus import EventContext
 
-from .adapter.base import Adapter, AdapterContext
-from .adapter.websocket import WebSocketAdapter
+from .adapter import Adapter, AdapterContext, WebSocketAdapter
 from .api import ApiClient
 from .gateway.dispatcher import Dispatcher
 from .model.event import EventModel, UnknownEvent
-from .module.http_client import HttpClient
+from .module import HttpClient
 from .options import ClientOptions
 
 __all__ = ["Bot"]

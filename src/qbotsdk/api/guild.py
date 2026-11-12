@@ -1,23 +1,34 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-"""频道（guild）域接口。"""
+"""频道(guild)域接口。"""
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from qbotsdk.model.channel import Channel
-from qbotsdk.model.guild import Guild
-from qbotsdk.model.member import Member
-from qbotsdk.model.role import RolesResult
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.model import Channel, Guild, Member, RolesResult
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.module.pagination import paginate
 
 from ._parse import expect_list, expect_object
 
+__all__ = ["GuildResource"]
+
 
 class GuildResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HttpClient) -> None:
         self._http = http
 
     async def get(self, guild_id: str) -> Guild:

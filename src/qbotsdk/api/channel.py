@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """子频道域接口。"""
 
@@ -12,10 +24,12 @@ from qbotsdk.exceptions import QQBotError
 from qbotsdk.model.channel import Channel
 from qbotsdk.model.draft import ChannelMessageDraft, MessageMarkdown, MessageReference
 from qbotsdk.model.message import Message
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.module.send_hook import SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
+
+__all__ = ["ChannelResource"]
 
 # 官方支持 multipart 直传时就这几种图片类型, 其余按二进制流发
 _CONTENT_TYPES: dict[str, str] = {
@@ -30,7 +44,7 @@ def _content_type(file_name: str) -> str:
 
 
 class ChannelResource:
-    def __init__(self, http: HTTPClient, *, hook: SendHook | None = None) -> None:
+    def __init__(self, http: HttpClient, *, hook: SendHook | None = None) -> None:
         self._http = http
         self._hook = hook
 

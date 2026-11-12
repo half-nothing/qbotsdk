@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """消息域。
 
@@ -18,12 +30,14 @@ if TYPE_CHECKING:
     from qbotsdk.model.keyboard import Keyboard
     from qbotsdk.model.media import MediaInfo
     from qbotsdk.model.message import GroupMessageReceipt
-    from qbotsdk.module.http_client import HTTPClient
+    from qbotsdk.module.http_client import HttpClient
     from qbotsdk.module.send_hook import SendHook
+
+__all__ = ["MessageResource"]
 
 
 class MessageResource:
-    def __init__(self, http: HTTPClient, *, hook: SendHook | None = None) -> None:
+    def __init__(self, http: HttpClient, *, hook: SendHook | None = None) -> None:
         self._http = http
         self._group = GroupResource(http, hook=hook)
 

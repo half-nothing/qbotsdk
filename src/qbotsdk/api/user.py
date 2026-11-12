@@ -1,4 +1,16 @@
 # Copyright (c) 2026-present Half_nothing.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """用户域接口。"""
 
@@ -8,17 +20,19 @@ from collections.abc import AsyncIterator
 
 from qbotsdk.model.guild import Guild
 from qbotsdk.model.user import GuildUser
-from qbotsdk.module.http_client import HTTPClient
+from qbotsdk.module.http_client import HttpClient
 from qbotsdk.module.pagination import paginate
 
 from ._parse import expect_list, expect_object
+
+__all__ = ["UserResource"]
 
 _ME_PATH = "/users/@me"
 _GUILDS_PATH = "/users/@me/guilds"
 
 
 class UserResource:
-    def __init__(self, http: HTTPClient) -> None:
+    def __init__(self, http: HttpClient) -> None:
         self._http = http
 
     async def me(self) -> GuildUser:
@@ -34,7 +48,7 @@ class UserResource:
         after: str | None = None,
         limit: int = 100,
     ) -> list[Guild]:
-        """机器人加入的频道列表, limit 上限 100；before 与 after 同给时 after 失效。"""
+        """机器人加入的频道列表, limit 上限 100;before 与 after 同给时 after 失效。"""
 
         params: dict[str, str | int] = {"limit": limit}
         if before is not None:

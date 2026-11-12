@@ -12,56 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PostgreSQL 存储。"""
+"""SQLite 存储。"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, override
+from pathlib import Path
+from typing import Any, override
 
 from sqlalchemy import URL, Table
-from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
-from .backend import SqlBackend
-from .base import SqlPermissionStorage
+from .sql_backend import SqlBackend
+from .sql_base import SqlPermissionStorage
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-__all__ = ["PostgresPermissionStorage"]
+__all__ = ["SqlitePermissionStorage"]
 
 
-class PostgresPermissionStorage(SqlPermissionStorage):
-    """基于 PostgreSQL 的权限存储。"""
+class SqlitePermissionStorage(SqlPermissionStorage):
+    """基于 SQLite 的权限存储。"""
 
-    backend = SqlBackend.POSTGRES
+    backend = SqlBackend.SQLITE
 
     def __init__(
         self,
+        path: str | Path = "permissions.db",
         *,
-        database: str,
-        user: str = "postgres",
-        password: str | None = None,
-        host: str = "localhost",
-        port: int = 5432,
-        options: Mapping[str, str] | None = None,
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
     ) -> None:
-        url = URL.create(
-            SqlBackend.POSTGRES.drivername,
-            username=user,
-            password=password,
-            host=host,
-            port=port,
-            database=database,
-            query=dict(options or {}),
-        )
+        self.path = Path(path).expanduser().resolve()
+        url = URL.create(SqlBackend.SQLITE.drivername, database=str(self.path))
         super().__init__(url, table_prefix=table_prefix, create_tables=create_tables)
 
     @override
     @staticmethod
     def _insert_statement(table: Table) -> Any:
-        return postgresql_insert(table)
+        return sqlite_insert(table)
 
     @override
     @staticmethod

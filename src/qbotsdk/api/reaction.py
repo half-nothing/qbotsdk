@@ -22,10 +22,8 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from qbotsdk.model.reaction import ReactionUsers
-from qbotsdk.model.user import GuildUser
-from qbotsdk.module.http_client import HttpClient
-from qbotsdk.module.pagination import paginate
+from qbotsdk.model import GuildUser, ReactionUsers
+from qbotsdk.module import HttpClient, paginate
 
 __all__ = ["ReactionResource"]
 

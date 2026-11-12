@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from qbotsdk.model.keyboard import Keyboard
+    from qbotsdk.model import Keyboard
 
 __all__ = ["Reply"]
 

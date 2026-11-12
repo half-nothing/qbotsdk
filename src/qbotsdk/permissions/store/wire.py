@@ -20,9 +20,9 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, PlainSerializer, RootModel
 
-from qbotsdk.permissions.grant import Grant, PendingGrant, Role, Scope
+from qbotsdk.permissions import Grant, PendingGrant, Role, Scope
 
-__all__ = ["GrantList", "NameList", "PendingRecord", "RoleRecord"]
+__all__ = ["GrantField", "GrantList", "NameList", "PendingRecord", "RoleRecord"]
 
 
 def _coerce_grant(value: Any) -> Grant:

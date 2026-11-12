@@ -22,12 +22,17 @@ from typing import TYPE_CHECKING, Literal, Protocol, cast, override
 
 if TYPE_CHECKING:
     from qbotsdk.bot import Bot
-    from qbotsdk.model.draft import MessageMarkdown
-    from qbotsdk.model.event import ApiProtocol, EventModel
-    from qbotsdk.model.keyboard import Keyboard
-    from qbotsdk.model.media import MediaInfo
-    from qbotsdk.model.message import GroupMessageReceipt, Message, UserMessageReceipt
-    from qbotsdk.model.user import MentionUser
+    from qbotsdk.model import (
+        ApiProtocol,
+        EventModel,
+        GroupMessageReceipt,
+        Keyboard,
+        MediaInfo,
+        MentionUser,
+        Message,
+        MessageMarkdown,
+        UserMessageReceipt,
+    )
 
     from .route import Route
 

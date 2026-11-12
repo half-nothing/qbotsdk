@@ -26,12 +26,8 @@ from typing import TYPE_CHECKING
 from .group import GroupResource
 
 if TYPE_CHECKING:
-    from qbotsdk.model.draft import MessageMarkdown
-    from qbotsdk.model.keyboard import Keyboard
-    from qbotsdk.model.media import MediaInfo
-    from qbotsdk.model.message import GroupMessageReceipt
-    from qbotsdk.module.http_client import HttpClient
-    from qbotsdk.module.send_hook import SendHook
+    from qbotsdk.model import GroupMessageReceipt, Keyboard, MediaInfo, MessageMarkdown
+    from qbotsdk.module import HttpClient, SendHook
 
 __all__ = ["MessageResource"]
 

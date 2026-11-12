@@ -23,7 +23,7 @@ from pydantic import ValidationError
 
 from qbotsdk.constant import BASE_URL, TOKEN_URL, TRACE_ID_HEADER
 from qbotsdk.exceptions import APIError, TransportError, error_code_of
-from qbotsdk.model.token import Token
+from qbotsdk.model import Token
 
 __all__ = ["TokenManager"]
 

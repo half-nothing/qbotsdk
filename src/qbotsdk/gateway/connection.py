@@ -36,8 +36,8 @@ from aiohttp import (
 from loguru import logger
 
 from qbotsdk.exceptions import TransportError
-from qbotsdk.model.event import ReadyEvent
-from qbotsdk.module.http_client import HttpClient
+from qbotsdk.model import ReadyEvent
+from qbotsdk.module import HttpClient
 from qbotsdk.options import ClientOptions
 from qbotsdk.storage import MemorySessionStorage, SessionData, SessionStorage
 

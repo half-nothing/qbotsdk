@@ -21,7 +21,7 @@ from typing import Any, ClassVar, Final
 
 from pydantic import Field
 
-from qbotsdk.model.base import QQModel
+from qbotsdk.model import QQModel
 
 __all__ = [
     "CloseAction",

@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, cast
 from async_event_bus import EmitResult, EventBus, EventContext, ExceptionStrategy
 from loguru import logger
 
-from qbotsdk.model.event import EventModel, UnknownEvent, parse_event
+from qbotsdk.model import EventModel, UnknownEvent, parse_event
 
 from .payload import GatewayPayload, OpCode
 

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from ssl import SSLContext
 
-from qbotsdk.gateway.webhook_server import WebhookServer
+from qbotsdk.gateway import WebhookServer
 
 from .base import Adapter, AdapterContext
 

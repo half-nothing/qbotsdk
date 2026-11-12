@@ -24,7 +24,7 @@ from typing import override
 from loguru import logger
 from pydantic import ValidationError
 
-from qbotsdk.permissions.grant import Grant, PendingGrant, Role
+from qbotsdk.permissions import Grant, PendingGrant, Role
 
 from .base import PermissionStorage
 from .wire import GrantList, PendingRecord, RoleRecord

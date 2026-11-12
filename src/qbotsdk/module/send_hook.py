@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from qbotsdk.exceptions import QQBotError
-from qbotsdk.model.draft import ChannelMessageDraft, GroupMessageDraft, UserMessageDraft
+from qbotsdk.model import ChannelMessageDraft, GroupMessageDraft, UserMessageDraft
 
 __all__ = ["MessageDraft", "SendHook", "SendRecord", "notify_send"]
 

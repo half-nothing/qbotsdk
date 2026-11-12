@@ -19,8 +19,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 from qbotsdk.model import Channel, Guild, Member, RolesResult
-from qbotsdk.module.http_client import HttpClient
-from qbotsdk.module.pagination import paginate
+from qbotsdk.module import HttpClient, paginate
 
 from ._parse import expect_list, expect_object
 

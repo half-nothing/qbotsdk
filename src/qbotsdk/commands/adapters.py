@@ -20,22 +20,20 @@ from dataclasses import dataclass
 from re import compile
 from typing import TYPE_CHECKING
 
-from qbotsdk.model.event import (
+from qbotsdk.model import (
     C2CMessageCreate,
     ChannelMessageCreate,
     EventModel,
     GroupAtMessageCreate,
     GroupMessageCreate,
     InteractionCreate,
+    MentionUser,
 )
-from qbotsdk.model.user import MentionUser
 
 from .context import Kind, Sender
 
 if TYPE_CHECKING:
-    from qbotsdk.model.draft import MessageMarkdown
-    from qbotsdk.model.keyboard import Keyboard
-    from qbotsdk.model.media import MediaInfo
+    from qbotsdk.model import Keyboard, MediaInfo, MessageMarkdown
 
     from .context import ReplyResult
 

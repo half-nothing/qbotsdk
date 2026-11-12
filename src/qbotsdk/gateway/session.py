@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from pydantic import Field
 
-from qbotsdk.model.base import QQModel
+from qbotsdk.model import QQModel
 
 __all__ = [
     "GatewayInfo",

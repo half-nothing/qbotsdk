@@ -19,10 +19,8 @@ from __future__ import annotations
 from secrets import choice
 from typing import TYPE_CHECKING, Final
 
-from qbotsdk.commands.context import Context
-from qbotsdk.commands.errors import UsageError
-from qbotsdk.commands.reply import Reply
-from qbotsdk.model.event import (
+from qbotsdk.commands import Context, Reply, UsageError
+from qbotsdk.model import (
     C2CMessageCreate,
     ChannelMessageCreate,
     GroupAtMessageCreate,
@@ -34,10 +32,10 @@ from .grant import Grant, PendingGrant, Role
 from .node import Permission, PermissionGroup
 
 if TYPE_CHECKING:
-    from qbotsdk.commands.router import Router
-    from qbotsdk.model.event import EventModel
+    from qbotsdk.commands import Router
+    from qbotsdk.model import EventModel
 
-    from .store.base import PermissionStorage
+    from .store import PermissionStorage
 
 __all__ = ["PermissionCommands", "install_permission_commands"]
 

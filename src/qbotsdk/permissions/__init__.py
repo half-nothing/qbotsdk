@@ -12,14 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""权限声明、判定与存储。
-
-Redis 与 SQL 实现需要安装可选依赖。
-"""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
+"""权限声明、判定与存储。"""
 
 from .builtin import PermissionCommands as PermissionCommands
 from .builtin import install_permission_commands as install_permission_commands
@@ -35,74 +28,20 @@ from .node import PermissionGroup as PermissionGroup
 from .node import PermissionRegistry as PermissionRegistry
 from .node import permission_registry as permission_registry
 from .node import validate_key as validate_key
-from .store import CachedPermissionStorage as CachedPermissionStorage
-from .store import FilePermissionStorage as FilePermissionStorage
-from .store import MemoryPermissionStorage as MemoryPermissionStorage
-from .store import PermissionStorage as PermissionStorage
-
-if TYPE_CHECKING:
-    from .store import MysqlPermissionStorage as MysqlPermissionStorage
-    from .store import PostgresPermissionStorage as PostgresPermissionStorage
-    from .store import RedisPermissionStorage as RedisPermissionStorage
-    from .store import SqlBackend as SqlBackend
-    from .store import SqlitePermissionStorage as SqlitePermissionStorage
-    from .store import SqlPermissionStorage as SqlPermissionStorage
 
 __all__ = [
-    "CachedPermissionStorage",
-    "FilePermissionStorage",
     "Grant",
-    "MemoryPermissionStorage",
-    "MysqlPermissionStorage",
     "PendingGrant",
     "Permission",
     "PermissionChecker",
     "PermissionCommands",
     "PermissionGroup",
     "PermissionRegistry",
-    "PermissionStorage",
-    "PostgresPermissionStorage",
-    "RedisPermissionStorage",
     "Role",
     "Scope",
-    "SqlBackend",
-    "SqlPermissionStorage",
-    "SqlitePermissionStorage",
     "account_of",
     "candidates",
     "install_permission_commands",
     "permission_registry",
     "validate_key",
 ]
-
-
-def __getattr__(name: str) -> Any:
-    if name == "MysqlPermissionStorage":
-        from .store import MysqlPermissionStorage
-
-        return MysqlPermissionStorage
-    if name == "PostgresPermissionStorage":
-        from .store import PostgresPermissionStorage
-
-        return PostgresPermissionStorage
-    if name == "RedisPermissionStorage":
-        from .store import RedisPermissionStorage
-
-        return RedisPermissionStorage
-    if name == "SqlBackend":
-        from .store import SqlBackend
-
-        return SqlBackend
-    if name == "SqlPermissionStorage":
-        from .store import SqlPermissionStorage
-
-        return SqlPermissionStorage
-    if name == "SqlitePermissionStorage":
-        from .store import SqlitePermissionStorage
-
-        return SqlitePermissionStorage
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def __dir__() -> list[str]:
-    return sorted(__all__)

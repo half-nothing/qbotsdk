@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 from loguru import logger
 from pydantic import BaseModel
 
-from qbotsdk.model.event import EventModel, InteractionCode, InteractionCreate
+from qbotsdk.model import EventModel, InteractionCode, InteractionCreate
 
 from .adapters import Invocation, adapt_event
 from .context import (
@@ -58,11 +58,8 @@ from .template import compile_template
 from .trie import Node, Partial, TextMatch, insert, resolve, usage_for
 
 if TYPE_CHECKING:
-    from qbotsdk.model.draft import MessageMarkdown
-    from qbotsdk.model.keyboard import Keyboard
-    from qbotsdk.model.media import MediaInfo
-    from qbotsdk.permissions.checker import PermissionChecker
-    from qbotsdk.permissions.node import Permission
+    from qbotsdk.model import Keyboard, MediaInfo, MessageMarkdown
+    from qbotsdk.permissions import Permission, PermissionChecker
 
     from .context import ReplyResult
 
@@ -458,7 +455,7 @@ class Router:
     def _check_registry(self, route: Route) -> None:
         if not self._strict or route.permission is None:
             return
-        from qbotsdk.permissions.node import permission_registry
+        from qbotsdk.permissions import permission_registry
 
         if route.permission not in permission_registry:
             raise ValueError(f"unknown permission {route.permission!r}")
@@ -773,7 +770,7 @@ class Router:
             return
         if reply.text is None:
             return
-        from qbotsdk.model.draft import MessageMarkdown
+        from qbotsdk.model import MessageMarkdown
 
         marked = self._with_mention(ctx, reply, mention)
         markdown_text = marked if marked is not None else (reply.text if reply.markdown else None)

@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from qbotsdk.api import ApiClient
-    from qbotsdk.gateway.dispatcher import Dispatcher
-    from qbotsdk.module.http_client import HttpClient
+    from qbotsdk.gateway import Dispatcher
+    from qbotsdk.module import HttpClient
 
 __all__ = ["Adapter", "AdapterContext"]
 

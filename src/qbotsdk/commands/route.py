@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Literal, get_args, get_origin, get_type_h
 
 from pydantic import BaseModel
 
-from qbotsdk.model.event import EventModel
+from qbotsdk.model import EventModel
 
 from .context import Context
 from .convert import DEFAULT_CONVERTERS, Converter, accepts_annotation

@@ -21,13 +21,17 @@
 from __future__ import annotations
 
 from qbotsdk.exceptions import QQBotError
-from qbotsdk.model.draft import InputNotify, MessageMarkdown, UserMessageDraft
-from qbotsdk.model.keyboard import Keyboard
-from qbotsdk.model.media import FileType, MediaInfo, UploadedFile
-from qbotsdk.model.message import UserMessageReceipt
-from qbotsdk.module.http_client import HttpClient
-from qbotsdk.module.rate_limit import RateLimiter
-from qbotsdk.module.send_hook import SendHook, SendRecord, notify_send
+from qbotsdk.model import (
+    FileType,
+    InputNotify,
+    Keyboard,
+    MediaInfo,
+    MessageMarkdown,
+    UploadedFile,
+    UserMessageDraft,
+    UserMessageReceipt,
+)
+from qbotsdk.module import HttpClient, RateLimiter, SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
 

@@ -18,8 +18,7 @@ from __future__ import annotations
 
 from asyncio import Task, create_task, gather
 
-from qbotsdk.gateway.connection import GatewayConnection
-from qbotsdk.gateway.payload import Intents
+from qbotsdk.gateway import GatewayConnection, Intents
 from qbotsdk.storage import SessionStorage
 
 from .base import Adapter, AdapterContext

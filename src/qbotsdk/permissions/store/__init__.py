@@ -22,23 +22,34 @@ from .base import CachedPermissionStorage as CachedPermissionStorage
 from .base import PermissionStorage as PermissionStorage
 from .file import FilePermissionStorage as FilePermissionStorage
 from .memory import MemoryPermissionStorage as MemoryPermissionStorage
+from .wire import GrantField as GrantField
+from .wire import GrantList as GrantList
+from .wire import NameList as NameList
+from .wire import PendingRecord as PendingRecord
+from .wire import RoleRecord as RoleRecord
 
 if TYPE_CHECKING:
+    from .mysql import MysqlPermissionStorage as MysqlPermissionStorage
+    from .postgres import PostgresPermissionStorage as PostgresPermissionStorage
     from .redis import RedisPermissionStorage as RedisPermissionStorage
-    from .sql import MysqlPermissionStorage as MysqlPermissionStorage
-    from .sql import PostgresPermissionStorage as PostgresPermissionStorage
-    from .sql import SqlBackend as SqlBackend
-    from .sql import SqlitePermissionStorage as SqlitePermissionStorage
-    from .sql import SqlPermissionStorage as SqlPermissionStorage
+    from .schema import PermissionSchema as PermissionSchema
+    from .sql_backend import SqlBackend as SqlBackend
+    from .sql_base import SqlPermissionStorage as SqlPermissionStorage
+    from .sqlite import SqlitePermissionStorage as SqlitePermissionStorage
 
 __all__ = [
     "CachedPermissionStorage",
     "FilePermissionStorage",
+    "GrantField",
+    "GrantList",
     "MemoryPermissionStorage",
     "MysqlPermissionStorage",
+    "NameList",
+    "PendingRecord",
     "PermissionStorage",
     "PostgresPermissionStorage",
     "RedisPermissionStorage",
+    "RoleRecord",
     "SqlBackend",
     "SqlPermissionStorage",
     "SqlitePermissionStorage",
@@ -51,23 +62,23 @@ def __getattr__(name: str) -> Any:
 
         return RedisPermissionStorage
     if name == "SqlBackend":
-        from .sql import SqlBackend
+        from .sql_backend import SqlBackend
 
         return SqlBackend
     if name == "SqlPermissionStorage":
-        from .sql import SqlPermissionStorage
+        from .sql_base import SqlPermissionStorage
 
         return SqlPermissionStorage
     if name == "SqlitePermissionStorage":
-        from .sql import SqlitePermissionStorage
+        from .sqlite import SqlitePermissionStorage
 
         return SqlitePermissionStorage
     if name == "MysqlPermissionStorage":
-        from .sql import MysqlPermissionStorage
+        from .mysql import MysqlPermissionStorage
 
         return MysqlPermissionStorage
     if name == "PostgresPermissionStorage":
-        from .sql import PostgresPermissionStorage
+        from .postgres import PostgresPermissionStorage
 
         return PostgresPermissionStorage
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

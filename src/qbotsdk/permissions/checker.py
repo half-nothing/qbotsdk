@@ -22,7 +22,7 @@ from .grant import Grant
 from .node import Permission
 
 if TYPE_CHECKING:
-    from .store.base import PermissionStorage
+    from .store import PermissionStorage
 
 __all__ = ["PermissionChecker", "account_of", "candidates"]
 

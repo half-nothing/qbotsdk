@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 
 from pydantic import Field
 
-from qbotsdk.model.base import QQModel
+from qbotsdk.model import QQModel
 
 __all__ = ["SessionData", "SessionStorage"]
 

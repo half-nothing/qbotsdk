@@ -293,7 +293,7 @@ async def test_missing_driver_raises_an_install_hint(monkeypatch: pytest.MonkeyP
     def _boom(*args: object, **kwargs: object) -> None:
         raise ModuleNotFoundError("No module named 'asyncmy'")
 
-    monkeypatch.setattr("qbotsdk.permissions.store.sql.base.create_async_engine", _boom)
+    monkeypatch.setattr("qbotsdk.permissions.store.sql.sql_base.py.create_async_engine", _boom)
     store = MysqlPermissionStorage(database="qbot")
 
     with pytest.raises(ImportError, match=r"pip install qbotsdk\[mysql\]"):

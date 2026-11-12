@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from qbotsdk.permissions.grant import Grant, PendingGrant, Role
+from qbotsdk.permissions import Grant, PendingGrant, Role
 
 from .base import PermissionStorage
 from .wire import GrantField

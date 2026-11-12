@@ -31,8 +31,8 @@ from async_event_bus import EventContext
 
 from .adapter import Adapter, AdapterContext, WebSocketAdapter
 from .api import ApiClient
-from .gateway.dispatcher import Dispatcher
-from .model.event import EventModel, UnknownEvent
+from .gateway import Dispatcher
+from .model import EventModel, UnknownEvent
 from .module import HttpClient
 from .options import ClientOptions
 

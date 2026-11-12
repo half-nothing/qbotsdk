@@ -20,7 +20,7 @@
 
 from __future__ import annotations
 
-from qbotsdk.module.http_client import HttpClient
+from qbotsdk.module import HttpClient
 
 __all__ = ["InteractionResource"]
 

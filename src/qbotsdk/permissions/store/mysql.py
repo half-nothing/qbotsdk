@@ -21,8 +21,8 @@ from typing import TYPE_CHECKING, Any, override
 from sqlalchemy import URL, Table
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 
-from .backend import SqlBackend
-from .base import SqlPermissionStorage
+from .sql_backend import SqlBackend
+from .sql_base import SqlPermissionStorage
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

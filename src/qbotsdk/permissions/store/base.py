@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 from time import monotonic
 from typing import TYPE_CHECKING, override
 
-from qbotsdk.permissions.grant import Grant, PendingGrant, Role
+from qbotsdk.permissions import Grant, PendingGrant, Role
 
 if TYPE_CHECKING:
     from collections.abc import Callable

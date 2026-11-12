@@ -2,10 +2,10 @@
 
 """用 WebSocket 长连接收事件
 
-运行前设置环境变量：
+运行前设置环境变量:
     QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证
-    QQ_BOT_INTENTS                     可选，十进制 intents；不设则用 Intents.DEFAULT
-    QQ_BOT_SESSION_FILE                可选，会话落盘路径；不设则不持久化
+    QQ_BOT_INTENTS                     可选, 十进制 intents;不设则用 Intents.DEFAULT
+    QQ_BOT_SESSION_FILE                可选, 会话落盘路径;不设则不持久化
 """
 
 import asyncio
@@ -26,7 +26,7 @@ from qbotsdk.model.event import (
 )
 from qbotsdk.storage import FileSessionStorage
 
-# 打开 TRACE 级别，输出底层网络日志；只看业务事件可以改成 INFO
+# 打开 TRACE 级别, 输出底层网络日志;只看业务事件可以改成 INFO
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
@@ -37,7 +37,7 @@ def build_adapter() -> WebSocketAdapter:
 
     return WebSocketAdapter(
         intents=int(raw_intents) if raw_intents else None,
-        # 会话落盘, 进程重启后直接 Resume；不设则用内存存储
+        # 会话落盘, 进程重启后直接 Resume;不设则用内存存储
         session_storage=FileSessionStorage(session_file) if session_file else None,
     )
 
@@ -71,7 +71,7 @@ async def main() -> None:
         async def on_interaction(ctx: EventContext[InteractionCreate]) -> None:
             event = ctx.event
             print(f"[互动] type={event.type.name} scene={event.scene}")
-            # 只有消息按钮与快捷菜单需要回应，同一 id 只能回一次
+            # 只有消息按钮与快捷菜单需要回应, 同一 id 只能回一次
             if event.needs_response:
                 await event.respond()
 
@@ -80,7 +80,7 @@ async def main() -> None:
             print(f"[未建模] {ctx.event.t}")
 
         await bot.start()
-        print("WebSocket 已连接，按 Ctrl+C 退出")
+        print("WebSocket 已连接, 按 Ctrl+C 退出")
         await bot.wait_for_exit()
 
 

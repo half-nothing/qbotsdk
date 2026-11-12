@@ -2,9 +2,9 @@
 
 """用 Webhook 方式收群聊 @ 消息
 
-运行前设置环境变量：
+运行前设置环境变量:
     QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证
-    QQ_BOT_CERTFILE / QQ_BOT_KEYFILE   证书与私钥；不设则走明文，仅适合本地调试
+    QQ_BOT_CERTFILE / QQ_BOT_KEYFILE   证书与私钥;不设则走明文, 仅适合本地调试
 """
 
 import asyncio
@@ -18,7 +18,7 @@ from qbotsdk import Bot
 from qbotsdk.adapter import WebhookAdapter
 from qbotsdk.model.event import GroupAtMessageCreate
 
-# 打开 TRACE 级别，输出底层网络日志
+# 打开 TRACE 级别, 输出底层网络日志
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
@@ -47,7 +47,7 @@ async def main() -> None:
             await event.reply(f"收到: {event.content}")
 
         await bot.start()
-        print(f"Webhook 已启动，端口 {bot.adapter.port}")
+        print(f"Webhook 已启动, 端口 {bot.adapter.port}")
         await bot.wait_for_exit()
 
 

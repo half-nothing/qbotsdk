@@ -1,6 +1,6 @@
 # 示例
 
-每个文件都能单独运行，只依赖 `qbotsdk` 本身。公共环境变量：
+每个文件都能单独运行, 只依赖 `qbotsdk` 本身。公共环境变量: 
 
 ```bash
 QQ_BOT_APP_ID=你的AppID
@@ -9,13 +9,13 @@ QQ_BOT_APP_SECRET=你的AppSecret
 
 | 文件                  | 演示内容                                                   |
 |---------------------|--------------------------------------------------------|
-| `hello.py`          | 拉频道、子频道、身份组、群信息，再发消息 / 表态 / 撤回                         |
-| `websocket.py`      | 长连接收四类事件（群 @、单聊、频道 @、互动），带会话落盘                         |
-| `webhook.py`        | 用 `WebhookAdapter` 起回调服务，含 TLS 证书与验签                   |
-| `group_bot.py`      | 群机器人：按钮键盘、按钮回调、富媒体上传、撤回                                |
-| `command_bot.py`    | 命令与权限：事件监听器接命令树、`<text:rest>`、`--` 选项、自定义转换器、子 Router `include` 与守卫、前缀回调、频道命令、内置 `/permission` |
-| `c2c_bot.py`        | 单聊机器人：正在输入、Markdown 回复、回复次数与错误处理                       |
-| `custom_webhook.py` | 把 Webhook 接进自己已有的 aiohttp 应用，只用 SDK 的纯函数与 `dispatcher` |
+| `hello.py`          | 拉频道、子频道、身份组、群信息, 再发消息 / 表态 / 撤回                         |
+| `websocket.py`      | 长连接收四类事件（群 @、单聊、频道 @、互动）, 带会话落盘                         |
+| `webhook.py`        | 用 `WebhookAdapter` 起回调服务, 含 TLS 证书与验签                   |
+| `group_bot.py`      | 群机器人: 按钮键盘、按钮回调、富媒体上传、撤回                                |
+| `command_bot.py`    | 命令与权限: 事件监听器接命令树、`<text:rest>`、`--` 选项、自定义转换器、子 Router `include` 与守卫、前缀回调、频道命令、内置 `/permission` |
+| `c2c_bot.py`        | 单聊机器人: 正在输入、Markdown 回复、回复次数与错误处理                       |
+| `custom_webhook.py` | 把 Webhook 接进自己已有的 aiohttp 应用, 只用 SDK 的纯函数与 `dispatcher` |
 
 ## 各示例额外的环境变量
 
@@ -31,5 +31,5 @@ QQ_BOT_APP_SECRET=你的AppSecret
 
 ## 说明
 
-- 所有示例都用 loguru 输出底层日志，默认`TRACE`，会输出大量网络通讯日志，如果觉得日志太多，可以将级别改成`INFO`
-- `webhook.py` 与 `custom_webhook.py` 的回调地址必须是平台允许的端口，本地调试建议用 `custom_webhook.py` 挂在反向代理后面。
+- 所有示例都用 loguru 输出底层日志, 默认`TRACE`, 会输出大量网络通讯日志, 如果觉得日志太多, 可以将级别改成`INFO`
+- `webhook.py` 与 `custom_webhook.py` 的回调地址必须是平台允许的端口, 本地调试建议用 `custom_webhook.py` 挂在反向代理后面。

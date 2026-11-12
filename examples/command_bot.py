@@ -1,39 +1,38 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""命令与权限示例：事件一等公民、命令树、参数绑定、-- 选项、权限与按钮回调
+"""命令与权限示例: 事件一等公民、命令树、参数绑定、-- 选项、权限与按钮回调
 
-环境变量：
-    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证，必填
-    QQ_BOT_OWNER                       可选，启动时授这个人 permission.*，写完整主体，
+环境变量:
+    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证, 必填
+    QQ_BOT_OWNER                       可选, 启动时授这个人 permission.*, 写完整主体,
                                        如 group:group-openid:member-openid 或 user:openid
-                                       （群里先发 /permission whoami 拿到）
-    QQ_BOT_PERMISSION_FILE             可选，权限落盘的 JSON 路径
-    QQ_BOT_REDIS_URL                   可选，权限与会话都走 Redis，优先于上面两个
-    QQ_BOT_SESSION_FILE                可选，会话落盘路径，默认 .qbotsdk/session.json
+    QQ_BOT_PERMISSION_FILE             可选, 权限落盘的 JSON 路径
+    QQ_BOT_REDIS_URL                   可选, 权限与会话都走 Redis, 优先于上面两个
+    QQ_BOT_SESSION_FILE                可选, 会话落盘路径, 默认 .qbotsdk/session.json
 
-群里发这些指令：
+群里发这些指令:
     /ping                    无权限要求
-    /echo 随便 什么 文本       bind_args=False，原样拿到 argv
+    /echo 随便 什么 文本       bind_args=False, 原样拿到 argv
     /roll                    不带参数
-    /roll 20                 带参数，两条注册表达「可选参数」
-    /greet 小明 --loud --times=3     `--` 选项，注册时声明类型、自动绑到形参
+    /roll 20                 带参数, 两条注册表达「可选参数」
+    /greet 小明 --loud --times=3     `--` 选项, 注册时声明类型、自动绑到形参
     /me                      打印场景键与账号键
     /help                    列出自己有权限用的命令
     /button                  回一条带回调按钮的消息
-    /vote                    回一条前缀回调按钮的消息，载荷形如 vote:yes
-    /shout 你好              自定义转换器，注册成 upper 后把参数转大写
-    /secret                  需要 demo.ping，点过按钮才会被授权
-    /admin ban <@某人>        需要 demo.admin，来自 include 进来的子路由器（守卫只作用在它自己身上）
-    /math add 1 2            子路由器 include 进来，前缀叠加
+    /vote                    回一条前缀回调按钮的消息, 载荷形如 vote:yes
+    /shout 你好              自定义转换器, 注册成 upper 后把参数转大写
+    /secret                  需要 demo.ping, 点过按钮才会被授权
+    /admin ban <@某人>        需要 demo.admin, 来自 include 进来的子路由器
+    /math add 1 2            子路由器 include 进来, 前缀叠加
 
-    频道里发 /say 你好：频道消息走 ChannelContext，只能用 markdown 与 image，
+    频道里发 /say 你好: 频道消息走 ChannelContext, 只能用 markdown 与 image,
     没有键盘、也没有 msg_seq。
 
-    单聊发 /ping、/help 也能用：同一条命令可以同时注册在多个事件类型上。
+    单聊发 /ping、/help 也能用: 同一条命令可以同时注册在多个事件类型上。
 
     /permission show         查看自己的权限
     /permission grant @某人 demo.admin   需要机器人开启「接收全部群消息」才能拿到 @ 信息
-    /permission role add <角色> <权限>    角色是权限的集合，可以继承
+    /permission role add <角色> <权限>    角色是权限的集合, 可以继承
 """
 
 import asyncio
@@ -80,49 +79,51 @@ from qbotsdk.model.keyboard import (
     KeyboardRow,
 )
 from qbotsdk.permissions import (
-    CachedPermissionStorage,
-    FilePermissionStorage,
     Grant,
-    MemoryPermissionStorage,
     Permission,
     PermissionChecker,
     PermissionGroup,
-    PermissionStorage,
     install_permission_commands,
+)
+from qbotsdk.permissions.store import (
+    CachedPermissionStorage,
+    FilePermissionStorage,
+    MemoryPermissionStorage,
+    PermissionStorage,
 )
 from qbotsdk.storage import FileSessionStorage, RedisSessionStorage
 
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
-# 文本命令默认挂的事件：群全量与单聊各有一棵树，互不干扰。
-# 想同时响应多种事件就一起写上，handler 的 ctx 标基类 Context。
+# 文本命令默认挂的事件: 群全量与单聊各有一棵树, 互不干扰。
+# 想同时响应多种事件就一起写上, handler 的 ctx 标基类 Context。
 TEXT_EVENTS = (GroupMessageCreate, C2CMessageCreate)
 
 
 class Demo(PermissionGroup, namespace="demo"):
-    """示例权限键：demo.ping、demo.admin，声明在类体里，导入即注册。"""
+    """示例权限键: demo.ping、demo.admin, 声明在类体里, 导入即注册。"""
 
     PING = Permission("ping", "点过按钮才拿得到的演示权限")
-    ADMIN = Permission("admin", "管理命令，可继承")
+    ADMIN = Permission("admin", "管理命令, 可继承")
 
 
 class ClickPayload(BaseModel):
-    """按钮载荷；`action` 用 Literal 声明，路由器靠它把回调分给本模型。"""
+    """按钮载荷;`action` 用 Literal 声明, 路由器靠它把回调分给本模型。"""
 
     action: Literal["demo.click"]
     note: str = ""
 
 
 def build_store() -> CachedPermissionStorage:
-    """权限存储：Redis > 文件 > 内存，外层统一套一层缓存。"""
+    """权限存储: Redis > 文件 > 内存, 外层统一套一层缓存。"""
 
     redis_url = os.environ.get("QQ_BOT_REDIS_URL")
     path = os.environ.get("QQ_BOT_PERMISSION_FILE")
     store: PermissionStorage
     if redis_url:
-        # 惰性导入：没装 qbotsdk[redis] 时只有走到这里才会报错
-        from qbotsdk.permissions import RedisPermissionStorage
+        # 惰性导入: 没装 qbotsdk[redis] 时只有走到这里才会报错
+        from qbotsdk.permissions.store import RedisPermissionStorage
 
         store = RedisPermissionStorage(redis_url)
     elif path:
@@ -133,7 +134,7 @@ def build_store() -> CachedPermissionStorage:
 
 
 def build_adapter() -> WebSocketAdapter:
-    """长连接适配器：会话信息同样可以放 Redis 或文件。"""
+    """长连接适配器: 会话信息同样可以放 Redis 或文件。"""
 
     redis_url = os.environ.get("QQ_BOT_REDIS_URL")
     if redis_url:
@@ -143,7 +144,7 @@ def build_adapter() -> WebSocketAdapter:
 
 
 def build_keyboard() -> Keyboard:
-    """一个回调按钮，点击后走 INTERACTION_CREATE。"""
+    """一个回调按钮, 点击后走 INTERACTION_CREATE。"""
 
     button = Button(
         id="click",
@@ -158,9 +159,9 @@ def build_keyboard() -> Keyboard:
 
 
 class UppercaseConverter:
-    """自定义转换器：只要 `annotation` 与一个纯函数 `parse`。
+    """自定义转换器: 只要 `annotation` 与一个纯函数 `parse`。
 
-    转换器拿不到事件，转换失败就抛异常，路由器会把它变成用法提示。
+    转换器拿不到事件, 转换失败就抛异常, 路由器会把它变成用法提示。
     """
 
     annotation = str
@@ -170,7 +171,7 @@ class UppercaseConverter:
 
 
 def build_vote_keyboard() -> Keyboard:
-    """前缀回调按钮：载荷可以是任意字符串，命中 `vote:` 前缀就算这个回调。"""
+    """前缀回调按钮: 载荷可以是任意字符串, 命中 `vote:` 前缀就算这个回调。"""
 
     buttons = [
         Button(
@@ -188,7 +189,7 @@ def build_vote_keyboard() -> Keyboard:
 
 
 async def timing(ctx: Context, call_next: Callable[[Context], Awaitable[Reply]]) -> Reply:
-    """中间件：包住匹配之后的整条管线，异常照常往上抛。"""
+    """中间件: 包住匹配之后的整条管线, 异常照常往上抛。"""
 
     started = time.perf_counter()
     reply = await call_next(ctx)
@@ -201,21 +202,21 @@ async def timing(ctx: Context, call_next: Callable[[Context], Awaitable[Reply]])
 
 
 async def require_group(ctx: Context) -> None:
-    """守卫：在进入 handler 之前拒绝整类场景。"""
+    """守卫: 在进入 handler 之前拒绝整类场景。"""
 
     if ctx.kind != "group":
         raise GuardFailed("admin commands only work in groups")
 
 
 def build_router(store: CachedPermissionStorage) -> Router:
-    """一个路由器装下所有命令；子路由器通过 include 并进来。"""
+    """一个路由器装下所有命令;子路由器通过 include 并进来。"""
 
     checker = PermissionChecker(store)
     router = Router(
         checker=checker,
         reply_unknown=True,
-        # 内置文案可以整条替换；这里演示只换「未知命令」那一句
-        messages=Messages(unknown_command="没有这条命令，发 /help 看看。"),
+        # 内置文案可以整条替换;这里演示只换「未知命令」那一句
+        messages=Messages(unknown_command="没有这条命令, 发 /help 看看。"),
     )
     router.use(timing)
     router.add_converter("upper", UppercaseConverter())
@@ -233,12 +234,12 @@ def build_router(store: CachedPermissionStorage) -> Router:
         description="原样回显",
     )
     async def echo(ctx: GroupContext, argv: list[str]) -> Reply:
-        # bind_args=False：<text:rest> 收到的 token 原样进 argv，转换与关键字绑定都跳过
+        # bind_args=False: <text:rest> 收到的 token 原样进 argv, 转换与关键字绑定都跳过
         return Reply(text=" ".join(argv) or "(空)")
 
     @router.command("roll", on=TEXT_EVENTS, usage="roll [<sides:int>]", description="掷骰子")
     async def roll(ctx: Context) -> Reply:
-        # 可选参数靠注册第二条命令表达，不在模板里写默认值
+        # 可选参数靠注册第二条命令表达, 不在模板里写默认值
         return Reply(text=f"掷出了 {random.randint(1, 6)}")
 
     @router.command(
@@ -249,7 +250,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
     )
     async def roll_sides(ctx: Context, sides: int) -> Reply:
         if sides < 2:
-            # UsageError 回用法行，其它异常统一回 internal_error
+            # UsageError 回用法行, 其它异常统一回 internal_error
             raise UsageError("sides must be at least 2")
         return Reply(text=f"掷出了 {random.randint(1, sides)}")
 
@@ -261,8 +262,8 @@ def build_router(store: CachedPermissionStorage) -> Router:
         description="演示 -- 选项",
     )
     async def greet(ctx: GroupContext, name: str, *, loud: bool = False, times: int = 1) -> Reply:
-        # 选项在注册时声明类型，匹配阶段收走 --loud / --times=3，转换后按名字绑到这里
-        lines = [f"你好，{name}！" if not loud else f"你好，{name}！".upper()]
+        # 选项在注册时声明类型, 匹配阶段收走 --loud / --times=3, 转换后按名字绑到这里
+        lines = [f"你好, {name}!" if not loud else f"你好, {name}!".upper()]
         return Reply(text="\n".join(lines * max(1, min(times, 5))))
 
     @router.command("me", on=TEXT_EVENTS, description="看看自己的权限主体")
@@ -286,7 +287,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
                 continue
             usage = route.usage or route.name
             if usage in seen:
-                # 同一个 handler 注册了两条路径时，usage 可能一样
+                # 同一个 handler 注册了两条路径时, usage 可能一样
                 continue
             seen.add(usage)
             lines.append(f"/{usage}  {route.description}".rstrip())
@@ -304,7 +305,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
         "shout <text:upper>",
         on=TEXT_EVENTS,
         usage="shout <text>",
-        description="自定义转换器，把参数转大写",
+        description="自定义转换器, 把参数转大写",
     )
     async def shout(ctx: Context, text: str) -> Reply:
         return Reply(text=text)
@@ -316,7 +317,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
         description="频道消息只能用 markdown 与 image",
     )
     async def say(ctx: ChannelContext, text: tuple[str, ...]) -> Reply:
-        # ChannelContext.reply 只接受 content / markdown / image，传键盘会被类型检查拦下
+        # ChannelContext.reply 只接受 content / markdown / image, 传键盘会被类型检查拦下
         return Reply(text=f"**{' '.join(text)}**", markdown=True)
 
     @router.command(
@@ -330,20 +331,20 @@ def build_router(store: CachedPermissionStorage) -> Router:
 
     @router.button(ClickPayload, ack="pre")
     async def on_click(ctx: InteractionContext, payload: ClickPayload) -> Reply:
-        # 互动事件发不出消息；ack="pre" 已经替我们回了 OK，这里只做业务
+        # 互动事件发不出消息;ack="pre" 已经替我们回了 OK, 这里只做业务
         await store.grant(ctx.principal, Grant(Demo.PING.key))
         logger.info("button clicked by {} note={}", ctx.principal, payload.note)
         return Reply.ok()
 
     @router.button_prefix("vote", ack="pre")
     async def on_vote(ctx: InteractionContext, payload: str) -> Reply:
-        # 前缀回调拿到的就是原始 data，这里形如 vote:yes；
-        # ack="pre" 会先替我们回 OK，handler 只写日志
+        # 前缀回调拿到的就是原始 data, 这里形如 vote:yes;
+        # ack="pre" 会先替我们回 OK, handler 只写日志
         _, _, value = payload.partition(":")
         logger.info("{} voted {}", ctx.principal, value)
         return Reply.ok()
 
-    # 子路由器：include 时前缀叠加，父级的 checker 与中间件会继承下去
+    # 子路由器: include 时前缀叠加, 父级的 checker 与中间件会继承下去
     math = Router()
 
     @math.command("add <a:int> <b:int>", on=GroupMessageCreate, description="加法")
@@ -352,7 +353,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
 
     router.include(math, prefix="math")
 
-    # 管理员子路由器：守卫挂在它自己身上，include 后只作用于这里的路由
+    # 管理员子路由器: 守卫挂在它自己身上, include 后只作用于这里的路由
     admin = Router()
     admin.guard(require_group)
 
@@ -361,7 +362,7 @@ def build_router(store: CachedPermissionStorage) -> Router:
         on=(GroupMessageCreate, C2CMessageCreate),
         permission=Demo.ADMIN,
         usage="admin ban <@成员>",
-        description="踢人（演示用）",
+        description="踢人(演示用)",
     )
     async def ban(ctx: Context, member: str) -> Reply:
         return Reply(text=f"ban {member}")
@@ -375,7 +376,7 @@ async def main() -> None:
     store = build_store()
     router = build_router(store)
 
-    # 第一个管理员：/permission grant 要 permission.grant，没有这一行就只能手动塞存储；
+    # 第一个管理员: /permission grant 要 permission.grant, 没有这一行就只能手动塞存储;
     # 授 permission.* 等于把 show / grant / revoke / role 四个键一起给
     owner = os.environ.get("QQ_BOT_OWNER", "").strip()
     if owner:
@@ -387,9 +388,9 @@ async def main() -> None:
         app_secret=os.environ["QQ_BOT_APP_SECRET"],
         adapter=build_adapter(),
     ) as bot:
-        # 命令层不自己订阅事件：在自己的回调里决定要不要交给它，
+        # 命令层不自己订阅事件: 在自己的回调里决定要不要交给它,
         # 这样同一个事件还能先做记录、过滤或别的处理。
-        # 多个 Router 就按顺序试，前一个返回 not_found 再交给下一个。
+        # 多个 Router 就按顺序试, 前一个返回 not_found 再交给下一个。
         @bot.on(GroupMessageCreate)
         async def on_group_message(ctx: EventContext[GroupMessageCreate]) -> None:
             result = await router.handle(ctx.event)
@@ -406,7 +407,7 @@ async def main() -> None:
 
         @bot.on(ChannelMessageCreate)
         async def on_channel_message(ctx: EventContext[ChannelMessageCreate]) -> None:
-            # 频道消息同样交给同一个路由器：命令按事件类型分树，互不干扰
+            # 频道消息同样交给同一个路由器: 命令按事件类型分树, 互不干扰
             result = await router.handle(ctx.event)
             if not result.handled:
                 logger.debug("not a command (channel): {}", ctx.event.content)
@@ -418,8 +419,8 @@ async def main() -> None:
                 logger.debug("unclaimed button: {}", ctx.event.data)
 
         await bot.start()
-        print("已连接，群里试 /ping、/roll 20、/greet 小明 --loud、/echo 你好、/help")
-        print("  /button 之后用 /secret 看动态授权；/math add 1 2 看 include")
+        print("已连接, 群里试 /ping、/roll 20、/greet 小明 --loud、/echo 你好、/help")
+        print("  /button 之后用 /secret 看动态授权;/math add 1 2 看 include")
         print("  /permission grant @某人 demo.admin   # 需要机器人开启接收全部群消息")
         await bot.wait_for_exit()
 

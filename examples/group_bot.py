@@ -1,18 +1,18 @@
 # Copyright (c) 2026-present Half_nothing.
 
-"""群聊机器人：被动回复、按钮键盘、按钮回调、富媒体与撤回
+"""群聊机器人: 被动回复、按钮键盘、按钮回调、富媒体与撤回
 
-环境变量：
-    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证，必填
-    QQ_BOT_IMAGE_PATH                  可选，收到 /image 时上传的本地图片路径
-    QQ_BOT_SESSION_FILE                可选，会话落盘路径，重启后直接 Resume
+环境变量:
+    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证, 必填
+    QQ_BOT_IMAGE_PATH                  可选, 收到 /image 时上传的本地图片路径
+    QQ_BOT_SESSION_FILE                可选, 会话落盘路径, 重启后直接 Resume
 
-在群里 @ 机器人发这些指令：
+在群里 @ 机器人发这些指令:
     /button   回一条带两个按钮的消息
-    /image    上传 QQ_BOT_IMAGE_PATH 指向的图片，再以富媒体消息发出去
+    /image    上传 QQ_BOT_IMAGE_PATH 指向的图片, 再以富媒体消息发出去
     /recall   撤回机器人上一条 /button 消息
     其它文本  原样回一句
-点按钮会走 INTERACTION_CREATE，示例里回应一下再打印按钮数据。
+点按钮会走 INTERACTION_CREATE, 示例里回应一下再打印按钮数据。
 """
 
 import asyncio
@@ -25,9 +25,7 @@ from loguru import logger
 
 from qbotsdk import Bot
 from qbotsdk.adapter import WebSocketAdapter
-from qbotsdk.model import MessageMarkdown
-from qbotsdk.model.event import GroupAtMessageCreate, InteractionCreate
-from qbotsdk.model.keyboard import (
+from qbotsdk.model import (
     Button,
     ButtonAction,
     ButtonActionType,
@@ -35,23 +33,27 @@ from qbotsdk.model.keyboard import (
     ButtonPermissionType,
     ButtonRenderData,
     ButtonStyle,
+    FileType,
+    GroupAtMessageCreate,
+    InteractionCreate,
     Keyboard,
     KeyboardContent,
     KeyboardRow,
+    MediaInfo,
+    MessageMarkdown,
 )
-from qbotsdk.model.media import FileType, MediaInfo
 from qbotsdk.storage import FileSessionStorage
 
-# 打开 TRACE 级别，输出底层网络日志；只看业务输出可以改成 INFO
+# 打开 TRACE 级别, 输出底层网络日志;只看业务输出可以改成 INFO
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
-# 记下机器人自己发出去的消息，撤回时要用 message id
+# 记下机器人自己发出去的消息, 撤回时要用 message id
 _sent: dict[str, str] = {}
 
 
 def build_keyboard() -> Keyboard:
-    """两个按钮：一个回调本机，一个打开链接。"""
+    """两个按钮: 一个回调本机, 一个打开链接。"""
 
     callback = Button(
         id="ping",
@@ -85,7 +87,7 @@ def build_keyboard() -> Keyboard:
 def build_adapter() -> WebSocketAdapter:
     session_file = os.environ.get("QQ_BOT_SESSION_FILE")
     return WebSocketAdapter(
-        # 会话落盘，进程重启后直接 Resume；不设则用内存存储
+        # 会话落盘, 进程重启后直接 Resume;不设则用内存存储
         session_storage=FileSessionStorage(session_file) if session_file else None,
     )
 
@@ -93,7 +95,7 @@ def build_adapter() -> WebSocketAdapter:
 async def send_button(bot: Bot, event: GroupAtMessageCreate) -> None:
     receipt = await bot.api.group.send_message(
         event.group_openid,
-        # 按钮只在 Markdown 消息上渲染；只给 content 的话 SDK 会自动升成 Markdown
+        # 按钮只在 Markdown 消息上渲染;只给 content 的话 SDK 会自动升成 Markdown
         markdown=MessageMarkdown(content="**试试下面的按钮**"),
         keyboard=build_keyboard(),
         reply_to=event.id,
@@ -105,11 +107,11 @@ async def send_button(bot: Bot, event: GroupAtMessageCreate) -> None:
 async def send_image(bot: Bot, event: GroupAtMessageCreate) -> None:
     raw_path = os.environ.get("QQ_BOT_IMAGE_PATH")
     if not raw_path:
-        await event.reply("没有设置 QQ_BOT_IMAGE_PATH，跳过富媒体演示")
+        await event.reply("没有设置 QQ_BOT_IMAGE_PATH, 跳过富媒体演示")
         return
 
     path = Path(raw_path)
-    # 上传拿 file_info，再拿它发一条富媒体消息
+    # 上传拿 file_info, 再拿它发一条富媒体消息
     uploaded = await bot.api.group.upload_file(
         event.group_openid,
         FileType.IMAGE,
@@ -148,7 +150,7 @@ async def main() -> None:
                 else:
                     await event.reply("还没有可撤回的消息")
             else:
-                await event.reply(f"收到：{text}")
+                await event.reply(f"收到: {text}")
 
         @bot.on(InteractionCreate)
         async def on_interaction(ctx: EventContext[InteractionCreate]) -> None:
@@ -156,12 +158,12 @@ async def main() -> None:
             data = event.data.resolved.button_data if event.data and event.data.resolved else None
             print(f"[按钮] type={event.type.name} data={data}")
 
-            # 消息按钮与快捷菜单必须回应，否则客户端一直转圈
+            # 消息按钮与快捷菜单必须回应, 否则客户端一直转圈
             if event.needs_response:
                 await event.respond()
 
         await bot.start()
-        print("WebSocket 已连接，在群里 @ 机器人试试 /button、/image、/recall")
+        print("WebSocket 已连接, 在群里 @ 机器人试试 /button、/image、/recall")
         await bot.wait_for_exit()
 
 

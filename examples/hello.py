@@ -2,12 +2,12 @@
 
 """REST 只读接口与发消息演示
 
-环境变量：
-    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证，必填
-    QQ_BOT_CHANNEL_ID                  可选，设置后在该子频道发一条消息、表态、再撤回
-    QQ_BOT_GROUP_OPENID                可选，设置后列出群信息、机器人在群内的状态与成员
+环境变量:
+    QQ_BOT_APP_ID / QQ_BOT_APP_SECRET  机器人凭证, 必填
+    QQ_BOT_CHANNEL_ID                  可选, 设置后在该子频道发一条消息、表态、再撤回
+    QQ_BOT_GROUP_OPENID                可选, 设置后列出群信息、机器人在群内的状态与成员
 
-群 openid 只能从消息事件里拿到，官方没有群列表接口，所以示例用环境变量指定一个群。
+群 openid 只能从消息事件里拿到, 官方没有群列表接口, 所以示例用环境变量指定一个群。
 """
 
 import asyncio
@@ -17,9 +17,9 @@ import sys
 from loguru import logger
 
 from qbotsdk import Bot
-from qbotsdk.model.reaction import EmojiType
+from qbotsdk.model import EmojiType
 
-# 打开 TRACE 级别，输出底层网络日志；只看业务输出可以改成 INFO
+# 打开 TRACE 级别, 输出底层网络日志;只看业务输出可以改成 INFO
 logger.remove()
 logger.add(sys.stderr, level="TRACE")
 
@@ -37,7 +37,7 @@ async def demo_channel(bot: Bot, channel_id: str) -> None:
     message = await bot.api.channel.send_message(channel_id, content="来自 qbotsdk 的问好")
     print(f"已发送: id={message.id} channel={message.channel_id}")
 
-    # 表态只作用于频道消息，emoji_id 是表情代码
+    # 表态只作用于频道消息, emoji_id 是表情代码
     await bot.api.reaction.add(channel_id, message.id, EmojiType.SYSTEM, "4")
     users = await bot.api.reaction.users(channel_id, message.id, EmojiType.SYSTEM)
     print(f"表态成功: {users.users[0].username if users.users else '(列表为空)'}")
@@ -74,13 +74,13 @@ async def main() -> None:
         if channel_id:
             await demo_channel(bot, channel_id)
         else:
-            print("未设置 QQ_BOT_CHANNEL_ID，跳过发消息与表态演示")
+            print("未设置 QQ_BOT_CHANNEL_ID, 跳过发消息与表态演示")
 
         group_openid = os.environ.get("QQ_BOT_GROUP_OPENID")
         if group_openid:
             await show_group(bot, group_openid)
         else:
-            print("未设置 QQ_BOT_GROUP_OPENID，跳过群信息演示")
+            print("未设置 QQ_BOT_GROUP_OPENID, 跳过群信息演示")
 
 
 if __name__ == "__main__":

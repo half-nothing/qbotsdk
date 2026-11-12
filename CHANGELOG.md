@@ -1,17 +1,32 @@
 # 更新日志
 
-## [未发布]
+## [1.0.0] - 2026-11-12
+
+首个稳定版本: 公开 API 全部显式声明, 若干历史接口按计划移除。升级前请先对照下面的破坏性变更。
+
+### 破坏性变更
+
+- 移除已弃用的 `Bot.get_me`, 需要当前机器人信息时改用 `bot.api.user.me()`。
+- `HTTPClient` 更名为 `HttpClient`, 原类名与 `from qbotsdk.module import HTTPClient` 不再可用。
+- `SessionStorage.close` 改为抽象方法, 自定义会话存储必须显式实现 `close()`。
+- 移除 `qbotsdk.permissions.store.sql` 子包, SQL 存储改为 `qbotsdk.permissions.store` 下的独立模块（`sqlite`、`mysql`、`postgres`、`sql_base`、`sql_backend`）, 原先从该子包导入的代码需改用新路径或包级导出。
+- 命令占位符转换器改为静态方法并按类注册: `Converter.parse` 与内建转换器都标成 `@staticmethod`, `DEFAULT_CONVERTERS` 存的是类本身（`dict[str, type[Converter]]`）, `add_converter` 接收转换器类而非实例, 例如 `router.add_converter("upper", UppercaseConverter)`。
+- `RedisPermissionStorage` 的构造方式与会话存储对齐: `__init__(client, *, key="qbotsdk:permissions")` 接现成的 `redis.asyncio.Redis`, 新增 `client` 属性与 `from_url(...)` 类方法, URL 拼装与校验复用 `qbotsdk.module.redis_url`, unix socket 地址改为 `unix://...?db=` 并支持 `protocol` 2/3。原先的 `RedisPermissionStorage(redis_url)` 需要改成 `RedisPermissionStorage.from_url(redis_url)`。
+- 群聊与单聊的 `upload_file()` 移除 `file_data`, 二进制内容改由新增的 `file` 参数接收（`str`、`Path`、`BinaryIO` 或 `bytes`）。
 
 ### 变更
 
-- 类型检查器由 mypy 换成 pyrefly: `make typecheck`、`check.yml`、`release.yml` 统一改为 `pyrefly check`, 开发依赖换成 `pyrefly>=1.4.1,<1.5`。`pdm run mypy` 的 3.5 秒降到 `pdm run pyrefly check` 的 2.5 秒, 检查本身 0.75 秒（本地 142 个文件）。
+- 公开 API 显式化: 包内各模块补齐 `__all__` 与 `X as X` 重导出, 适配器模块补许可证头; `ApiClient` 迁到 `qbotsdk.api.api`, 对外仍从 `qbotsdk.api` 导入; `qbotsdk.model.parse_event` 对外导出。
+- 权限存储布局整理: SQL 实现从 `store.sql` 子包拆成独立模块, `PermissionSchema`、`SqlBackend`、`SqlPermissionStorage` 与 wire 类型统一从 `qbotsdk.permissions.store` 导出, Redis 与 SQL 实现保持惰性导入。
+- 新增 `qbotsdk.module.redis_url`: `build_redis_url()` 与 `build_redis_unix_url()` 统一生成并校验 Redis 连接地址, 会话存储与权限存储共用, 认证信息按 URL 规则转义。
+- 富媒体分片上传: 群聊与单聊的 `upload_file()` 按文件大小自动选择 JSON 直传或预上传 + 并发分片 + 合并, 摘要由 SDK 单遍计算, 新增 `progress(done, total)` 回调; `ClientOptions` 新增 `upload_concurrency`（默认 4, 实际取服务端 `upload_config.concurrency` 的较小值）; `srv_send_msg=True` 的发送计入本地限流与发送记录。
+- 类型检查器由 mypy 换成 pyrefly: `make typecheck`、`check.yml`、`release.yml` 统一改为 `pyrefly check`, 开发依赖换成 `pyrefly>=1.4.1,<1.5`。`pdm run mypy` 的 3.5 秒降到 `pdm run pyrefly check` 的 2.5 秒, 检查本身 0.75 秒。
 - 按 pyrefly 的 `preset = "strict"` 补齐实现类的 `@override` 标记;冻结模型赋值测试改用 `# pyrefly: ignore[read-only]` 注明是故意触发校验。
-- 命令占位符转换器改为静态方法调用: `Converter.parse` 在协议与内建实现里都标成 `@staticmethod`, `DEFAULT_CONVERTERS` 存的是类本身（`dict[str, type[Converter]]`）, 注册自定义转换器不再需要实例化——`router.add_converter("upper", UppercaseConverter)`。
-- `RedisPermissionStorage` 的构造方式与会话存储对齐: `__init__(client, *, key="qbotsdk:permissions")` 接现成的 `redis.asyncio.Redis`, 新增 `client` 属性与 `from_url(...)` 类方法, URL 拼装与校验复用 `qbotsdk.module.redis_url`, unix socket 地址改为 `unix://...?db=` 并支持 `protocol` 2/3。**破坏性**: 构造函数的第一个位置参数由 URL 换成客户端, 原先的 `RedisPermissionStorage(redis_url)` 需要改成 `RedisPermissionStorage.from_url(redis_url)`。
+- pydantic 升到 2.14.3（pydantic-core 2.50.4）, 开发依赖移除 mypy 及其传递依赖;常量用 `Final` 标注, 限流键改用 `Literal` 约束。
 
 ### 修复
 
-- `INTERACTION_CREATE` 兼容官方未定义的互动类型: 点进机器人设置页时网关会推送 `data.type = 2001`, 此前 pydantic 按 `InteractionType` 枚举校验失败, 整条事件被 `Dispatcher` 当作畸形帧丢弃;现在 `type` 字段先按枚举解析, 未知值保留为原始整数, 不影响 `needs_response` 的判断。
+- `INTERACTION_CREATE` 兼容官方未定义的互动类型: 点进机器人设置页时网关会推送 `data.type = 2001`, 此前 pydantic 按 `InteractionType` 枚举校验失败, 整条事件被 `Dispatcher` 当作畸形帧丢弃。
 
 ## [0.9.1] - 2026-11-08
 
@@ -131,6 +146,7 @@
 - `Bot` 默认使用 `WebSocketAdapter()`;`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[1.0.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v1.0.0
 [0.9.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.1
 [0.9.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.0
 [0.8.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.8.0

@@ -44,6 +44,8 @@ class ClientOptions:
     max_retry_after: float = 30.0
     # POST 是否参与 5xx 与网络异常重试
     retry_post: bool = False
+    # 分片上传的并发, 实际取它与服务端下发 concurrency 的较小值
+    upload_concurrency: int = 4
     # 主动消息是否走本地令牌桶; 关掉就完全交给服务端频控
     respect_rate_limits: bool = True
     # 覆盖默认限流(条/分钟), 键为 "group" 与 "c2c", 0 表示不限
@@ -65,6 +67,8 @@ class ClientOptions:
             raise ValueError("backoff values must not be negative")
         if self.max_retry_after < 0:
             raise ValueError("max_retry_after must not be negative")
+        if self.upload_concurrency < 1:
+            raise ValueError("upload_concurrency must be at least 1")
         for scope, limit in (self.rate_limits or {}).items():
             if limit < 0:
                 raise ValueError(f"rate limit for {scope} must not be negative")

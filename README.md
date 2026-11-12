@@ -505,6 +505,33 @@ RedisPermissionStorage(Redis(host="10.0.0.5", port=6379))
 按钮与快捷菜单回调用 `router.button(载荷模型)` 注册, handler 里写 `return Reply(text="已处理")`
 或 `await ctx.reply("已处理")` 都可以, 框架按 `ack` 策略把它变成客户端回应。
 
+## 富媒体上传
+
+群聊与单聊的 `upload_file()` 在 `url` 和 `file` 之间二选一: 传 `url` 时由平台自行抓取; 传 `file` 时
+SDK 按大小自动选择直传还是分片（`str` / `Path` 按路径读文件, `BinaryIO` 需要可 seek, 也可以直接给
+`bytes`）, 调用方不必关心底层走哪条路径。
+
+```python
+from pathlib import Path
+
+from qbotsdk import Bot
+from qbotsdk.model.media import FileType, MediaInfo
+
+async with Bot(app_id="app", app_secret="secret") as bot:
+    # 本地文件, 超过 5MB 自动走预上传 + 分片 + 合并
+    uploaded = await bot.api.group.upload_file(
+        "group-openid",
+        FileType.FILE,
+        file=Path("./report.pdf"),
+        progress=lambda done, total: print(f"{done}/{total}"),
+    )
+    await bot.api.group.send_message("group-openid", media=MediaInfo(file_info=uploaded.file_info))
+```
+
+不传 `file_name` 时取文件名; 分片用的 `md5` / `sha1` / `md5_10m` 由 SDK 单遍读取计算, 不接受调用方
+传入。分片并发取 `ClientOptions(upload_concurrency=4)` 与服务端下发的 `upload_config.concurrency`
+的较小值。`srv_send_msg=True` 表示平台把文件直接发进会话, 这次发送会计入本地限流与发送记录。
+
 ## 本地限流
 
 发消息前 `RateLimiter` 会依次检查三层限制, 任何一层没额度都会在本地拦下, 请求不会发出: 

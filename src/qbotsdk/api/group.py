@@ -16,8 +16,9 @@
 
 from __future__ import annotations
 
-import base64
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from pathlib import Path
+from typing import BinaryIO
 
 from qbotsdk.exceptions import QQBotError
 from qbotsdk.model import (
@@ -39,12 +40,9 @@ from qbotsdk.model import (
 from qbotsdk.module import HttpClient, RateLimiter, SendHook, SendRecord, notify_send, paginate
 
 from ._parse import expect_object
+from ._upload import open_source, upload_file_content, upload_file_url
 
 __all__ = ["GroupResource"]
-
-# 二进制直传上限, 官方文档对图片/语音写 20MB、视频 30MB、文件 200MB
-# 但 file_data 字段本身限制 5MB, 超过要走 url 或分片上传。
-_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
 class GroupResource:
@@ -267,46 +265,68 @@ class GroupResource:
         /,
         *,
         url: str | None = None,
-        file_data: bytes | None = None,
+        file: str | Path | BinaryIO | bytes | None = None,
         file_name: str | None = None,
         srv_send_msg: bool = False,
+        progress: Callable[[int, int], None] | None = None,
     ) -> UploadedFile:
         """上传群富媒体(图片 / 视频 / 语音 / 文件)。
 
-        url 与 file_data 二选一, 前者交给服务端下载, 后者 base64 编码后随 JSON 直传, 上限 5MB。
-        返回的 file_info 直接填进 send_message 的 media。
-        srv_send_msg=True 时服务端上传后立即发送, 会占用主动消息频次。
+        url 与 file 二选一: url 交给服务端下载; file 由 SDK 按体积自动选择
+        base64 直传或预上传分片, 调用方不需要关心差别。
+        分片所需的 md5 / sha1 / md5_10m 由 SDK 计算, 不接受调用方传入。
+        srv_send_msg=True 时服务端上传后立即发送, 会占用主动消息频次并产生发送记录。
         """
 
-        if (url is None) == (file_data is None):
-            raise ValueError("upload_file needs exactly one of url or file_data")
+        if (url is None) == (file is None):
+            raise ValueError("upload_file needs exactly one of url or file")
 
         path = f"/v2/groups/{group_openid}/files"
+        if srv_send_msg and self._limiter is not None:
+            self._limiter.check("group", group_openid, active=True)
 
-        if url is not None:
-            payload = await self._http.post(
-                path,
-                json={
-                    "file_type": int(file_type),
-                    "url": url,
-                    "srv_send_msg": srv_send_msg,
-                },
-            )
-            return UploadedFile.model_validate(expect_object(payload, path))
-
-        assert file_data is not None  # 由上面的二选一校验保证
-        if len(file_data) > _MAX_UPLOAD_BYTES:
-            raise ValueError("file_data must not exceed 5 MB, use url instead")
-        if file_name is None:
-            raise ValueError("file_data needs file_name so the server can infer the type")
-
-        payload = await self._http.post(
-            path,
-            json={
-                "file_type": int(file_type),
-                "file_data": base64.b64encode(file_data).decode("ascii"),
-                "file_name": file_name,
-                "srv_send_msg": srv_send_msg,
-            },
-        )
-        return UploadedFile.model_validate(expect_object(payload, path))
+        uploaded: UploadedFile | None = None
+        error: QQBotError | None = None
+        try:
+            if url is not None:
+                uploaded = await upload_file_url(
+                    self._http,
+                    files_path=path,
+                    file_type=file_type,
+                    url=url,
+                    srv_send_msg=srv_send_msg,
+                )
+            else:
+                assert file is not None
+                source = open_source(file, file_name)
+                try:
+                    uploaded = await upload_file_content(
+                        self._http,
+                        prefix=f"/v2/groups/{group_openid}",
+                        files_path=path,
+                        file_type=file_type,
+                        source=source,
+                        srv_send_msg=srv_send_msg,
+                        progress=progress,
+                    )
+                finally:
+                    source.close()
+        except QQBotError as exc:
+            error = exc
+            raise
+        finally:
+            if srv_send_msg and (uploaded is not None or error is not None):
+                await notify_send(
+                    self._hook,
+                    SendRecord(
+                        scope="group",
+                        target=group_openid,
+                        path=path,
+                        proactive=True,
+                        message=None,
+                        message_id=uploaded.id if uploaded is not None else None,
+                        error=error,
+                    ),
+                )
+        assert uploaded is not None
+        return uploaded

@@ -308,6 +308,38 @@ class HttpClient:
 
         return await self.request("POST", path, form=form)
 
+    async def put_bytes(self, url: str, data: bytes, *, timeout: float | None = None) -> None:
+        """向绝对地址 PUT 裸字节, 用于 COS 预签名地址。
+
+        预签名地址自带签名, 不能再带 QQ 的 Authorization 头, 响应也不保证是 JSON,
+        因此不复用 `request`: 不拼 BASE_URL、不加鉴权、不解析包体。
+        """
+
+        if not url.startswith(("http://", "https://")):
+            raise ValueError("put_bytes needs an absolute http or https url")
+        session = await self._get_session()
+        logger.trace("Upload PUT {} bytes={}", url, len(data))
+        try:
+            if timeout is None:
+                request = session.put(url, data=data)
+            else:
+                request = session.put(url, data=data, timeout=ClientTimeout(total=timeout))
+            async with request as resp:
+                if resp.status >= 400:
+                    text = (await resp.text())[:200]
+                    raise TransportError(
+                        f"PUT {url} failed with status {resp.status}: {text}",
+                        method="PUT",
+                        path=url,
+                    )
+        except (ClientError, TimeoutError) as exc:
+            raise TransportError(
+                f"PUT {url} failed: {exc!r}",
+                method="PUT",
+                path=url,
+                cause=exc,
+            ) from exc
+
     async def _send(
         self,
         method: str,

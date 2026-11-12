@@ -115,7 +115,10 @@ from .markup import TextChain as TextChain
 from .markup import TextNode as TextNode
 from .media import FileType as FileType
 from .media import MediaInfo as MediaInfo
+from .media import UploadConfig as UploadConfig
 from .media import UploadedFile as UploadedFile
+from .media import UploadPart as UploadPart
+from .media import UploadPrepare as UploadPrepare
 from .member import Member as Member
 from .message import GroupMessageReceipt as GroupMessageReceipt
 from .message import Message as Message
@@ -265,6 +268,9 @@ __all__ = [
     "TextNode",
     "Token",
     "UnknownEvent",
+    "UploadConfig",
+    "UploadPart",
+    "UploadPrepare",
     "UploadedFile",
     "User",
     "UserMessageDraft",

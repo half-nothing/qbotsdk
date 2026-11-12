@@ -20,6 +20,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from pathlib import Path
+from typing import BinaryIO
+
 from qbotsdk.exceptions import QQBotError
 from qbotsdk.model import (
     FileType,
@@ -34,6 +38,7 @@ from qbotsdk.model import (
 from qbotsdk.module import HttpClient, RateLimiter, SendHook, SendRecord, notify_send
 
 from ._parse import expect_object
+from ._upload import open_source, upload_file_content, upload_file_url
 
 __all__ = ["UserMessageResource"]
 
@@ -147,22 +152,68 @@ class UserMessageResource:
         file_type: FileType,
         /,
         *,
-        url: str,
+        url: str | None = None,
+        file: str | Path | BinaryIO | bytes | None = None,
+        file_name: str | None = None,
         srv_send_msg: bool = False,
+        progress: Callable[[int, int], None] | None = None,
     ) -> UploadedFile:
-        """上传单聊富媒体。
+        """上传单聊富媒体(图片 / 视频 / 语音 / 文件)。
 
-        返回的 file_info 填进 send_message 的 media。
-        srv_send_msg=True 时服务端上传后立即发送, 会占用主动消息频次。
+        构造与群聊一致: url 与 file 二选一, file 由 SDK 按体积自动选择直传或分片,
+        摘要由 SDK 计算。srv_send_msg=True 时服务端上传后立即发送,
+        会占用主动消息频次并产生发送记录。
         """
 
+        if (url is None) == (file is None):
+            raise ValueError("upload_file needs exactly one of url or file")
+
         path = f"/v2/users/{user_openid}/files"
-        payload = await self._http.post(
-            path,
-            json={
-                "file_type": int(file_type),
-                "url": url,
-                "srv_send_msg": srv_send_msg,
-            },
-        )
-        return UploadedFile.model_validate(expect_object(payload, path))
+        if srv_send_msg and self._limiter is not None:
+            self._limiter.check("c2c", user_openid, active=True)
+
+        uploaded: UploadedFile | None = None
+        error: QQBotError | None = None
+        try:
+            if url is not None:
+                uploaded = await upload_file_url(
+                    self._http,
+                    files_path=path,
+                    file_type=file_type,
+                    url=url,
+                    srv_send_msg=srv_send_msg,
+                )
+            else:
+                assert file is not None
+                source = open_source(file, file_name)
+                try:
+                    uploaded = await upload_file_content(
+                        self._http,
+                        prefix=f"/v2/users/{user_openid}",
+                        files_path=path,
+                        file_type=file_type,
+                        source=source,
+                        srv_send_msg=srv_send_msg,
+                        progress=progress,
+                    )
+                finally:
+                    source.close()
+        except QQBotError as exc:
+            error = exc
+            raise
+        finally:
+            if srv_send_msg and (uploaded is not None or error is not None):
+                await notify_send(
+                    self._hook,
+                    SendRecord(
+                        scope="c2c",
+                        target=user_openid,
+                        path=path,
+                        proactive=True,
+                        message=None,
+                        message_id=uploaded.id if uploaded is not None else None,
+                        error=error,
+                    ),
+                )
+        assert uploaded is not None
+        return uploaded

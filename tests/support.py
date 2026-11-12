@@ -52,7 +52,8 @@ def _free_port() -> int:
 
 class MockServer:
     def __init__(self) -> None:
-        self._app = aiohttp.web.Application()
+        # 富媒体分片上传的请求体超过 aiohttp 默认的 1MB, 这里放宽到 64MB
+        self._app = aiohttp.web.Application(client_max_size=64 * 1024 * 1024)
         self._runner: aiohttp.web.AppRunner | None = None
         self._url = ""
         # 路由表在服务启动后仍可增补: 所有请求先落到统一分发器

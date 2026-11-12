@@ -28,6 +28,9 @@ from .base import QQModel
 __all__ = [
     "FileType",
     "MediaInfo",
+    "UploadConfig",
+    "UploadPart",
+    "UploadPrepare",
     "UploadedFile",
 ]
 
@@ -59,3 +62,32 @@ class UploadedFile(QQModel):
     ttl: int = Field(alias="ttl")
     id: str | None = Field(alias="id", default=None)
     raw_url: str | None = Field(alias="raw_url", default=None)
+
+
+class UploadPart(QQModel):
+    """预上传返回的一个分片。
+
+    `presigned_url` 是 COS 的预签名地址, PUT 时不能带 QQ 的鉴权头。
+    `block_size` 由服务端给出, 最后一片可能小于它。
+    """
+
+    index: int = Field(alias="index")
+    presigned_url: str = Field(alias="presigned_url")
+    block_size: int = Field(alias="block_size")
+
+
+class UploadConfig(QQModel):
+    """预上传返回的上传建议: 并发上限与重试节奏。"""
+
+    concurrency: int = Field(alias="concurrency", default=1)
+    retry_timeout: int = Field(alias="retry_timeout", default=300)
+    retry_delay: int = Field(alias="retry_delay", default=1)
+
+
+class UploadPrepare(QQModel):
+    """预上传响应, 分片上传的起点。"""
+
+    upload_id: str = Field(alias="upload_id")
+    block_size: int = Field(alias="block_size")
+    parts: list[UploadPart] = Field(alias="parts", default_factory=list)
+    upload_config: UploadConfig = Field(alias="upload_config", default_factory=UploadConfig)

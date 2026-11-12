@@ -7,6 +7,7 @@
 - 类型检查器由 mypy 换成 pyrefly: `make typecheck`、`check.yml`、`release.yml` 统一改为 `pyrefly check`, 开发依赖换成 `pyrefly>=1.4.1,<1.5`。`pdm run mypy` 的 3.5 秒降到 `pdm run pyrefly check` 的 2.5 秒, 检查本身 0.75 秒（本地 142 个文件）。
 - 按 pyrefly 的 `preset = "strict"` 补齐实现类的 `@override` 标记;冻结模型赋值测试改用 `# pyrefly: ignore[read-only]` 注明是故意触发校验。
 - 命令占位符转换器改为静态方法调用: `Converter.parse` 在协议与内建实现里都标成 `@staticmethod`, `DEFAULT_CONVERTERS` 存的是类本身（`dict[str, type[Converter]]`）, 注册自定义转换器不再需要实例化——`router.add_converter("upper", UppercaseConverter)`。
+- `RedisPermissionStorage` 的构造方式与会话存储对齐: `__init__(client, *, key="qbotsdk:permissions")` 接现成的 `redis.asyncio.Redis`, 新增 `client` 属性与 `from_url(...)` 类方法, URL 拼装与校验复用 `qbotsdk.module.redis_url`, unix socket 地址改为 `unix://...?db=` 并支持 `protocol` 2/3。**破坏性**: 构造函数的第一个位置参数由 URL 换成客户端, 原先的 `RedisPermissionStorage(redis_url)` 需要改成 `RedisPermissionStorage.from_url(redis_url)`。
 
 ### 修复
 

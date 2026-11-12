@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import pytest
 
+from qbotsdk.module.redis_url import build_redis_url
 from qbotsdk.storage import SessionData
-from qbotsdk.storage.redis import RedisSessionStorage, _build_url
+from qbotsdk.storage.redis import RedisSessionStorage
 
 
 def _connection_kwargs(storage: RedisSessionStorage) -> dict[str, object]:
@@ -16,13 +17,13 @@ def _connection_kwargs(storage: RedisSessionStorage) -> dict[str, object]:
 
 
 def test_build_url_without_auth() -> None:
-    assert _build_url(
+    assert build_redis_url(
         host="10.0.0.5", port=6379, db=0, username=None, password=None, ssl=False
     ) == ("redis://10.0.0.5:6379/0")
 
 
 def test_build_url_with_password_only() -> None:
-    url = _build_url(
+    url = build_redis_url(
         host="localhost", port=6380, db=3, username=None, password="p@ss/word", ssl=False
     )
 
@@ -30,7 +31,7 @@ def test_build_url_with_password_only() -> None:
 
 
 def test_build_url_with_user_and_ssl() -> None:
-    url = _build_url(
+    url = build_redis_url(
         host="redis.example.com",
         port=6379,
         db=1,
@@ -63,7 +64,7 @@ def test_build_url_rejects_bad_parts(kwargs: dict[str, object], message: str) ->
     parts.update(kwargs)
 
     with pytest.raises(ValueError, match=message):
-        _build_url(**parts)  # type: ignore[arg-type]
+        build_redis_url(**parts)  # type: ignore[arg-type]
 
 
 def test_from_url_builds_client_from_parts() -> None:

@@ -17,9 +17,10 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, override
-from urllib.parse import quote
 
 from loguru import logger
+
+from qbotsdk.module import build_redis_unix_url, build_redis_url
 
 from .base import SessionData, SessionStorage
 
@@ -36,57 +37,6 @@ except ImportError as exc:
     raise ImportError(_MISSING_HINT) from exc
 
 __all__ = ["RedisSessionStorage"]
-
-
-def _auth_prefix(username: str | None, password: str | None) -> str:
-    """拼认证前缀, {username}:{password}@, 两项都没给时返回空串。"""
-
-    if username is None and password is None:
-        return ""
-    user = quote(username, safe="") if username is not None else ""
-    secret = quote(password, safe="") if password is not None else ""
-    return f"{user}:{secret}@"
-
-
-def _build_url(
-    *,
-    host: str,
-    port: int,
-    db: int,
-    username: str | None,
-    password: str | None,
-    ssl: bool,
-) -> str:
-    """把主机、端口、账号密码拼成 redis 地址。"""
-
-    if not host:
-        raise ValueError("host must not be empty")
-    if not 0 < port < 65536:
-        raise ValueError("port must be between 1 and 65535")
-    if db < 0:
-        raise ValueError("db must not be negative")
-
-    scheme = "rediss" if ssl else "redis"
-    return f"{scheme}://{_auth_prefix(username, password)}{host}:{port}/{db}"
-
-
-def _build_unix_url(
-    *,
-    unix_socket: str,
-    db: int,
-    username: str | None,
-    password: str | None,
-) -> str:
-    """拼 unix socket 地址。"""
-
-    if not unix_socket:
-        raise ValueError("unix_socket must not be empty")
-    if db < 0:
-        raise ValueError("db must not be negative")
-
-    # 路径里的斜杠是分隔符, 不能整体转义
-    # db只能通过查询参数指定
-    return f"unix://{_auth_prefix(username, password)}{unix_socket}?db={db}"
 
 
 class RedisSessionStorage(SessionStorage):
@@ -168,14 +118,14 @@ class RedisSessionStorage(SessionStorage):
         if url is not None:
             target = url
         elif unix_socket is not None:
-            target = _build_unix_url(
+            target = build_redis_unix_url(
                 unix_socket=unix_socket,
                 db=db,
                 username=username,
                 password=password,
             )
         else:
-            target = _build_url(
+            target = build_redis_url(
                 host=host,
                 port=port,
                 db=db,

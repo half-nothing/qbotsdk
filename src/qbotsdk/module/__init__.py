@@ -19,6 +19,8 @@ from .rate_limit import DEFAULT_DAILY_LIMITS as DEFAULT_DAILY_LIMITS
 from .rate_limit import DEFAULT_LIMITS as DEFAULT_LIMITS
 from .rate_limit import RateLimiter as RateLimiter
 from .rate_limit import TokenBucket as TokenBucket
+from .redis_url import build_redis_unix_url as build_redis_unix_url
+from .redis_url import build_redis_url as build_redis_url
 from .send_hook import MessageDraft as MessageDraft
 from .send_hook import SendHook as SendHook
 from .send_hook import SendRecord as SendRecord
@@ -36,6 +38,8 @@ __all__ = [
     "SendRecord",
     "TokenBucket",
     "TokenManager",
+    "build_redis_unix_url",
+    "build_redis_url",
     "notify_send",
     "paginate",
 ]

@@ -125,7 +125,7 @@ def build_store() -> CachedPermissionStorage:
         # 惰性导入: 没装 qbotsdk[redis] 时只有走到这里才会报错
         from qbotsdk.permissions.store import RedisPermissionStorage
 
-        store = RedisPermissionStorage(redis_url)
+        store = RedisPermissionStorage.from_url(redis_url)
     elif path:
         store = FilePermissionStorage(path)
     else:

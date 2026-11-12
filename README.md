@@ -482,6 +482,24 @@ user:member-1
 
 权限数据要跨重启保留时才需要换存储, 本地调试用默认的内存实现即可。
 
+Redis 权限存储的构造方式与会话存储一致, 同样支持 `from_url` 与现成客户端:
+
+```python
+from qbotsdk.permissions.store import RedisPermissionStorage
+
+# 给完整地址, 或者只给零件, 地址由SDK拼
+RedisPermissionStorage.from_url("redis://:pwd@10.0.0.5:6379/2")
+RedisPermissionStorage.from_url(host="10.0.0.5", port=6379, password="pwd", db=2)
+
+# Unix domain socket, 以及指定RESP协议版本
+RedisPermissionStorage.from_url(unix_socket="/var/run/redis/redis.sock", db=2, protocol=3)
+
+# 也可以直接把现成的Redis客户端交给SDK, 全限定名必须是 redis.asyncio.Redis
+from redis.asyncio import Redis
+
+RedisPermissionStorage(Redis(host="10.0.0.5", port=6379))
+```
+
 ### 按钮回调
 
 按钮与快捷菜单回调用 `router.button(载荷模型)` 注册, handler 里写 `return Reply(text="已处理")`

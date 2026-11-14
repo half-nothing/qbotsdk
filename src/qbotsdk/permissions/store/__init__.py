@@ -30,8 +30,6 @@ from .wire import PendingRecord as PendingRecord
 from .wire import RoleRecord as RoleRecord
 
 if TYPE_CHECKING:
-    from qbotsdk.storage.sql import SqlBackend as SqlBackend
-
     from .mysql import MysqlPermissionStorage as MysqlPermissionStorage
     from .postgres import PostgresPermissionStorage as PostgresPermissionStorage
     from .redis import RedisPermissionStorage as RedisPermissionStorage
@@ -53,7 +51,6 @@ __all__ = [
     "PostgresPermissionStorage",
     "RedisPermissionStorage",
     "RoleRecord",
-    "SqlBackend",
     "SqlPermissionStorage",
     "SqlitePermissionStorage",
 ]
@@ -64,10 +61,6 @@ def __getattr__(name: str) -> Any:
         from .redis import RedisPermissionStorage
 
         return RedisPermissionStorage
-    if name == "SqlBackend":
-        from qbotsdk.storage.sql import SqlBackend
-
-        return SqlBackend
     if name == "SqlPermissionStorage":
         from .sql_base import SqlPermissionStorage
 

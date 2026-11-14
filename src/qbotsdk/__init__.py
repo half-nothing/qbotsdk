@@ -24,7 +24,7 @@ from .options import ClientOptions as ClientOptions
 
 __author__ = "Half_nothing"
 __email__ = "Half_nothing@163.com"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "APIError",

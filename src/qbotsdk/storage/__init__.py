@@ -21,6 +21,8 @@ from .memory import MemorySessionStorage as MemorySessionStorage
 
 if TYPE_CHECKING:
     from .redis import RedisSessionStorage as RedisSessionStorage
+    from .sql import SqlBackend as SqlBackend
+    from .sql import SqlStorage as SqlStorage
 
 __all__ = [
     "FileSessionStorage",
@@ -28,6 +30,8 @@ __all__ = [
     "RedisSessionStorage",
     "SessionData",
     "SessionStorage",
+    "SqlBackend",
+    "SqlStorage",
 ]
 
 
@@ -36,6 +40,14 @@ def __getattr__(name: str) -> object:
         from .redis import RedisSessionStorage
 
         return RedisSessionStorage
+    if name == "SqlBackend":
+        from .sql import SqlBackend
+
+        return SqlBackend
+    if name == "SqlStorage":
+        from .sql import SqlStorage
+
+        return SqlStorage
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

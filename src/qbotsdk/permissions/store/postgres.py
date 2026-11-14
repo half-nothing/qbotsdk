@@ -21,7 +21,8 @@ from typing import TYPE_CHECKING, Any, override
 from sqlalchemy import URL, Table
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 
-from .sql_backend import SqlBackend
+from qbotsdk.storage.sql import SqlBackend, resolve_drivername
+
 from .sql_base import SqlPermissionStorage
 
 if TYPE_CHECKING:
@@ -31,9 +32,14 @@ __all__ = ["PostgresPermissionStorage"]
 
 
 class PostgresPermissionStorage(SqlPermissionStorage):
-    """基于 PostgreSQL 的权限存储。"""
+    """基于 PostgreSQL 的权限存储。
+
+    默认驱动是 `asyncpg`, 通过 `driver` 换成 `psycopg` 等其它异步驱动,
+    或者用 `from_url()` 直接给完整连接串。
+    """
 
     backend = SqlBackend.POSTGRES
+    dialect_names = ("postgresql",)
 
     def __init__(
         self,
@@ -43,12 +49,14 @@ class PostgresPermissionStorage(SqlPermissionStorage):
         password: str | None = None,
         host: str = "localhost",
         port: int = 5432,
+        driver: str | None = None,
         options: Mapping[str, str] | None = None,
+        connect_args: Mapping[str, Any] | None = None,
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
     ) -> None:
         url = URL.create(
-            SqlBackend.POSTGRES.drivername,
+            resolve_drivername(driver, self.dialect_names, SqlBackend.POSTGRES.drivername),
             username=user,
             password=password,
             host=host,
@@ -56,7 +64,12 @@ class PostgresPermissionStorage(SqlPermissionStorage):
             database=database,
             query=dict(options or {}),
         )
-        super().__init__(url, table_prefix=table_prefix, create_tables=create_tables)
+        super().__init__(
+            url,
+            table_prefix=table_prefix,
+            create_tables=create_tables,
+            connect_args=connect_args,
+        )
 
     @override
     @staticmethod

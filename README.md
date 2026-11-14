@@ -13,9 +13,12 @@
 - **连接与重连**: WebSocket 适配器自动心跳、断线重连与 Resume。
 - **接入方式可插拔**: 默认走 WebSocket 长连接, 也可以换成 Webhook 回调, 或自己实现 `Adapter`。
 - **消息即对象**: 收到的事件可以直接 `await event.reply(...)`。
-- **命令与权限**: `Router` 用前缀树匹配命令, 支持模板参数、`--` 选项与子路由 `include`;权限键按操作拆分, 内置 `/permission` 管理命令, 存储可选内存、文件、Redis 或关系库。
-- **按钮回调**: `@router.button` 把按钮点击路由到带 pydantic 载荷的处理器, `ack` 策略自动回应客户端, 不必自己调 `respond`。
-- **容错内置**: 429 按 `Retry-After` 重试, 幂等请求遇 5xx 与网络异常退避重试, 本地限流分会话速率、会话日配额与机器人总速率三层, 错误统一成 `QQBotError` 体系。
+- **命令与权限**: `Router` 用前缀树匹配命令, 支持模板参数、`--` 选项与子路由 `include`;权限键按操作拆分, 内置
+  `/permission` 管理命令, 存储可选内存、文件、Redis 或关系库。
+- **按钮回调**: `@router.button` 把按钮点击路由到带 pydantic 载荷的处理器, `ack` 策略自动回应客户端, 不必自己调
+  `respond`。
+- **容错内置**: 429 按 `Retry-After` 重试, 幂等请求遇 5xx 与网络异常退避重试, 本地限流分会话速率、会话日配额与机器人总速率三层,
+  错误统一成 `QQBotError` 体系。
 - **原始报文兜底**: 每个模型都带 `raw`, 官方新增字段时可以直接取用, 不必等 SDK 更新。
 - **类型完整**: pydantic v2 模型、全量类型标注、随包分发 `py.typed`。
 
@@ -104,8 +107,8 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
-c
-bot的`adapter`参数默认为`WebSocketAdapter`, 可以显式指定为`WebhookAdapter`  
+
+bot的`adapter`参数默认为`WebSocketAdapter`, 可以显式指定为`WebhookAdapter`
 
 也可以自行实现`Adapter`从而扩展更多接入方式, 自行实现的`Adapter`需要继承`qbotsdk.adapter.Adapter`并实现两个抽象方法
 
@@ -113,7 +116,8 @@ bot的`adapter`参数默认为`WebSocketAdapter`, 可以显式指定为`WebhookA
 如果想关闭后自动续连, 可以在构造`WebSocketAdapter`的时候传递参数`session_storage=`  
 可选值为`MemorySessionStorage`, `FileSessionStorage`, `RedisSessionStorage`, 默认为`MemorySessionStorage`
 
-会话存档会连同 `intents` 一起记录。重启时如果存档的 `intents` 与当前配置不同, SDK 会丢弃这份存档并重新 Identify, 避免 Resume 进一个订阅位不同的旧会话;旧版本写下的存档没有该字段, 解析为 0, 与当前配置不同时同样会被丢弃。
+会话存档会连同 `intents` 一起记录。重启时如果存档的 `intents` 与当前配置不同, SDK 会丢弃这份存档并重新 Identify, 避免
+Resume 进一个订阅位不同的旧会话;旧版本写下的存档没有该字段, 解析为 0, 与当前配置不同时同样会被丢弃。
 
 ```python
 from qbotsdk.adapter import WebSocketAdapter
@@ -149,8 +153,8 @@ storage = RedisSessionStorage(Redis(host="10.0.0.5", port=6379))
 
 ### Webhook 接入
 
-在[QQ机器人管理后台](https://q.qq.com/qqbot/dashboard/manage)填好回调地址并勾选要监听的事件后, 
-事件就改走 HTTP 推送, 代码层面仅需把适配器换成 `WebhookAdapter`: 
+在[QQ机器人管理后台](https://q.qq.com/qqbot/dashboard/manage)填好回调地址并勾选要监听的事件后,
+事件就改走 HTTP 推送, 代码层面仅需把适配器换成 `WebhookAdapter`:
 
 ```python
 from qbotsdk import Bot
@@ -173,7 +177,7 @@ await bot.start()
 
 没有公网地址时用反向代理或内网穿透把请求转到本机, 务必原样透传 body 和两个签名头, 任何改写都会导致验签失败。
 
-如果事件要接进自己已有的aiohttp应用, 不用起整套服务器, 挂一个处理函数就行: 
+如果事件要接进自己已有的aiohttp应用, 不用起整套服务器, 挂一个处理函数就行:
 
 ```python
 from aiohttp import web
@@ -190,7 +194,8 @@ app.router.add_post("/qbotsdk", build_webhook_handler(bot.dispatcher, "机器人
 
 ## 文本交互
 
-官方把 @ 某人、@ 全部成员、可点击指令、跳转子频道、系统表情都做成嵌在正文里的标记, 渲染成字符串后放进 `content` 或 `MessageMarkdown.content`。`qbotsdk.model.markup` 把这些标记做成了节点, 拼好之后一次渲染, 不用手动拼尖括号: 
+官方把 @ 某人、@ 全部成员、可点击指令、跳转子频道、系统表情都做成嵌在正文里的标记, 渲染成字符串后放进 `content` 或
+`MessageMarkdown.content`。`qbotsdk.model.markup` 把这些标记做成了节点, 拼好之后一次渲染, 不用手动拼尖括号:
 
 ```python
 from qbotsdk.model.markup import (
@@ -212,9 +217,11 @@ chain = TextChain.of(
 await event.reply(markdown=MessageMarkdown(content=chain.render()))
 ```
 
-渲染结果是 `<qqbot-at-user id="member-openid" /> 签到去 <qqbot-cmd-input text="...%20..." show="..."/> 或者直接 <qqbot-cmd-enter text="%2Fsign" />`, 指令文本会自动 urlencode。
+渲染结果是
+`<qqbot-at-user id="member-openid" /> 签到去 <qqbot-cmd-input text="...%20..." show="..."/> 或者直接 <qqbot-cmd-enter text="%2Fsign" />`,
+指令文本会自动 urlencode。
 
-反方向也能拆回来, 认不出的片段原样保留在 `PlainText` 里: 
+反方向也能拆回来, 认不出的片段原样保留在 `PlainText` 里:
 
 ```python
 chain = TextChain.parse(markdown_text)
@@ -222,7 +229,7 @@ for node in chain:
     print(type(node).__name__, node.render())
 ```
 
-几点边界: 
+几点边界:
 
 - `AtUser` 的 `id` 在群聊里填 `member_openid`、在文字子频道里填 `user_openid`, 两者 id 空间不同, 本模型不做转换。
 - 群聊的 `AtUser` 只支持 markdown 消息;文字子频道支持文本、图文与 markdown 三种。
@@ -315,7 +322,7 @@ async def on_group(ctx: EventContext[GroupMessageCreate]) -> None:
 
 ### 处理器返回值
 
-处理器返回值必须是 `Reply`, `Reply(text="...")` 当正文发出去, `Reply.ok()` 表示静默成功, 
+处理器返回值必须是 `Reply`, `Reply(text="...")` 当正文发出去, `Reply.ok()` 表示静默成功,
 `Reply(..., markdown=True)` / `Reply(..., keyboard=...)` 带额外能力, 参数错误请显式 `raise UsageError(...)`。
 
 参数有问题就 `raise UsageError("...")`, 其它异常统一回内部错误文案;
@@ -328,13 +335,13 @@ handler 里已经 `await ctx.reply(...)` 过的话, 路由器不会把返回值�
 
 群聊里默认会在正文前带上对发送者的 @。QQ 的 @ 标记只在 markdown 消息里生效, 所以带 @ 的回复会自动
 按 markdown 发送, 正文形如 `<qqbot-at-user id="..." /> pong`。不想带就逐层关掉, 优先级从高到低是
-`Reply(mention=...)`、`router.command(..., mention=...)`、`Router(reply_mention=False)`。单聊不带, 
+`Reply(mention=...)`、`router.command(..., mention=...)`、`Router(reply_mention=False)`。单聊不带,
 频道会把正文换成 markdown 消息再带 @。
 
 ### 参数与模板
 
 模板里的占位符默认按注解转换, `str`、`int`、`float`、`mention`, 末尾写 `<text:rest>` 表示吃掉剩余全部 token。
-模板不支持默认值, 可选参数用注册两条命令表达: 
+模板不支持默认值, 可选参数用注册两条命令表达:
 
 ```python
 @router.command("roll", on=GroupMessageCreate)
@@ -347,7 +354,7 @@ async def roll_sides(ctx: GroupContext, sides: int) -> Reply:
     return Reply(text=f"掷出了 {random.randint(1, sides)}")
 ```
 
-想让处理器自己拿原始参数, 注册时写 `bind_args=False`, 此时处理器只收 `ctx` 和 `argv: list[str]`: 
+想让处理器自己拿原始参数, 注册时写 `bind_args=False`, 此时处理器只收 `ctx` 和 `argv: list[str]`:
 
 ```python
 @router.command("echo <text:rest>", on=GroupMessageCreate, bind_args=False)
@@ -357,13 +364,14 @@ async def echo(ctx: GroupContext, argv: list[str]) -> Reply:
 
 ### 匹配顺序
 
-命令匹配是一棵按事件类型分开的前缀树, 字面量边优先, 整棵子树走不通才回退到 `<name>` 这类可变参边, 最后才是 `<text:rest>`;
-token 用完却停在没有处理器的节点上时, 框架会按该节点的子项回 usage, 
+命令匹配是一棵按事件类型分开的前缀树, 字面量边优先, 整棵子树走不通才回退到 `<name>` 这类可变参边, 最后才是
+`<text:rest>`;
+token 用完却停在没有处理器的节点上时, 框架会按该节点的子项回 usage,
 例如 `/permission role` → `Invalid arguments. Usage: /permission role <add|*name>`。
 
 ### 选项
 
-`--` 开头的 token 在匹配阶段被收进选项表, `--` 单独出现表示后面不再当选项。注册时声明类型即可自动转换并绑定: 
+`--` 开头的 token 在匹配阶段被收进选项表, `--` 单独出现表示后面不再当选项。注册时声明类型即可自动转换并绑定:
 
 ```python
 @router.command("roll <sides:int>", on=GroupMessageCreate, options={"loud": bool, "times": int})
@@ -375,13 +383,13 @@ async def roll(ctx: GroupContext, sides: int, *, loud: bool = False, times: int 
 
 ### 未知命令
 
-带前缀但没命中任何命令时默认静默;需要提示就 `Router(reply_unknown=True)`, 
+带前缀但没命中任何命令时默认静默;需要提示就 `Router(reply_unknown=True)`,
 回复文案是 `Messages.unknown_command`, 可整体或按键替换。不带前缀的普通聊天不会触发任何回复。
 
 ### 处理器身份
 
 `ctx.command` 是这次命中的路径。
-同一个 handler 注册多条路径时每条路径各有一个名字, 但 `handler` 是同一个函数对象: 
+同一个 handler 注册多条路径时每条路径各有一个名字, 但 `handler` 是同一个函数对象:
 
 ```python
 @router.command("ban <member>", on=GroupMessageCreate)
@@ -396,7 +404,7 @@ router.command("封禁 <member>", on=GroupMessageCreate)(ban)
 
 ### 权限
 
-权限键自己声明, 注册命令时挂上去: 
+权限键自己声明, 注册命令时挂上去:
 
 ```python
 class Demo(PermissionGroup, namespace="demo"):
@@ -409,7 +417,7 @@ async def ban(ctx: GroupContext, member: str) -> Reply:
     return Reply(text=f"banned {member}")
 ```
 
-`namespace` 加键名就是完整键, `Demo.ADMIN` 即 `demo.admin`;`Demo.ADMIN.wildcard()` 是 `demo.*`, 
+`namespace` 加键名就是完整键, `Demo.ADMIN` 即 `demo.admin`;`Demo.ADMIN.wildcard()` 是 `demo.*`,
 只授 `demo.*` 就能一次覆盖 `demo.admin` 与 `demo.ping`。
 
 判定由 `Router(checker=PermissionChecker(store))` 完成, `store` 是下面的任意一种权限存储;
@@ -417,7 +425,7 @@ async def ban(ctx: GroupContext, member: str) -> Reply:
 
 #### 第一次授权
 
-`/permission grant` 自己也要 `permission.grant`, 所以第一次得在启动时给一个人: 
+`/permission grant` 自己也要 `permission.grant`, 所以第一次得在启动时给一个人:
 
 ```python
 import os
@@ -433,25 +441,25 @@ install_permission_commands(router, store)
 
 #### 内置命令
 
-| 命令                                          | 作用        | 需要                  |
-|---------------------------------------------|-----------|---------------------|
-| `/permission whoami`                        | 打印自己的主体键  | 无                   |
-| `/permission show`                          | 看自己的作用域、授予与角色 | 无                   |
-| `/permission show @某人`                      | 看别人的同一组信息 | `permission.show`   |
-| `/permission grant @某人 demo.admin`          | 授权（默认场景级） | `permission.grant`  |
-| `/permission grant @某人 demo.admin --global` | 授到账号级     | `permission.grant`  |
-| `/permission grant demo.admin --code`       | 生成一次性授权码  | `permission.grant`  |
-| `/permission claim ABCD-2345`               | 领取授权码     | 无                   |
-| `/permission revoke @某人 demo.admin`         | 撤销        | `permission.revoke` |
-| `/permission role list`                     | 列出角色      | `permission.role`   |
-| `/permission role save vip demo.*`          | 定义角色      | `permission.role`   |
-| `/permission role assign @某人 vip`           | 把角色分给人    | `permission.role`   |
+| 命令                                          | 作用                       | 需要                |
+|-----------------------------------------------|----------------------------|---------------------|
+| `/permission whoami`                          | 打印自己的主体键           | 无                  |
+| `/permission show`                            | 看自己的作用域、授予与角色 | 无                  |
+| `/permission show @某人`                      | 看别人的同一组信息         | `permission.show`   |
+| `/permission grant @某人 demo.admin`          | 授权（默认场景级）         | `permission.grant`  |
+| `/permission grant @某人 demo.admin --global` | 授到账号级                 | `permission.grant`  |
+| `/permission grant demo.admin --code`         | 生成一次性授权码           | `permission.grant`  |
+| `/permission claim ABCD-2345`                 | 领取授权码                 | 无                  |
+| `/permission revoke @某人 demo.admin`         | 撤销                       | `permission.revoke` |
+| `/permission role list`                       | 列出角色                   | `permission.role`   |
+| `/permission role save vip demo.*`            | 定义角色                   | `permission.role`   |
+| `/permission role assign @某人 vip`           | 把角色分给人               | `permission.role`   |
 
-`@某人` 依赖事件里的成员标记, 
+`@某人` 依赖事件里的成员标记,
 `GroupMessageCreate` 下事件层把 `<@openid>` 渲染成 `@openid`, `mention` 参数直接得到裸 openid;
 机器人只订阅 `GROUP_AT_MESSAGE_CREATE` 时拿不到 @ 信息, 这时用 `--code` 或直接写 openid。
 
-`/permission show` 的输出按主体分段, 每段带上作用域、直接授予与角色: 
+`/permission show` 的输出按主体分段, 每段带上作用域、直接授予与角色:
 
 ```text
 Your permissions:
@@ -500,6 +508,34 @@ from redis.asyncio import Redis
 RedisPermissionStorage(Redis(host="10.0.0.5", port=6379))
 ```
 
+SQL 存储默认带一个异步驱动
+
+- SQLite 用 `aiosqlite`
+- MySQL 用 `asyncmy`
+- PostgreSQL 用 `asyncpg`
+
+已有项目用别的驱动时不必换装:
+
+```python
+from qbotsdk.permissions.store import MysqlPermissionStorage, PostgresPermissionStorage
+
+# 只换驱动, 连接参数写法不变
+MysqlPermissionStorage(database="qbot", driver="aiomysql")
+
+# 给完整连接串, 驱动、SSL 与驱动私有参数放进 URL 或 connect_args
+PostgresPermissionStorage.from_url(
+    "postgresql+psycopg://qbot:pwd@10.0.0.5:5432/qbot?sslmode=require",
+    connect_args={"prepare_threshold": 0},
+)
+
+# 已经有异步引擎时直接交进来, 存储不负责关闭它
+PostgresPermissionStorage.from_engine(engine)
+```
+
+`qbotsdk[mysql]` 与 `qbotsdk[postgres]` 只安装默认驱动, 用别的驱动时自行安装即可。
+
+连接层本身与权限无关, 放在 `qbotsdk.storage.sql`: `SqlBackend` 描述方言与默认驱动, `SqlStorage` 负责 URL 解析、引擎创建/释放与 `from_url`/`from_engine`, 其它存储可以直接继承或单独使用。
+
 ### 按钮回调
 
 按钮与快捷菜单回调用 `router.button(载荷模型)` 注册, handler 里写 `return Reply(text="已处理")`
@@ -534,13 +570,13 @@ async with Bot(app_id="app", app_secret="secret") as bot:
 
 ## 本地限流
 
-发消息前 `RateLimiter` 会依次检查三层限制, 任何一层没额度都会在本地拦下, 请求不会发出: 
+发消息前 `RateLimiter` 会依次检查三层限制, 任何一层没额度都会在本地拦下, 请求不会发出:
 
-| 层 | 统计范围 | 默认值 | 配置项 |
-|---|---|---|---|
-| 会话速率 | 每个群 / 每个单聊 | 20 条/分钟 | `rate_limits` |
-| 会话日配额 | 每个群 / 每个单聊 | 1000 条/天 | `daily_limits` |
-| 机器人总速率 | 所有主动消息共享 | 不限 | `global_rate_limit` |
+| 层           | 统计范围          | 默认值     | 配置项              |
+|--------------|-------------------|------------|---------------------|
+| 会话速率     | 每个群 / 每个单聊 | 20 条/分钟 | `rate_limits`       |
+| 会话日配额   | 每个群 / 每个单聊 | 1000 条/天 | `daily_limits`      |
+| 机器人总速率 | 所有主动消息共享  | 不限       | `global_rate_limit` |
 
 被动回复（带 `reply_to` 或 `event_id`）只走前两层, 不占机器人总速率, 避免正常回复被主动消息的配额拖住。
 这几层都是本进程内的计数: 多实例部署时各算各的, 最终仍以服务端的 `40034100` 为准。
@@ -562,16 +598,16 @@ async with Bot(app_id="app", app_secret="secret", options=options) as bot:
 ```
 
 `rate_limits` 与 `daily_limits` 的键是 scope（`group`、`c2c`）, 值为 0 表示不限;
-`global_rate_limit` 传 `None` 或 0 表示不限。任一限制被触发都会抛 `RateLimitExceededError`, 
+`global_rate_limit` 传 `None` 或 0 表示不限。任一限制被触发都会抛 `RateLimitExceededError`,
 异常上的 `window` 说明是哪一层（`minute` / `day` / `bot`）, `retry_after` 是预计需要等待的秒数。
 `ClientOptions(respect_rate_limits=False)` 会整体关掉本地限流。
 
-查询剩余额度: `bot.api.limiter.remaining("group", group_openid)` 返回这一分钟还剩几条, 
+查询剩余额度: `bot.api.limiter.remaining("group", group_openid)` 返回这一分钟还剩几条,
 `daily_remaining(...)` 返回这一天还剩几条（没有配置日配额时返回 `None`）。
 
 ## 发送记录
 
-`ClientOptions(send_hook=...)` 可以挂一个切面, 统一观察所有发出的消息: 每次发送结束后回调一次, 
+`ClientOptions(send_hook=...)` 可以挂一个切面, 统一观察所有发出的消息: 每次发送结束后回调一次,
 群聊、单聊、频道三条通道都覆盖, `event.reply()` 这类高层入口最终也走同一个切面。
 
 ```python
@@ -594,11 +630,11 @@ async with Bot(app_id="app", app_secret="secret", options=options) as bot:
 ```
 
 `SendRecord` 的字段: `scope` 是通道（`group` / `c2c` / `channel`）, `target` 是对应的
-群 openid、用户 openid 或子频道 id, `path` 是实际请求路径, `proactive` 表示这条是不是主动消息, 
-`message` 是真正发出去的那条消息本身, 群聊/单聊是 `GroupMessageDraft`/`UserMessageDraft`, 
-频道是 `ChannelMessageDraft`: 正文、Markdown、图片或富媒体、keyboard、回复引用都在上面, 
+群 openid、用户 openid 或子频道 id, `path` 是实际请求路径, `proactive` 表示这条是不是主动消息,
+`message` 是真正发出去的那条消息本身, 群聊/单聊是 `GroupMessageDraft`/`UserMessageDraft`,
+频道是 `ChannelMessageDraft`: 正文、Markdown、图片或富媒体、keyboard、回复引用都在上面,
 `record.message.model_dump(by_alias=True, exclude_none=True)` 就是可直接落库的完整请求体;
-要展示或写日志时用 `record.message.to_text()`, 它把正文与 Markdown 还原成文字, 
+要展示或写日志时用 `record.message.to_text()`, 它把正文与 Markdown 还原成文字,
 图片带上地址, 富媒体、keyboard 这类没有文字的部分用 `[media]`、`[keyboard]` 占位。
 `message_id` 与 `error` 二选一: 发送成功时前者是平台返回的消息 id, 失败时后者是抛出的
 `QQBotError`（包括本地限流拦下的 `RateLimitExceededError`, 此时请求没发出去, `message` 也可能为 `None`）。
@@ -622,14 +658,14 @@ async def on_group(ctx) -> None:
     print(event.raw.get("some_new_field"))  # 官方新加、SDK 还没建模的字段
 ```
 
-嵌套模型各自带一份子 dict, `event.author.raw["username"]`等都能直接读。REST 接口同理: 
+嵌套模型各自带一份子 dict, `event.author.raw["username"]`等都能直接读。REST 接口同理:
 
 ```python
 me = await bot.api.user.me()
 print(me.raw["username"])
 ```
 
-注意事项: 
+注意事项:
 
 1. `raw`字段是dict类型, 生成的 `__hash__` 在调用时会抛 `TypeError`, 不要把模型放进 `set` 或当作 dict 的键。
 2. 内存上每个模型有一份dict引用, 嵌套对象与原报文共享同一个dict对象, 不是深拷贝。
@@ -640,14 +676,14 @@ print(me.raw["username"])
 
 ## 第三方依赖
 
-| 依赖                                                                 | 用途                      | 许可                         |
-|--------------------------------------------------------------------|-------------------------|----------------------------|
-| [aiohttp](https://github.com/aio-libs/aiohttp)                     | HTTP 与 WebSocket 客户端    | Apache-2.0 AND MIT         |
-| [pydantic](https://github.com/pydantic/pydantic)                   | 数据模型与校验                 | MIT                        |
-| [loguru](https://github.com/Delgan/loguru)                         | 日志                      | MIT                        |
+| 依赖                                                               | 用途                          | 许可                       |
+|--------------------------------------------------------------------|-------------------------------|----------------------------|
+| [aiohttp](https://github.com/aio-libs/aiohttp)                     | HTTP 与 WebSocket 客户端      | Apache-2.0 AND MIT         |
+| [pydantic](https://github.com/pydantic/pydantic)                   | 数据模型与校验                | MIT                        |
+| [loguru](https://github.com/Delgan/loguru)                         | 日志                          | MIT                        |
 | [cryptography](https://github.com/pyca/cryptography)               | Webhook 的 ed25519 签名与验签 | Apache-2.0 OR BSD-3-Clause |
-| [async-event-bus](https://github.com/half-nothing/async-event-bus) | 事件总线                    | MIT                        |
-| [yarl](https://github.com/aio-libs/yarl)                           | URL 拼接                  | Apache-2.0                 |
+| [async-event-bus](https://github.com/half-nothing/async-event-bus) | 事件总线                      | MIT                        |
+| [yarl](https://github.com/aio-libs/yarl)                           | URL 拼接                      | Apache-2.0                 |
 
 ## 致谢
 

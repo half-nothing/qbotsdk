@@ -1,5 +1,16 @@
 # 更新日志
 
+## [1.1.0] - 2026-11-14
+
+### 新增
+
+- SQL 权限存储不再写死驱动: `MysqlPermissionStorage` / `PostgresPermissionStorage` 新增 `driver` 参数, 可换成 aiomysql、psycopg 等其它 SQLAlchemy 异步驱动; 新增 `from_url()` 接收完整连接串与 `connect_args`, 新增 `from_engine()` 采纳已有的 `AsyncEngine`（存储不负责关闭它）。缺依赖提示改为按实际驱动给出安装命令, `qbotsdk[mysql]` 与 `qbotsdk[postgres]` 仍只安装默认驱动。
+- `SqlPermissionStorage` 的构造签名接受 `str` 形式的连接串, 并新增 `dialect_names` 类属性, 子类据此校验 URL 方言与存储类是否匹配。
+
+### 变更
+
+- 通用 SQL 连接层移到 `qbotsdk.storage.sql`: `SqlBackend`、`resolve_drivername()` 与 `SqlStorage` 基类（URL 解析、引擎创建/释放、`from_url`/`from_engine`）与权限业务解耦, `SqlPermissionStorage` 只保留表、读写流程与方言 upsert; `qbotsdk.storage` 同时导出 `SqlBackend` 与 `SqlStorage`。移除 `qbotsdk.permissions.store.sql_backend` 模块, `qbotsdk.permissions.store.SqlBackend` 保留同名导出, 旧导入不必改。
+
 ## [1.0.0] - 2026-11-12
 
 首个稳定版本: 公开 API 全部显式声明, 若干历史接口按计划移除。升级前请先对照下面的破坏性变更。

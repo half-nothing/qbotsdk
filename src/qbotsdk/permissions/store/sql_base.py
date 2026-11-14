@@ -17,22 +17,22 @@
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING, Any, ClassVar, cast, override
+from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, override
 
 from loguru import logger
 from pydantic import ValidationError
 
 from qbotsdk.permissions import Grant, PendingGrant, Role, Scope
+from qbotsdk.storage.sql import SqlBackend, SqlStorage
 
 from .base import PermissionStorage
 from .schema import PermissionSchema
-from .sql_backend import SqlBackend
 from .wire import GrantList, NameList, PendingRecord
 
 try:  # pragma: no cover
-    from sqlalchemy import delete, select
+    from sqlalchemy import delete, make_url, select
     from sqlalchemy.engine import URL
-    from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+    from sqlalchemy.ext.asyncio import AsyncEngine
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
         "SQL permission storage requires SQLAlchemy; "
@@ -41,7 +41,7 @@ except ImportError as exc:  # pragma: no cover
     ) from exc
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from sqlalchemy import Table
 
@@ -80,28 +80,109 @@ def _decode_names(text: object) -> tuple[str, ...]:
         return ()
 
 
-class SqlPermissionStorage(PermissionStorage):
-    """关系库存储基类, 子类绑定具体方言。"""
+class SqlPermissionStorage(SqlStorage, PermissionStorage):
+    """权限的关系库存储基类, 表与读写流程在这里, 连接层复用 `SqlStorage`。"""
 
     backend: ClassVar[SqlBackend] = SqlBackend.SQLITE
+    dialect_names: ClassVar[tuple[str, ...]] = ("sqlite",)
 
     def __init__(
         self,
-        url: URL,
+        url: URL | str,
         *,
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
+        connect_args: Mapping[str, Any] | None = None,
+        engine: AsyncEngine | None = None,
     ) -> None:
-        self._url = url
-        self._engine: AsyncEngine | None = None
+        super().__init__(url, connect_args=connect_args, engine=engine)
         self._schema = PermissionSchema(table_prefix)
         self._create_tables = create_tables
 
-    @property
-    def url(self) -> str:
-        """连接串, 密码已打码, 便于日志里确认连的是哪个库。"""
+    @classmethod
+    @override
+    def from_url(
+        cls,
+        url: str | URL,
+        *,
+        table_prefix: str = "qbotsdk_",
+        create_tables: bool = False,
+        connect_args: Mapping[str, Any] | None = None,
+    ) -> Self:
+        """用完整连接串构造存储, 驱动名写在 URL 里。
 
-        return self._url.render_as_string(hide_password=True)
+        异步驱动可以换成任意 SQLAlchemy 支持的名字, 例如 `mysql+aiomysql`
+        或 `postgresql+psycopg`。
+
+        :param url:          完整连接串, `str` 或 `sqlalchemy.engine.URL`。
+        :param table_prefix: 表名前缀, 同一个库里的多套权限靠它隔离。
+        :param create_tables: 首次使用时自动建表。
+        :param connect_args: 直接交给驱动的连接参数, 放不进 URL 查询串的对象走这里。
+
+        :raise ValueError: URL 没写异步驱动, 或方言与存储类不匹配。
+        """
+
+        parsed = make_url(url)
+        cls._check_url(parsed)
+        return cls._adopt(
+            parsed,
+            table_prefix=table_prefix,
+            create_tables=create_tables,
+            connect_args=connect_args,
+        )
+
+    @classmethod
+    @override
+    def from_engine(
+        cls,
+        engine: AsyncEngine,
+        *,
+        table_prefix: str = "qbotsdk_",
+        create_tables: bool = False,
+    ) -> Self:
+        """复用调用方已有的异步引擎, 存储不负责关闭它。
+
+        :param engine:        `sqlalchemy.ext.asyncio.AsyncEngine`。
+        :param table_prefix:  表名前缀。
+        :param create_tables: 首次使用时自动建表。
+
+        :raise TypeError:  传入的不是 `AsyncEngine`。
+        :raise ValueError: 引擎的方言与存储类不匹配。
+        """
+
+        if not isinstance(engine, AsyncEngine):
+            raise TypeError("engine must be an AsyncEngine")
+        cls._check_url(engine.url)
+        return cls._adopt(
+            engine.url,
+            engine=engine,
+            table_prefix=table_prefix,
+            create_tables=create_tables,
+        )
+
+    @classmethod
+    @override
+    def _adopt(
+        cls,
+        url: URL,
+        *,
+        engine: AsyncEngine | None = None,
+        table_prefix: str = "qbotsdk_",
+        create_tables: bool = False,
+        connect_args: Mapping[str, Any] | None = None,
+    ) -> Self:
+        """按已经解析好的 URL 建实例, 绕开子类构造函数的连接参数。"""
+
+        store = cls.__new__(cls)
+        SqlPermissionStorage.__init__(
+            store,
+            url,
+            table_prefix=table_prefix,
+            create_tables=create_tables,
+            connect_args=connect_args,
+            engine=engine,
+        )
+        return store
 
     async def grants(self, principal: str) -> frozenset[Grant]:
         await self._ensure_tables()
@@ -254,28 +335,6 @@ class SqlPermissionStorage(PermissionStorage):
             logger.warning("pending grant {!r} is not valid, ignoring", code)
             return None
         return record.to_pending()
-
-    @override
-    async def close(self) -> None:
-        if self._engine is not None:
-            await self._engine.dispose()
-            self._engine = None
-
-    def _connection(self) -> AsyncEngine:
-        """引擎在第一次使用时才创建, 构造存储本身不需要驱动。"""
-
-        if self._engine is None:
-            try:
-                self._engine = create_async_engine(self._url, future=True)
-            except ModuleNotFoundError as exc:  # pragma: no cover
-                raise ImportError(
-                    f"{type(self).__name__} needs the {self.backend.driver} driver; "
-                    f"install it with `pip install qbotsdk[{self.backend.value}]`"
-                ) from exc
-        assert self._engine is not None, (
-            "Something that would never happen has occurred, the program is about to exit."
-        )
-        return self._engine
 
     @staticmethod
     def _insert_statement(table: Table) -> Any:

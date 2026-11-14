@@ -22,7 +22,8 @@ from typing import Any, override
 from sqlalchemy import URL, Table
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
-from .sql_backend import SqlBackend
+from qbotsdk.storage.sql import SqlBackend
+
 from .sql_base import SqlPermissionStorage
 
 __all__ = ["SqlitePermissionStorage"]
@@ -32,6 +33,7 @@ class SqlitePermissionStorage(SqlPermissionStorage):
     """基于 SQLite 的权限存储。"""
 
     backend = SqlBackend.SQLITE
+    dialect_names = ("sqlite",)
 
     def __init__(
         self,
@@ -40,9 +42,15 @@ class SqlitePermissionStorage(SqlPermissionStorage):
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
     ) -> None:
-        self.path = Path(path).expanduser().resolve()
-        url = URL.create(SqlBackend.SQLITE.drivername, database=str(self.path))
+        resolved = Path(path).expanduser().resolve()
+        url = URL.create(SqlBackend.SQLITE.drivername, database=str(resolved))
         super().__init__(url, table_prefix=table_prefix, create_tables=create_tables)
+
+    @property
+    def path(self) -> Path:
+        """SQLite 数据库文件路径。"""
+
+        return Path(self._url.database or "")
 
     @override
     @staticmethod

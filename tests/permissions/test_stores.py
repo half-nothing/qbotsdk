@@ -10,9 +10,11 @@ from json import loads
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine, text
 from sqlalchemy.dialects import mysql as mysql_dialect
 from sqlalchemy.dialects import postgresql as postgresql_dialect
 from sqlalchemy.dialects import sqlite as sqlite_dialect
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.schema import CreateTable
 
 from qbotsdk.permissions import Grant, PendingGrant, Role
@@ -280,6 +282,107 @@ async def test_postgres_storage_builds_its_own_url() -> None:
         await store.close()
 
 
+async def test_mysql_storage_accepts_a_driver_override() -> None:
+    store = MysqlPermissionStorage(
+        host="db.internal",
+        port=3307,
+        user="qbot",
+        password="p@ss word",
+        database="qbot",
+        driver="aiomysql",
+    )
+
+    try:
+        assert store.url == "mysql+aiomysql://qbot:***@db.internal:3307/qbot"
+    finally:
+        await store.close()
+
+
+async def test_mysql_storage_accepts_a_full_drivername() -> None:
+    store = MysqlPermissionStorage(database="qbot", driver="mariadb+aiomysql")
+
+    try:
+        assert store.url.startswith("mariadb+aiomysql://")
+    finally:
+        await store.close()
+
+
+def test_driver_must_match_the_storage_dialect() -> None:
+    with pytest.raises(ValueError, match="mysql"):
+        MysqlPermissionStorage(database="qbot", driver="postgresql+psycopg")
+
+
+async def test_storage_takes_a_full_url() -> None:
+    store = PostgresPermissionStorage.from_url(
+        "postgresql+psycopg://qbot:p%40ss@pg.internal:5432/qbot?sslmode=require",
+        connect_args={"prepare_threshold": 0},
+    )
+
+    try:
+        assert store.url == "postgresql+psycopg://qbot:***@pg.internal:5432/qbot?sslmode=require"
+    finally:
+        await store.close()
+
+
+def test_url_must_name_an_async_driver() -> None:
+    with pytest.raises(ValueError, match="async"):
+        PostgresPermissionStorage.from_url("postgresql://qbot@pg.internal/qbot")
+
+
+def test_url_dialect_must_match_the_storage() -> None:
+    with pytest.raises(ValueError, match="postgresql"):
+        MysqlPermissionStorage.from_url("postgresql+asyncpg://qbot@pg.internal/qbot")
+
+
+async def test_storage_adopts_an_existing_engine(tmp_path: Path) -> None:
+    engine = create_async_engine(f"sqlite+aiosqlite:///{(tmp_path / 'adopted.db').as_posix()}")
+    store = SqlitePermissionStorage.from_engine(engine, create_tables=True)
+
+    try:
+        await store.grant("user:u1", Grant("demo.start"))
+        assert await store.grants("user:u1") == frozenset({Grant("demo.start")})
+    finally:
+        await store.close()
+
+    async with engine.connect() as connection:
+        assert (await connection.execute(text("select 1"))).scalar() == 1
+    await engine.dispose()
+
+
+def test_from_engine_rejects_a_sync_engine() -> None:
+    engine = create_engine("sqlite://")
+
+    try:
+        with pytest.raises(TypeError, match="AsyncEngine"):
+            # 故意传同步 Engine, 验证运行时的类型检查
+            SqlitePermissionStorage.from_engine(engine)  # pyrefly: ignore[bad-argument-type]
+    finally:
+        engine.dispose()
+
+
+async def test_from_engine_rejects_a_mismatched_dialect() -> None:
+    engine = create_async_engine("sqlite+aiosqlite://")
+
+    try:
+        with pytest.raises(ValueError, match="mysql"):
+            MysqlPermissionStorage.from_engine(engine)
+    finally:
+        await engine.dispose()
+
+
+async def test_custom_driver_missing_raises_an_install_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _boom(*args: object, **kwargs: object) -> None:
+        raise ModuleNotFoundError("No module named 'aiomysql'")
+
+    monkeypatch.setattr("qbotsdk.storage.sql.create_async_engine", _boom)
+    store = MysqlPermissionStorage(database="qbot", driver="aiomysql")
+
+    with pytest.raises(ImportError, match=r"pip install aiomysql"):
+        await store.grants("group:g1:m1")
+
+
 def test_backend_enum_carries_the_drivername() -> None:
     assert SqlBackend.SQLITE.drivername == "sqlite+aiosqlite"
     assert SqlBackend.MYSQL.drivername == "mysql+asyncmy"
@@ -291,7 +394,7 @@ async def test_missing_driver_raises_an_install_hint(monkeypatch: pytest.MonkeyP
     def _boom(*args: object, **kwargs: object) -> None:
         raise ModuleNotFoundError("No module named 'asyncmy'")
 
-    monkeypatch.setattr("qbotsdk.permissions.store.sql_base.create_async_engine", _boom)
+    monkeypatch.setattr("qbotsdk.storage.sql.create_async_engine", _boom)
     store = MysqlPermissionStorage(database="qbot")
 
     with pytest.raises(ImportError, match=r"pip install qbotsdk\[mysql\]"):

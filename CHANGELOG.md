@@ -1,5 +1,15 @@
 # 更新日志
 
+## [1.2.0] - 2026-11-15
+
+### 破坏性变更
+
+- `qbotsdk.permissions.store` 不再导出 `SqlBackend`: 1.1.0 曾保留同名再导出, 本版移除, `from qbotsdk.permissions.store import SqlBackend` 会失败, 需改成 `from qbotsdk.storage import SqlBackend`。
+
+### 新增
+
+- SQL 连接池增加探活与回收: `SqlStorage._connection()` 建引擎时固定开启 `pool_pre_ping`, 取连接前先探活, 数据库重启或空闲断连后自动换新连接; 新增 `pool_recycle` 参数（秒, 默认 `-1` 表示不回收）, `SqlStorage`、`SqlPermissionStorage` 与 `SqlitePermissionStorage` / `MysqlPermissionStorage` / `PostgresPermissionStorage` 的构造函数和 `from_url()` 都可传。`from_engine()` 采纳的引擎归调用方, 不受影响。
+
 ## [1.1.0] - 2026-11-14
 
 ### 新增
@@ -157,6 +167,8 @@
 - `Bot` 默认使用 `WebSocketAdapter()`;`Bot` 的 `intents` 与 `shard` 参数移到 `WebSocketAdapter`。
 - `WebhookServer` 的第一个参数从 `Bot` 改成 `Dispatcher`。
 
+[1.2.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v1.2.0
+[1.1.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v1.1.0
 [1.0.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v1.0.0
 [0.9.1]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.1
 [0.9.0]: https://github.com/half-nothing/qbotsdk/releases/tag/v0.9.0

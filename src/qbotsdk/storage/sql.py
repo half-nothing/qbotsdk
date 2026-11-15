@@ -101,7 +101,9 @@ class SqlStorage:
     """SQL 存储的公共底座: URL 解析、引擎创建与释放。
 
     子类绑定 `backend` 与 `dialect_names` 并补自己的表; 连接层不掺业务,
-    其它存储可以直接继承, 也可以单独使用。
+    其它存储可以直接继承, 也可以单独使用。引擎默认开启 `pool_pre_ping`,
+    池里的连接取出前先探活, 数据库重启或空闲断连后由 SQLAlchemy 换新连接;
+    `pool_recycle` 控制连接的最长复用时间, 默认 `-1` 表示不主动回收。
     """
 
     backend: ClassVar[SqlBackend] = SqlBackend.SQLITE
@@ -113,11 +115,13 @@ class SqlStorage:
         *,
         connect_args: Mapping[str, Any] | None = None,
         engine: AsyncEngine | None = None,
+        pool_recycle: int = -1,
     ) -> None:
         self._url = make_url(url) if isinstance(url, str) else url
         self._engine = engine
         self._owns_engine = engine is None
         self._connect_args = dict(connect_args or {})
+        self._pool_recycle = pool_recycle
 
     @classmethod
     def from_url(
@@ -125,18 +129,20 @@ class SqlStorage:
         url: str | URL,
         *,
         connect_args: Mapping[str, Any] | None = None,
+        pool_recycle: int = -1,
     ) -> Self:
         """用完整连接串构造, 驱动名写在 URL 里。
 
         :param url:          完整连接串, `str` 或 `sqlalchemy.engine.URL`。
         :param connect_args: 直接交给驱动的连接参数, 放不进 URL 查询串的对象走这里。
+        :param pool_recycle: 连接池回收周期, 单位秒, `-1` 表示不回收。
 
         :raise ValueError: URL 没写异步驱动, 或方言与存储类不匹配。
         """
 
         parsed = make_url(url)
         cls._check_url(parsed)
-        return cls._adopt(parsed, connect_args=connect_args)
+        return cls._adopt(parsed, connect_args=connect_args, pool_recycle=pool_recycle)
 
     @classmethod
     def from_engine(cls, engine: AsyncEngine) -> Self:
@@ -160,11 +166,18 @@ class SqlStorage:
         *,
         engine: AsyncEngine | None = None,
         connect_args: Mapping[str, Any] | None = None,
+        pool_recycle: int = -1,
     ) -> Self:
         """按已经解析好的 URL 建实例, 绕开子类构造函数的连接参数。"""
 
         store = cls.__new__(cls)
-        SqlStorage.__init__(store, url, connect_args=connect_args, engine=engine)
+        SqlStorage.__init__(
+            store,
+            url,
+            connect_args=connect_args,
+            engine=engine,
+            pool_recycle=pool_recycle,
+        )
         return store
 
     @classmethod
@@ -198,7 +211,12 @@ class SqlStorage:
         return self._url.drivername.rpartition("+")[2] or self._url.drivername
 
     def _connection(self) -> AsyncEngine:
-        """引擎在第一次使用时才创建, 构造存储本身不需要驱动。"""
+        """引擎在第一次使用时才创建, 构造存储本身不需要驱动。
+
+        创建时固定开启 `pool_pre_ping`, 从池里取连接前先发一条探活语句,
+        数据库重启或连接被中间设备掐断后能自动换新连接; `pool_recycle`
+        取自构造参数, 到期的连接在下次取用时重建。
+        """
 
         if self._engine is None:
             try:
@@ -206,6 +224,8 @@ class SqlStorage:
                     self._url,
                     future=True,
                     connect_args=self._connect_args,
+                    pool_pre_ping=True,
+                    pool_recycle=self._pool_recycle,
                 )
             except ModuleNotFoundError as exc:  # pragma: no cover
                 driver = self._driver_name()

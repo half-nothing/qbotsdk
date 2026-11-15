@@ -4,10 +4,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.engine import URL
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
+from qbotsdk.permissions.store import MysqlPermissionStorage, PostgresPermissionStorage
 from qbotsdk.storage import SqlBackend, SqlStorage
 from qbotsdk.storage.sql import resolve_drivername
 
@@ -50,7 +54,62 @@ async def test_sql_storage_from_engine_does_not_own_engine() -> None:
     await engine.dispose()
 
 
-def test_permissions_store_keeps_sql_backend_export() -> None:
-    from qbotsdk.permissions.store import SqlBackend as ExportedSqlBackend
+def test_permissions_store_does_not_reexport_sql_backend() -> None:
+    import qbotsdk.permissions.store as store_module
 
-    assert ExportedSqlBackend is SqlBackend
+    assert "SqlBackend" not in store_module.__all__
+    assert not hasattr(store_module, "SqlBackend")
+
+
+async def test_connection_applies_pool_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    from qbotsdk.storage import sql as sql_module
+
+    captured: list[dict[str, Any]] = []
+    original = sql_module.create_async_engine
+
+    def spy(url: str | URL, **kwargs: Any) -> AsyncEngine:
+        captured.append(kwargs)
+        return original(url, **kwargs)
+
+    monkeypatch.setattr(sql_module, "create_async_engine", spy)
+
+    default_store = SqlStorage.from_url("sqlite+aiosqlite://")
+    default_store._connection()
+    await default_store.close()
+
+    recycled = SqlStorage.from_url("sqlite+aiosqlite://", pool_recycle=1800)
+    recycled._connection()
+    await recycled.close()
+
+    assert captured[0]["pool_pre_ping"] is True
+    assert captured[0]["pool_recycle"] == -1
+    assert captured[1]["pool_pre_ping"] is True
+    assert captured[1]["pool_recycle"] == 1800
+
+
+async def test_pool_recycle_flows_through_subclass_from_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from qbotsdk.permissions.store import SqlitePermissionStorage
+    from qbotsdk.storage import sql as sql_module
+
+    captured: list[dict[str, Any]] = []
+    original = sql_module.create_async_engine
+
+    def spy(url: str | URL, **kwargs: Any) -> AsyncEngine:
+        captured.append(kwargs)
+        return original(url, **kwargs)
+
+    monkeypatch.setattr(sql_module, "create_async_engine", spy)
+
+    store = SqlitePermissionStorage.from_url("sqlite+aiosqlite://", pool_recycle=900)
+    store._connection()
+    await store.close()
+
+    assert captured[0]["pool_recycle"] == 900
+
+
+def test_pool_recycle_reaches_dialect_constructors() -> None:
+    # 这里不建引擎: 断言参数被构造函数收下并传到基类, 不需要装 MySQL/PostgreSQL 驱动
+    assert MysqlPermissionStorage(database="qbot", pool_recycle=600)._pool_recycle == 600
+    assert PostgresPermissionStorage(database="qbot")._pool_recycle == -1

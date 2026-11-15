@@ -29,9 +29,9 @@ from qbotsdk.permissions.store import (
     PermissionStorage,
     PostgresPermissionStorage,
     RoleRecord,
-    SqlBackend,
     SqlitePermissionStorage,
 )
+from qbotsdk.storage import SqlBackend
 
 
 class FakeClock:

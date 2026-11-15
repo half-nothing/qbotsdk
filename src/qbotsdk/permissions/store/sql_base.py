@@ -94,8 +94,14 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
         create_tables: bool = False,
         connect_args: Mapping[str, Any] | None = None,
         engine: AsyncEngine | None = None,
+        pool_recycle: int = -1,
     ) -> None:
-        super().__init__(url, connect_args=connect_args, engine=engine)
+        super().__init__(
+            url,
+            connect_args=connect_args,
+            engine=engine,
+            pool_recycle=pool_recycle,
+        )
         self._schema = PermissionSchema(table_prefix)
         self._create_tables = create_tables
 
@@ -108,6 +114,7 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
         connect_args: Mapping[str, Any] | None = None,
+        pool_recycle: int = -1,
     ) -> Self:
         """用完整连接串构造存储, 驱动名写在 URL 里。
 
@@ -118,6 +125,7 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
         :param table_prefix: 表名前缀, 同一个库里的多套权限靠它隔离。
         :param create_tables: 首次使用时自动建表。
         :param connect_args: 直接交给驱动的连接参数, 放不进 URL 查询串的对象走这里。
+        :param pool_recycle: 连接池回收周期, 单位秒, `-1` 表示不回收。
 
         :raise ValueError: URL 没写异步驱动, 或方言与存储类不匹配。
         """
@@ -129,6 +137,7 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
             table_prefix=table_prefix,
             create_tables=create_tables,
             connect_args=connect_args,
+            pool_recycle=pool_recycle,
         )
 
     @classmethod
@@ -170,6 +179,7 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
         connect_args: Mapping[str, Any] | None = None,
+        pool_recycle: int = -1,
     ) -> Self:
         """按已经解析好的 URL 建实例, 绕开子类构造函数的连接参数。"""
 
@@ -181,6 +191,7 @@ class SqlPermissionStorage(SqlStorage, PermissionStorage):
             create_tables=create_tables,
             connect_args=connect_args,
             engine=engine,
+            pool_recycle=pool_recycle,
         )
         return store
 

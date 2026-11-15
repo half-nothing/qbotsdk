@@ -54,6 +54,7 @@ class MysqlPermissionStorage(SqlPermissionStorage):
         connect_args: Mapping[str, Any] | None = None,
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
+        pool_recycle: int = -1,
     ) -> None:
         url = URL.create(
             resolve_drivername(driver, self.dialect_names, SqlBackend.MYSQL.drivername),
@@ -69,6 +70,7 @@ class MysqlPermissionStorage(SqlPermissionStorage):
             table_prefix=table_prefix,
             create_tables=create_tables,
             connect_args=connect_args,
+            pool_recycle=pool_recycle,
         )
 
     @override

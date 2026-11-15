@@ -534,7 +534,7 @@ PostgresPermissionStorage.from_engine(engine)
 
 `qbotsdk[mysql]` 与 `qbotsdk[postgres]` 只安装默认驱动, 用别的驱动时自行安装即可。
 
-连接层本身与权限无关, 放在 `qbotsdk.storage.sql`: `SqlBackend` 描述方言与默认驱动, `SqlStorage` 负责 URL 解析、引擎创建/释放与 `from_url`/`from_engine`, 其它存储可以直接继承或单独使用。
+连接层本身与权限无关, 放在 `qbotsdk.storage.sql`: `SqlBackend` 描述方言与默认驱动, `SqlStorage` 负责 URL 解析、引擎创建/释放与 `from_url`/`from_engine`, 其它存储可以直接继承或单独使用。连接池固定开启 `pool_pre_ping`, 取连接前先探活, 数据库重启或空闲断连后自动换新连接; 连接最长复用时间用 `pool_recycle`（秒）配置, 默认 `-1` 表示不回收, 例如 `MysqlPermissionStorage(database="qbot", pool_recycle=1800)`。
 
 ### 按钮回调
 

@@ -41,10 +41,16 @@ class SqlitePermissionStorage(SqlPermissionStorage):
         *,
         table_prefix: str = "qbotsdk_",
         create_tables: bool = False,
+        pool_recycle: int = -1,
     ) -> None:
         resolved = Path(path).expanduser().resolve()
         url = URL.create(SqlBackend.SQLITE.drivername, database=str(resolved))
-        super().__init__(url, table_prefix=table_prefix, create_tables=create_tables)
+        super().__init__(
+            url,
+            table_prefix=table_prefix,
+            create_tables=create_tables,
+            pool_recycle=pool_recycle,
+        )
 
     @property
     def path(self) -> Path:
